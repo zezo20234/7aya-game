@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +11,8 @@
     button { background: #4CAF50; color: white; border: none; cursor: pointer; }
     button:hover { background: #45a049; }
     .top-bar { background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; }
-    #dashboard, #scanner, #edit-user, #facenet, #card-container, #transfer-scanner { display: none; }
+    .sim-logo { height: 40px; cursor: pointer; margin: 10px; }
+    #dashboard, #sim-app, #card-container, #facenet, #buy-sim-section { display: none; }
     #card-container { margin-top: 10px; }
     .real-card {
       border-radius: 15px;
@@ -22,30 +24,11 @@
       font-family: 'Courier New', Courier, monospace;
     }
     .real-card h3 { margin: 0; font-size: 24px; }
-    .real-card small { font-size: 12px; opacity: 0.8; }
     .facenet-post {
       background: white; padding: 10px; margin: 10px 0;
       border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.1);
     }
   </style>
-
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
-      authDomain: "aya-game-e579b.firebaseapp.com",
-      projectId: "aya-game-e579b",
-      storageBucket: "aya-game-e579b.appspot.com",
-      messagingSenderId: "609706801625",
-      appId: "1:609706801625:web:1e128b6f2c001133c1c1c8",
-      measurementId: "G-E6BK1J3X3R"
-    };
-
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-  </script>
 </head>
 <body>
 
@@ -65,55 +48,44 @@
 
   <h3>Welcome, <span id="user-name"></span></h3>
 
-  <button onclick="makeCard()">Make Card</button>
-  <button onclick="openCard()">Open Card</button>
-  <div id="card-container"></div>
-
-  <div>
-    <h4>Secret Code (Change Balance)</h4>
-    <input id="secret-code" placeholder="Secret Code">
-    <input id="new-balance" type="number" placeholder="New Balance">
-    <button onclick="changeMyBalance()">Change</button>
+  <button onclick="buySim()">Buy Phone Number</button>
+  <div id="buy-sim-section">
+    <p>Select your provider:</p>
+    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Orange_logo.svg/2560px-Orange_logo.svg.png" onclick="selectSim('orange')">
+    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Vodafone_icon_2022.svg" onclick="selectSim('vodafone')">
+    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/b/b3/E%26%26_logo.png" onclick="selectSim('eand')">
   </div>
 
-  <div>
-    <h4>Transfer Money</h4>
-    <button onclick="startTransferScanner()">Scan QR to Send</button>
-    <div id="transfer-scanner"></div>
+  <div id="sim-app">
+    <h3>SIM App</h3>
+    <p>Raseed: <span id="raseed-balance">0</span>$</p>
+    <input id="secret-raseed" placeholder="Enter secret code">
+    <input id="raseed-amount" type="number" placeholder="Amount to add">
+    <button onclick="addRaseed()">Add Raseed</button>
+    <h4>Buy Internet</h4>
+    <button onclick="buyInternet(100,10)">100MB = $10</button>
+    <button onclick="buyInternet(2000,50)">2GB = $50</button>
+    <button onclick="buyInternet(2500,60)">2.5GB = $60</button>
+    <button onclick="buyInternet(3000,70)">3GB = $70</button>
   </div>
 
-  <div id="admin-tools">
-    <h4>Admin QR Scanner (Zezo Only)</h4>
-    <button onclick="startAdminScanner()">Scan User to Edit</button>
-    <div id="scanner"></div>
-    <div id="edit-user">
-      <h5>Edit Scanned User</h5>
-      <p id="edit-username"></p>
-      <input id="edit-money" type="number" placeholder="New Balance">
-      <input id="edit-phone" placeholder="New Phone">
-      <button onclick="saveEdit()">Save</button>
-    </div>
-  </div>
-
+  <button onclick="document.getElementById('facenet').style.display='block'">Open FaceNet</button>
   <div id="facenet">
-    <h3>Facenet 🧠</h3>
+    <h3>FaceNet 🧠</h3>
     <input id="post-title" placeholder="Title">
-    <input id="post-image" placeholder="Image URL">
+    <input id="post-image" type="file">
     <button onclick="addPost()">Post</button>
     <div id="posts"></div>
   </div>
 </div>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-  const users = {
-    zezo:  { password: "123", money: 500, phone: null, internet: 0, sim: null, raseed: 0, card: null },
-    asser: { password: "12345", money: 500, phone: null, internet: 0, sim: null, raseed: 0, card: null },
-    layan: { password: "1234", money: 500, phone: null, internet: 0, sim: null, raseed: 0, card: null }
+  let users = {
+    zezo: { password: "123", money: 500, phone: null, sim: null, raseed: 0, internet: 0 },
+    asser: { password: "12345", money: 500, phone: null, sim: null, raseed: 0, internet: 0 },
+    layan: { password: "1234", money: 500, phone: null, sim: null, raseed: 0, internet: 0 }
   };
   let currentUser = null;
-  let scannedUser = null;
 
   function login() {
     const u = document.getElementById("username").value.trim();
@@ -123,8 +95,6 @@
       document.getElementById("login").style.display = "none";
       document.getElementById("dashboard").style.display = "block";
       document.getElementById("user-name").innerText = u;
-      if (u === "zezo") document.getElementById("admin-tools").style.display = "block";
-      document.getElementById("facenet").style.display = "block";
       updateUI();
     } else {
       document.getElementById("login-error").innerText = "Wrong username or password";
@@ -135,106 +105,62 @@
     const u = users[currentUser];
     document.getElementById("user-phone").innerText = "📞 Phone: " + (u.phone || "None");
     document.getElementById("user-money").innerText = "💰 Money: $" + u.money;
+    document.getElementById("raseed-balance").innerText = u.raseed;
+    if (u.sim) document.getElementById("sim-app").style.display = "block";
   }
 
-  function makeCard() {
-    if (users[currentUser].card) return alert("Card already exists");
-    const pin = prompt("Enter 3-digit PIN:");
-    if (!/^[0-9]{3}$/.test(pin)) return alert("Invalid PIN");
-    users[currentUser].card = { pin };
-    showCard();
+  function buySim() {
+    document.getElementById("buy-sim-section").style.display = "block";
   }
 
-  function openCard() {
-    const c = users[currentUser].card;
-    if (!c) return alert("No card created");
-    const pin = prompt("Enter PIN:");
-    if (pin === c.pin) showCard();
-    else alert("Wrong PIN");
+  function selectSim(type) {
+    if (users[currentUser].money < 250) return alert("Not enough money.");
+    const number = Math.floor(10000 + Math.random() * 90000);
+    users[currentUser].money -= 250;
+    users[currentUser].phone = "05" + number;
+    users[currentUser].sim = type;
+    updateUI();
+    alert("You got a number: 05" + number);
+    document.getElementById("buy-sim-section").style.display = "none";
+    document.getElementById("sim-app").style.display = "block";
   }
 
-  function showCard() {
-    const c = document.getElementById("card-container");
-    c.style.display = "block";
-    c.innerHTML = `
-      <div class="real-card">
-        <h3>${currentUser.toUpperCase()}</h3>
-        <p>💳 Virtual Card</p>
-        <div id="qrcode"></div>
-        <small>Scan to Transfer or Edit (Zezo)</small>
-      </div>
-    `;
-    new QRCode(document.getElementById("qrcode"), currentUser);
-  }
-
-  function changeMyBalance() {
-    const code = document.getElementById("secret-code").value;
-    const newBal = parseInt(document.getElementById("new-balance").value);
-    if (code === "magiccode" && !isNaN(newBal)) {
-      users[currentUser].money = newBal;
+  function addRaseed() {
+    const code = document.getElementById("secret-raseed").value;
+    const amount = parseInt(document.getElementById("raseed-amount").value);
+    if (code === "555" && !isNaN(amount)) {
+      users[currentUser].raseed += amount;
       updateUI();
-      alert("Balance changed!");
+      alert("Raseed added!");
+    } else alert("Wrong code or amount");
+  }
+
+  function buyInternet(mb, cost) {
+    if (users[currentUser].raseed >= cost) {
+      users[currentUser].internet += mb;
+      users[currentUser].raseed -= cost;
+      updateUI();
     } else {
-      alert("Wrong code or balance");
+      alert("Not enough raseed");
     }
   }
 
-  function startTransferScanner() {
-    const div = document.getElementById("transfer-scanner");
-    div.innerHTML = "";
-    div.style.display = "block";
-    const qr = new Html5Qrcode("transfer-scanner");
-    Html5Qrcode.getCameras().then(cams => {
-      const cam = cams.find(c => c.label.toLowerCase().includes("back")) || cams[0];
-      qr.start(cam.id, { fps: 10, qrbox: 250 }, msg => {
-        qr.stop();
-        if (!users[msg]) return alert("User not found");
-        if (msg === currentUser) return alert("You can't send to yourself.");
-        const amount = parseInt(prompt(`Send how much to ${msg}?`));
-        if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
-        if (users[currentUser].money < amount) return alert("Not enough balance.");
-        users[currentUser].money -= amount;
-        users[msg].money += amount;
-        updateUI();
-        alert(`Sent $${amount} to ${msg}!`);
-      });
-    });
-  }
-
-  function startAdminScanner() {
-    const div = document.getElementById("scanner");
-    div.innerHTML = "";
-    div.style.display = "block";
-    const qr = new Html5Qrcode("scanner");
-    Html5Qrcode.getCameras().then(cams => {
-      const cam = cams.find(c => c.label.toLowerCase().includes("back")) || cams[0];
-      qr.start(cam.id, { fps: 10, qrbox: 250 }, msg => {
-        qr.stop();
-        if (users[msg]) {
-          scannedUser = msg;
-          document.getElementById("edit-user").style.display = "block";
-          document.getElementById("edit-username").innerText = msg;
-          document.getElementById("edit-money").value = users[msg].money;
-          document.getElementById("edit-phone").value = users[msg].phone;
-        } else alert("User not found");
-      });
-    });
-  }
-
-  function saveEdit() {
-    users[scannedUser].money = parseInt(document.getElementById("edit-money").value);
-    users[scannedUser].phone = document.getElementById("edit-phone").value;
-    updateUI();
-    alert("User updated!");
-  }
-
   function addPost() {
-    const t = document.getElementById("post-title").value;
-    const img = document.getElementById("post-image").value;
-    const div = document.createElement("div");
-    div.className = "facenet-post";
-    div.innerHTML = `<strong>${t}</strong><br><img src="${img}" width="100%">`;
-    document.getElementById("posts").prepend(div);
+    if (users[currentUser].internet < 100) return alert("Not enough internet to post.");
+    const title = document.getElementById("post-title").value;
+    const fileInput = document.getElementById("post-image");
+    const file = fileInput.files[0];
+    if (!file) return alert("Choose an image file");
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const div = document.createElement("div");
+      div.className = "facenet-post";
+      div.innerHTML = "<strong>" + title + "</strong><br><img src='" + e.target.result + "' width='100%'>";
+      document.getElementById("posts").prepend(div);
+      users[currentUser].internet -= 100;
+    };
+    reader.readAsDataURL(file);
   }
 </script>
 </body>
