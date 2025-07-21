@@ -5,7 +5,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sibling Game Platform</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f2f2f2;
+    }
+    #login-screen, #dashboard, #facenet {
+      padding: 20px;
+    }
+    .top-bar {
+      background: #333;
+      color: white;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    #card-container {
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
 </head>
 <body>
   <!-- Login Screen -->
@@ -73,6 +112,69 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    const users = {
+      asser: { password: "12345", money: 100, phone: null, card: null },
+      layan: { password: "1234", money: 100, phone: null, card: null },
+      zezo: { password: "123", money: 100, phone: null, card: null },
+    };
+
+    let currentUser = null;
+
+    function login() {
+      const username = document.getElementById("username").value.trim().toLowerCase();
+      const password = document.getElementById("password").value.trim();
+
+      if (users[username] && users[username].password === password) {
+        currentUser = username;
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("user-name").textContent = username;
+        updateUserInfo();
+
+        if (username === "zezo") {
+          document.getElementById("admin-tools").style.display = "block";
+        }
+      } else {
+        document.getElementById("login-error").textContent = "Incorrect username or password";
+      }
+    }
+
+    function updateUserInfo() {
+      const user = users[currentUser];
+      document.getElementById("user-money").textContent = `💰 Money: $${user.money}`;
+      document.getElementById("user-phone").textContent = `📞 Phone: ${user.phone || "None"}`;
+    }
+
+    function makeCard() {
+      alert("Card creation not fully implemented yet.");
+    }
+
+    function openCard() {
+      alert("Card opening not fully implemented yet.");
+    }
+
+    function startScanner() {
+      alert("QR Code scanner not implemented yet.");
+    }
+
+    function saveUserEdit() {
+      alert("Save user edit not implemented yet.");
+    }
+
+    function goToFacenet() {
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("facenet").style.display = "block";
+    }
+
+    function backToDashboard() {
+      document.getElementById("facenet").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+    }
+
+    function createPost() {
+      alert("Post feature not implemented yet.");
+    }
+  </script>
 </body>
 </html>
