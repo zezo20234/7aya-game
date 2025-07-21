@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -44,6 +43,7 @@
   <div class="top-bar">
     <div id="user-phone">📞 Phone: None</div>
     <div id="user-money">💰 Money: $0</div>
+    <div id="user-internet">🌐 0MB</div>
   </div>
 
   <h3>Welcome, <span id="user-name"></span></h3>
@@ -51,9 +51,9 @@
   <button onclick="buySim()">Buy Phone Number</button>
   <div id="buy-sim-section">
     <p>Select your provider:</p>
-    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Orange_logo.svg/2560px-Orange_logo.svg.png" onclick="selectSim('orange')">
-    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Vodafone_icon_2022.svg" onclick="selectSim('vodafone')">
-    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/b/b3/E%26%26_logo.png" onclick="selectSim('eand')">
+    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Orange_logo.svg/2560px-Orange_logo.svg.png" onclick="selectSim('Orange')">
+    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Vodafone_icon_2022.svg" onclick="selectSim('Vodafone')">
+    <img class="sim-logo" src="https://upload.wikimedia.org/wikipedia/commons/b/b3/E%26%26_logo.png" onclick="selectSim('E&')">
   </div>
 
   <div id="sim-app">
@@ -63,10 +63,10 @@
     <input id="raseed-amount" type="number" placeholder="Amount to add">
     <button onclick="addRaseed()">Add Raseed</button>
     <h4>Buy Internet</h4>
-    <button onclick="buyInternet(100,10)">100MB = $10</button>
-    <button onclick="buyInternet(2000,50)">2GB = $50</button>
-    <button onclick="buyInternet(2500,60)">2.5GB = $60</button>
-    <button onclick="buyInternet(3000,70)">3GB = $70</button>
+    <button onclick="buyInternet(100,10)">100MB = 10 Raseed</button>
+    <button onclick="buyInternet(2000,50)">2GB = 50 Raseed</button>
+    <button onclick="buyInternet(2500,60)">2.5GB = 60 Raseed</button>
+    <button onclick="buyInternet(3000,70)">3GB = 70 Raseed</button>
   </div>
 
   <button onclick="document.getElementById('facenet').style.display='block'">Open FaceNet</button>
@@ -79,89 +79,148 @@
   </div>
 </div>
 
+<!-- Insert Firebase SDK script block from above here -->
+
 <script>
-  let users = {
-    zezo: { password: "123", money: 500, phone: null, sim: null, raseed: 0, internet: 0 },
-    asser: { password: "12345", money: 500, phone: null, sim: null, raseed: 0, internet: 0 },
-    layan: { password: "1234", money: 500, phone: null, sim: null, raseed: 0, internet: 0 }
-  };
-  let currentUser = null;
+let currentUser = null;
+let usersRef = ref(window.db, "users/");
+let postsRef = ref(window.db, "posts/");
 
-  function login() {
-    const u = document.getElementById("username").value.trim();
-    const p = document.getElementById("password").value.trim();
-    if (users[u] && users[u].password === p) {
-      currentUser = u;
-      document.getElementById("login").style.display = "none";
-      document.getElementById("dashboard").style.display = "block";
-      document.getElementById("user-name").innerText = u;
-      updateUI();
-    } else {
-      document.getElementById("login-error").innerText = "Wrong username or password";
-    }
+async function login() {
+  const u = document.getElementById("username").value.trim();
+  const p = document.getElementById("password").value.trim();
+  const snapshot = await get(ref(window.db, `users/${u}`));
+  if (snapshot.exists() && snapshot.val().password === p) {
+    currentUser = u;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
+    document.getElementById("user-name").innerText = u;
+    loadData();
+  } else {
+    document.getElementById("login-error").innerText = "Wrong username or password";
   }
+}
 
-  function updateUI() {
-    const u = users[currentUser];
-    document.getElementById("user-phone").innerText = "📞 Phone: " + (u.phone || "None");
-    document.getElementById("user-money").innerText = "💰 Money: $" + u.money;
-    document.getElementById("raseed-balance").innerText = u.raseed;
-    if (u.sim) document.getElementById("sim-app").style.display = "block";
+function loadData() {
+  onValue(ref(window.db, `users/${currentUser}`), snap => {
+    const data = snap.val();
+    document.getElementById("user-phone").innerText = "📞 Phone: " + (data.phone || "None");
+    document.getElementById("user-money").innerText = "💰 Money: $" + data.money;
+    document.getElementById("user-internet").innerText = "🌐 " + data.internet + "MB";
+    document.getElementById("raseed-balance").innerText = data.raseed;
+  });
+
+  onValue(postsRef, snap => {
+    const all = snap.val() || {};
+    const postsDiv = document.getElementById("posts");
+    postsDiv.innerHTML = "";
+    Object.values(all).forEach(post => {
+      const div = document.createElement("div");
+      div.className = "facenet-post";
+      div.innerHTML = `<strong>${post.title}</strong><br><img src="${post.img}" width="100%">`;
+      postsDiv.prepend(div);
+    });
+  });
+}
+
+function buySim() {
+  document.getElementById("buy-sim-section").style.display = "block";
+}
+
+function selectSim(type) {
+  const number = "05" + Math.floor(10000 + Math.random() * 89999);
+  update(ref(window.db, `users/${currentUser}`), {
+    phone: number,
+    sim: type,
+    money: window.money - 250
+  });
+  document.getElementById("buy-sim-section").style.display = "none";
+  document.getElementById("sim-app").style.display = "block";
+}
+
+function addRaseed() {
+  const code = document.getElementById("secret-raseed").value;
+  const amount = parseInt(document.getElementById("raseed-amount").value);
+  if (code === "555" && !isNaN(amount)) {
+    const userRef = ref(window.db, `users/${currentUser}`);
+    get(userRef).then(snap => {
+      const r = (snap.val().raseed || 0) + amount;
+      update(userRef, { raseed: r });
+    });
+  } else {
+    alert("Wrong code or invalid amount");
   }
+}
 
-  function buySim() {
-    document.getElementById("buy-sim-section").style.display = "block";
-  }
-
-  function selectSim(type) {
-    if (users[currentUser].money < 250) return alert("Not enough money.");
-    const number = Math.floor(10000 + Math.random() * 90000);
-    users[currentUser].money -= 250;
-    users[currentUser].phone = "05" + number;
-    users[currentUser].sim = type;
-    updateUI();
-    alert("You got a number: 05" + number);
-    document.getElementById("buy-sim-section").style.display = "none";
-    document.getElementById("sim-app").style.display = "block";
-  }
-
-  function addRaseed() {
-    const code = document.getElementById("secret-raseed").value;
-    const amount = parseInt(document.getElementById("raseed-amount").value);
-    if (code === "555" && !isNaN(amount)) {
-      users[currentUser].raseed += amount;
-      updateUI();
-      alert("Raseed added!");
-    } else alert("Wrong code or amount");
-  }
-
-  function buyInternet(mb, cost) {
-    if (users[currentUser].raseed >= cost) {
-      users[currentUser].internet += mb;
-      users[currentUser].raseed -= cost;
-      updateUI();
+function buyInternet(mb, price) {
+  const userRef = ref(window.db, `users/${currentUser}`);
+  get(userRef).then(snap => {
+    const user = snap.val();
+    if (user.raseed >= price) {
+      update(userRef, {
+        raseed: user.raseed - price,
+        internet: user.internet + mb
+      });
     } else {
       alert("Not enough raseed");
     }
-  }
+  });
+}
 
-  function addPost() {
-    if (users[currentUser].internet < 100) return alert("Not enough internet to post.");
-    const title = document.getElementById("post-title").value;
-    const fileInput = document.getElementById("post-image");
-    const file = fileInput.files[0];
-    if (!file) return alert("Choose an image file");
+function addPost() {
+  const title = document.getElementById("post-title").value;
+  const file = document.getElementById("post-image").files[0];
+  if (!file) return alert("Choose an image");
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const url = e.target.result;
+    const postId = Date.now();
+    set(ref(window.db, `posts/${postId}`), { title, img: url });
+  };
+  reader.readAsDataURL(file);
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const div = document.createElement("div");
-      div.className = "facenet-post";
-      div.innerHTML = "<strong>" + title + "</strong><br><img src='" + e.target.result + "' width='100%'>";
-      document.getElementById("posts").prepend(div);
-      users[currentUser].internet -= 100;
-    };
-    reader.readAsDataURL(file);
-  }
+// Internet timer
+setInterval(() => {
+  if (!currentUser) return;
+  const userRef = ref(window.db, `users/${currentUser}`);
+  get(userRef).then(snap => {
+    const user = snap.val();
+    if (user.internet >= 150) {
+      update(userRef, { internet: user.internet - 150 });
+    } else {
+      update(userRef, { internet: 0 });
+    }
+  });
+}, 90000); // Every 1.5 min
+</script>
+<!-- Firebase SDKs -->
+<script type="module">
+  // Your Firebase config here
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
+    authDomain: "aya-game-e579b.firebaseapp.com",
+    databaseURL: "https://aya-game-e579b-default-rtdb.firebaseio.com",
+    projectId: "aya-game-e579b",
+    storageBucket: "aya-game-e579b.appspot.com",
+    messagingSenderId: "609706801625",
+    appId: "1:609706801625:web:1e128b6f2c001133c1c1c8",
+    measurementId: "G-E6BK1J3X3R"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Make db globally accessible
+  window.db = db;
+  window.ref = ref;
+  window.get = get;
+  window.set = set;
+  window.update = update;
+  window.onValue = onValue;
 </script>
 </body>
 </html>
