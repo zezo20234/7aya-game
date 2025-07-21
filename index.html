@@ -43,6 +43,21 @@
   <div class="top-bar">
     <div id="user-phone">📞 Phone: None</div>
     <div id="user-money">💰 Money: $0</div>
+    <div>
+  <h4>Buy Phone Number</h4>
+  <div style="display: flex; gap: 10px; justify-content: center;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/6/6f/Orange_logo.svg" width="60" onclick="buySim('Orange')" style="cursor:pointer;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/f8/Vodafone_icon.svg" width="60" onclick="buySim('Vodafone')" style="cursor:pointer;">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/f/fc/Etisalat_logo_2022.svg" width="60" onclick="buySim('Etisalat')" style="cursor:pointer;">
+  </div>
+  <p id="sim-status"></p>
+</div>
+
+<div>
+  <h4>Recharge (Raseed) by Secret Code</h4>
+  <input id="raseed-code" placeholder="Enter Secret Code">
+  <button onclick="addRaseed()">Recharge</button>
+</div>
   </div>
 
   <h3>Welcome, <span id="user-name"></span></h3>
@@ -126,9 +141,10 @@ function login() {
 
 function updateUI() {
   db.ref("users/" + currentUser).once("value", snap => {
-    const user = snap.val();
-    document.getElementById("user-phone").innerText = "📞 Phone: " + (user.phone || "None");
-    document.getElementById("user-money").innerText = "💰 Money: $" + user.money;
+    const u = snap.val();
+    document.getElementById("user-phone").innerText = "📞 Phone: " + (u.sim?.number || "None");
+    document.getElementById("user-money").innerText = "💰 Money: $" + u.money;
+    document.getElementById("sim-status").innerText = u.sim ? `SIM: ${u.sim.company} (${u.sim.number})` : "";
   });
 }
   function makeCard() {
@@ -285,6 +301,39 @@ setInterval(() => {
     }
   });
 }, 90000); // every 1.5 minutes
+  function buySim(company) {
+  db.ref("users/" + currentUser).once("value", snap => {
+    const data = snap.val();
+    if (data.money < 250) return alert("Not enough money");
+    if (data.sim) return alert("You already have a phone number");
+
+    const number = "05" + Math.floor(10000000 + Math.random() * 90000000);
+    db.ref("users/" + currentUser).update({
+      money: data.money - 250,
+      sim: { company, number }
+    }).then(() => {
+      updateUI();
+      document.getElementById("sim-status").innerText = `Bought ${company} SIM: ${number}`;
+    });
+  });
+}
+
+function addRaseed() {
+  const code = document.getElementById("raseed-code").value.trim();
+  const validCodes = {
+    "raseed100": 100,
+    "raseed200": 200,
+    "raseed300": 300
+  };
+  if (!validCodes[code]) return alert("Invalid code");
+
+  db.ref("users/" + currentUser).once("value", snap => {
+    const old = snap.val().raseed || 0;
+    db.ref("users/" + currentUser).update({ raseed: old + validCodes[code] });
+    alert("Recharged successfully!");
+    updateUI();
+  });
+}
 </script>
 </body>
 </html>
