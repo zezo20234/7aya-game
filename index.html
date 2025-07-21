@@ -5,136 +5,219 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Sibling Game</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; margin: 0; }
+    body { font-family: Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px; }
     input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
     button { background: #4CAF50; color: white; border: none; cursor: pointer; }
     button:hover { background: #45a049; }
     .top-bar { background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; }
-    #dashboard, #facenet, #scanner, #edit-user { display: none; }
-    #card-container { background: white; padding: 15px; border-radius: 10px; margin-top: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
+    #dashboard, #scanner, #edit-user, #facenet, #card-container, #transfer-scanner { display: none; }
+    #card-container { margin-top: 10px; }
+    .real-card {
+      border-radius: 15px;
+      width: 320px;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: white;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      font-family: 'Courier New', Courier, monospace;
+    }
+    .real-card h3 { margin: 0; font-size: 24px; }
+    .real-card small { font-size: 12px; opacity: 0.8; }
+    .facenet-post {
+      background: white; padding: 10px; margin: 10px 0;
+      border-radius: 8px; box-shadow: 0 0 4px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
-  <div id="login">
-    <h2>Login</h2>
-    <input id="username" placeholder="Username">
-    <input id="password" type="password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <p id="login-error" style="color:red;"></p>
+
+<div id="login">
+  <h2>Login</h2>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+  <p id="login-error" style="color:red;"></p>
+</div>
+
+<div id="dashboard">
+  <div class="top-bar">
+    <div id="user-phone">📞 Phone: None</div>
+    <div id="user-money">💰 Money: $0</div>
   </div>
 
-  <div id="dashboard">
-    <div class="top-bar">
-      <div id="user-phone">📞 Phone: None</div>
-      <div id="user-money">💰 Money: $0</div>
-    </div>
-    <h3>Welcome, <span id="user-name"></span></h3>
+  <h3>Welcome, <span id="user-name"></span></h3>
 
-    <button onclick="makeCard()">Make Card</button>
-    <button onclick="openCard()">Open Card</button>
-    <div id="card-container"></div>
+  <button onclick="makeCard()">Make Card</button>
+  <button onclick="openCard()">Open Card</button>
+  <div id="card-container"></div>
 
-    <div id="admin-tools">
-      <h4>Zezo Admin Tools</h4>
-      <button onclick="startScanner()">Scan QR Code</button>
-      <div id="scanner"></div>
-      <div id="edit-user">
-        <h5>Edit User</h5>
-        <p id="edit-username"></p>
-        <input id="edit-money" type="number" placeholder="New Balance">
-        <input id="edit-phone" placeholder="New Phone Number">
-        <button onclick="saveEdit()">Save</button>
-      </div>
+  <div>
+    <h4>Secret Code (Change Balance)</h4>
+    <input id="secret-code" placeholder="Secret Code">
+    <input id="new-balance" type="number" placeholder="New Balance">
+    <button onclick="changeMyBalance()">Change</button>
+  </div>
+
+  <div>
+    <h4>Transfer Money</h4>
+    <button onclick="startTransferScanner()">Scan QR to Send</button>
+    <div id="transfer-scanner"></div>
+  </div>
+
+  <div id="admin-tools">
+    <h4>Admin QR Scanner (Zezo Only)</h4>
+    <button onclick="startAdminScanner()">Scan User to Edit</button>
+    <div id="scanner"></div>
+    <div id="edit-user">
+      <h5>Edit Scanned User</h5>
+      <p id="edit-username"></p>
+      <input id="edit-money" type="number" placeholder="New Balance">
+      <input id="edit-phone" placeholder="New Phone">
+      <button onclick="saveEdit()">Save</button>
     </div>
   </div>
 
-  <script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script>
-    const users = {
-      zezo:  { password: "123", money: 100, phone: null, card: null },
-      asser: { password: "12345", money: 100, phone: null, card: null },
-      layan: { password: "1234", money: 100, phone: null, card: null }
-    };
+  <div id="facenet">
+    <h3>Facenet 🧠</h3>
+    <input id="post-title" placeholder="Title">
+    <input id="post-image" placeholder="Image URL">
+    <button onclick="addPost()">Post</button>
+    <div id="posts"></div>
+  </div>
+</div>
 
-    let currentUser = null;
-    let scannedUser = null;
+<script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const users = {
+    zezo:  { password: "123", money: 100, phone: "0550000000", card: null },
+    asser: { password: "12345", money: 100, phone: "0551111111", card: null },
+    layan: { password: "1234", money: 100, phone: "0552222222", card: null }
+  };
+  let currentUser = null;
+  let scannedUser = null;
 
-    function login() {
-      const u = document.getElementById("username").value.trim();
-      const p = document.getElementById("password").value.trim();
-      if (users[u] && users[u].password === p) {
-        currentUser = u;
-        document.getElementById("login").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-        document.getElementById("user-name").innerText = u;
-        updateUI();
-        if (u === "zezo") document.getElementById("admin-tools").style.display = "block";
-      } else {
-        document.getElementById("login-error").innerText = "Wrong username or password";
-      }
-    }
-
-    function updateUI() {
-      const user = users[currentUser];
-      document.getElementById("user-phone").innerText = "📞 Phone: " + (user.phone || "None");
-      document.getElementById("user-money").innerText = "💰 Money: $" + user.money;
-    }
-
-    function makeCard() {
-      if (users[currentUser].card) return alert("You already made a card.");
-      const pin = prompt("Enter 3-digit PIN:");
-      if (!/^[0-9]{3}$/.test(pin)) return alert("PIN must be 3 digits.");
-      users[currentUser].card = { pin };
-      showCard();
-    }
-
-    function openCard() {
-      const card = users[currentUser].card;
-      if (!card) return alert("No card created.");
-      const pin = prompt("Enter your PIN:");
-      if (pin === card.pin) showCard();
-      else alert("Incorrect PIN.");
-    }
-
-    function showCard() {
-      const container = document.getElementById("card-container");
-      container.innerHTML = `<h4>Card: ${currentUser}</h4><div id="qrcode"></div><p>PIN: ***</p>`;
-      new QRCode(document.getElementById("qrcode"), currentUser);
-    }
-
-    function startScanner() {
-      const scannerDiv = document.getElementById("scanner");
-      scannerDiv.innerHTML = "";
-      scannerDiv.style.display = "block";
-
-      const qr = new Html5Qrcode("scanner");
-      Html5Qrcode.getCameras().then(devices => {
-        if (devices.length > 0) {
-          qr.start(devices[0].id, { fps: 10, qrbox: 250 }, msg => {
-            qr.stop();
-            if (users[msg]) {
-              scannedUser = msg;
-              document.getElementById("edit-user").style.display = "block";
-              document.getElementById("edit-username").innerText = msg;
-              document.getElementById("edit-money").value = users[msg].money;
-              document.getElementById("edit-phone").value = users[msg].phone || "";
-            } else {
-              alert("User not found");
-            }
-          });
-        }
-      });
-    }
-
-    function saveEdit() {
-      const m = parseInt(document.getElementById("edit-money").value);
-      const p = document.getElementById("edit-phone").value;
-      users[scannedUser].money = m;
-      users[scannedUser].phone = p;
-      alert("User updated");
+  function login() {
+    const u = document.getElementById("username").value.trim();
+    const p = document.getElementById("password").value.trim();
+    if (users[u] && users[u].password === p) {
+      currentUser = u;
+      document.getElementById("login").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      document.getElementById("user-name").innerText = u;
+      if (u === "zezo") document.getElementById("admin-tools").style.display = "block";
+      document.getElementById("facenet").style.display = "block";
       updateUI();
+    } else {
+      document.getElementById("login-error").innerText = "Wrong username or password";
     }
-  </script>
+  }
+
+  function updateUI() {
+    const u = users[currentUser];
+    document.getElementById("user-phone").innerText = "📞 Phone: " + (u.phone || "None");
+    document.getElementById("user-money").innerText = "💰 Money: $" + u.money;
+  }
+
+  function makeCard() {
+    if (users[currentUser].card) return alert("Card already exists");
+    const pin = prompt("Enter 3-digit PIN:");
+    if (!/^[0-9]{3}$/.test(pin)) return alert("Invalid PIN");
+    users[currentUser].card = { pin };
+    showCard();
+  }
+
+  function openCard() {
+    const c = users[currentUser].card;
+    if (!c) return alert("No card created");
+    const pin = prompt("Enter PIN:");
+    if (pin === c.pin) showCard();
+    else alert("Wrong PIN");
+  }
+
+  function showCard() {
+    const c = document.getElementById("card-container");
+    c.style.display = "block";
+    c.innerHTML = `
+      <div class="real-card">
+        <h3>${currentUser.toUpperCase()}</h3>
+        <p>💳 Virtual Card</p>
+        <div id="qrcode"></div>
+        <small>Scan to Transfer or Edit (Zezo)</small>
+      </div>
+    `;
+    new QRCode(document.getElementById("qrcode"), currentUser);
+  }
+
+  function changeMyBalance() {
+    const code = document.getElementById("secret-code").value;
+    const newBal = parseInt(document.getElementById("new-balance").value);
+    if (code === "magiccode" && !isNaN(newBal)) {
+      users[currentUser].money = newBal;
+      updateUI();
+      alert("Balance changed!");
+    } else {
+      alert("Wrong code or balance");
+    }
+  }
+
+  function startTransferScanner() {
+    const div = document.getElementById("transfer-scanner");
+    div.innerHTML = "";
+    div.style.display = "block";
+    const qr = new Html5Qrcode("transfer-scanner");
+    Html5Qrcode.getCameras().then(cams => {
+      const cam = cams.find(c => c.label.toLowerCase().includes("back")) || cams[0];
+      qr.start(cam.id, { fps: 10, qrbox: 250 }, msg => {
+        qr.stop();
+        if (!users[msg]) return alert("User not found");
+        if (msg === currentUser) return alert("You can't send to yourself.");
+        const amount = parseInt(prompt(`Send how much to ${msg}?`));
+        if (isNaN(amount) || amount <= 0) return alert("Invalid amount.");
+        if (users[currentUser].money < amount) return alert("Not enough balance.");
+        users[currentUser].money -= amount;
+        users[msg].money += amount;
+        updateUI();
+        alert(`Sent $${amount} to ${msg}!`);
+      });
+    });
+  }
+
+  function startAdminScanner() {
+    const div = document.getElementById("scanner");
+    div.innerHTML = "";
+    div.style.display = "block";
+    const qr = new Html5Qrcode("scanner");
+    Html5Qrcode.getCameras().then(cams => {
+      const cam = cams.find(c => c.label.toLowerCase().includes("back")) || cams[0];
+      qr.start(cam.id, { fps: 10, qrbox: 250 }, msg => {
+        qr.stop();
+        if (users[msg]) {
+          scannedUser = msg;
+          document.getElementById("edit-user").style.display = "block";
+          document.getElementById("edit-username").innerText = msg;
+          document.getElementById("edit-money").value = users[msg].money;
+          document.getElementById("edit-phone").value = users[msg].phone;
+        } else alert("User not found");
+      });
+    });
+  }
+
+  function saveEdit() {
+    users[scannedUser].money = parseInt(document.getElementById("edit-money").value);
+    users[scannedUser].phone = document.getElementById("edit-phone").value;
+    updateUI();
+    alert("User updated!");
+  }
+
+  function addPost() {
+    const t = document.getElementById("post-title").value;
+    const img = document.getElementById("post-image").value;
+    const div = document.createElement("div");
+    div.className = "facenet-post";
+    div.innerHTML = `<strong>${t}</strong><br><img src="${img}" width="100%">`;
+    document.getElementById("posts").prepend(div);
+  }
+</script>
 </body>
 </html>
