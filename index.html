@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sibling Game Platform</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen">
+    <h1>Login</h1>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="login()">Login</button>
+    <p id="login-error" style="color:red;"></p>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" style="display:none;">
+    <div class="top-bar">
+      <span id="user-phone">📞 Phone: None</span>
+      <span id="user-money">💰 Money: $0</span>
+    </div>
+
+    <h2>Welcome, <span id="user-name"></span></h2>
+
+    <!-- Card Actions -->
+    <div id="card-controls">
+      <button onclick="makeCard()">Make Card</button>
+      <button onclick="openCard()">Open Card</button>
+    </div>
+
+    <!-- Card Display -->
+    <div id="card-container" style="display:none;"></div>
+
+    <!-- Phone Shop -->
+    <div id="phone-shop">
+      <h3>Phone Numbers</h3>
+      <div id="phone-list"></div>
+    </div>
+
+    <!-- Admin Tools for Zezo -->
+    <div id="admin-tools" style="display:none;">
+      <h3>Admin Tools (Zezo Only)</h3>
+      <button onclick="startScanner()">Scan QR Code</button>
+      <div id="scanner" style="display:none;"></div>
+
+      <div id="edit-user" style="display:none;">
+        <h4>Edit User</h4>
+        <p id="edit-username"></p>
+        <input id="edit-balance" type="number" placeholder="New Balance">
+        <input id="edit-number" placeholder="New Phone Number">
+        <button onclick="saveUserEdit()">Save</button>
+      </div>
+    </div>
+
+    <!-- Facenet Button -->
+    <button id="facenet-btn" onclick="goToFacenet()">Facenet</button>
+  </div>
+
+  <!-- Facenet Section -->
+  <div id="facenet" style="display:none;">
+    <h2>Facenet</h2>
+    <input type="text" id="post-title" placeholder="Post Title">
+    <input type="file" id="post-image">
+    <button onclick="createPost()">Post</button>
+    <div id="posts"></div>
+    <button onclick="backToDashboard()">Back</button>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.7/html5-qrcode.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
