@@ -186,7 +186,10 @@
   <button onclick="openCard()">Open Card</button>
   <button onclick="buyPhone()">Buy Phone Number</button>
   <button onclick="toggleSimApp()">SIM App</button>
-  <button onclick="startQRScanner()">Scan Card (Change Balance)</button>
+  
+  <button id="zezoAdminScanBtn" style="display:none; background:#4CAF50;" onclick="startQRScanner('admin_change_balance')">Scan Card (Admin Change Balance)</button>
+  
+  <button onclick="startQRScanner('transfer_credits')">Scan Card (Transfer Credits)</button>
   
   <button onclick="logout()" style="margin-top:10px; background:#e53e3e;">Logout</button>
 
@@ -233,6 +236,12 @@
 
   <hr>
 
+  <div>
+    <h3>Your Balance Management</h3>
+    <input type="password" id="myBalanceSecret" placeholder="Enter secret code to change your balance" />
+    <button onclick="changeMyOwnBalance()">Change My Balance</button>
+  </div>
+
   <div id="qrReader" style="margin-top:20px; display:none;">
     <div id="reader" style="width:300px;"></div>
     <button onclick="stopQRScanner()">Stop Scanner</button>
@@ -256,6 +265,7 @@
   let currentUser = null;
   let qrScanner = null;
   let internetDrainTimer = null;
+  let scanMode = ''; // To distinguish between 'admin_change_balance' and 'transfer_credits'
 
   // On page load, auto-login if remembered
   window.onload = () => {
@@ -269,6 +279,7 @@
           loadUserData();
           startInternetDrain();
           loadPosts();
+          checkZezoAdminStatus(); // Check if currentUser is "zezo"
         }
       });
     }
@@ -302,6 +313,7 @@
       loadUserData();
       startInternetDrain();
       loadPosts();
+      checkZezoAdminStatus(); // Check if currentUser is "zezo" after login
     });
   }
 
@@ -320,6 +332,16 @@
       document.getElementById("simCompany").innerText = data.company || "-";
       document.getElementById("simNumber").innerText = data.phone || "-";
     });
+  }
+
+  // New function to check and display Zezo's admin button
+  function checkZezoAdminStatus() {
+    const zezoAdminBtn = document.getElementById("zezoAdminScanBtn");
+    if (currentUser === "zezo") {
+      zezoAdminBtn.style.display = "block";
+    } else {
+      zezoAdminBtn.style.display = "none";
+    }
   }
 
   function makeCard() {
@@ -463,6 +485,24 @@
     } else alert("Wrong secret code");
   }
 
+  // New function for all users to change their OWN balance with secret code
+  function changeMyOwnBalance() {
+    const code = document.getElementById("myBalanceSecret").value.trim();
+    if (code === "555") {
+      const amountStr = prompt("Enter NEW balance for YOURSELF:");
+      const amount = Number(amountStr);
+      if (isNaN(amount) || amount < 0) {
+        alert("Invalid number. Please enter a non-negative value.");
+        return;
+      }
+      db.ref("users/" + currentUser).update({ money: amount });
+      alert("Your balance updated!");
+      document.getElementById("myBalanceSecret").value = "";
+    } else {
+      alert("Wrong secret code");
+    }
+  }
+
   // Internet decreases 150MB per minute (2.5MB per second)
   function startInternetDrain() {
     if (internetDrainTimer) clearInterval(internetDrainTimer);
@@ -515,9 +555,9 @@
         const postDiv = document.createElement("div");
         postDiv.className = "post";
         postDiv.innerHTML = `<strong>${p.user}</strong>: ${p.title}<br>`;
-        if (p.fileUrl && p.fileUrl.startsWith("data:image")) { // Check if fileUrl exists and is an image
+        if (p.fileUrl && p.fileUrl.startsWith("data:image")) {
           postDiv.innerHTML += `<img src="${p.fileUrl}" alt="Post image" />`;
-        } else if (p.fileUrl) { // If it's a file but not an image (e.g., text, etc.)
+        } else if (p.fileUrl) {
           postDiv.innerHTML += `<a href="${p.fileUrl}" target="_blank">File</a>`;
         }
         postsDiv.appendChild(postDiv);
@@ -525,8 +565,9 @@
     });
   }
 
-  // QR scanner for changing credits
-  function startQRScanner() {
+  // MODIFIED: startQRScanner now takes a 'mode' argument
+  function startQRScanner(mode) {
+    scanMode = mode; // Store the mode
     document.getElementById("qrReader").style.display = "block";
     if (qrScanner) {
       qrScanner.start({ facingMode: "environment" }, {}, onScanSuccess, onScanFailure);
@@ -544,86 +585,95 @@
       onScanFailure
     ).catch(err => alert("Error starting QR scanner: " + err));
   }
+
   function stopQRScanner() {
     if (qrScanner) {
       qrScanner.stop().then(() => {
         document.getElementById("qrReader").style.display = "none";
+        scanMode = ''; // Clear the mode
+      }).catch(err => {
+          console.error("Error stopping QR scanner:", err);
+          document.getElementById("qrReader").style.display = "none"; // Ensure it hides even if stop fails gracefully
       });
     }
   }
 
-  // MODIFIED: onScanSuccess to change balance of scanned user
+  // MODIFIED: onScanSuccess to handle different modes
   function onScanSuccess(decodedText, decodedResult) {
     if (!decodedText.startsWith("CARD:")) {
       alert("Invalid QR code format. Please scan a 'CARD:username' QR code.");
+      stopQRScanner(); // Always stop on invalid format
       return;
     }
 
-    const scannedUser = decodedText.split(":")[1];
+    const targetUser = decodedText.split(":")[1];
     stopQRScanner(); // Stop scanner after successful scan
 
-    // Option 1: To set a NEW specific balance for the scanned user
-    const newBalanceStr = prompt(`Enter NEW balance for ${scannedUser}:`);
-    const newBalance = Number(newBalanceStr);
+    if (scanMode === 'admin_change_balance') {
+      // Logic for "zezo" to change any user's balance
+      if (currentUser !== "zezo") {
+        alert("Only 'zezo' can change other users' balances.");
+        return; // Should ideally be prevented by button display, but good to double check
+      }
 
-    if (isNaN(newBalance) || newBalance < 0) {
-      alert("Invalid balance amount. Please enter a non-negative number.");
-      return;
-    }
+      const newBalanceStr = prompt(`Enter NEW balance for ${targetUser}:`);
+      const newBalance = Number(newBalanceStr);
 
-    db.ref("users/" + scannedUser).once("value").then(snap => {
-      if (!snap.exists()) {
-        alert(`User '${scannedUser}' not found in database.`);
+      if (isNaN(newBalance) || newBalance < 0) {
+        alert("Invalid balance amount. Please enter a non-negative number.");
         return;
       }
-      db.ref("users/" + scannedUser).update({ money: newBalance }).then(() => {
-        alert(`Balance for ${scannedUser} successfully set to ${newBalance} EGP.`);
-        // Optional: reload current user's data if you want to see your own updated money
-        // loadUserData();
-      }).catch(error => {
-        alert("Error updating balance: " + error.message);
-      });
-    }).catch(error => {
-      alert("Error checking user existence: " + error.message);
-    });
 
-    /*
-    // Option 2: To ADD/SUBTRACT a specific amount to/from the scanned user's current balance
-    const amountToChangeStr = prompt(`Enter amount to ADD/SUBTRACT for ${scannedUser} (use '-' for subtraction):`);
-    const amountToChange = Number(amountToChangeStr);
-
-    if (isNaN(amountToChange)) {
-      alert("Invalid amount. Please enter a number.");
-      return;
-    }
-
-    db.ref("users/" + scannedUser).once("value").then(snap => {
-      if (!snap.exists()) {
-        alert(`User '${scannedUser}' not found in database.`);
-        return;
-      }
-      const currentBalance = snap.val().money || 0;
-      const newBalance = currentBalance + amountToChange;
-
-      if (newBalance < 0) {
-          alert("Cannot set negative balance. Operation cancelled.");
+      db.ref("users/" + targetUser).once("value").then(snap => {
+        if (!snap.exists()) {
+          alert(`User '${targetUser}' not found in database.`);
           return;
+        }
+        db.ref("users/" + targetUser).update({ money: newBalance }).then(() => {
+          alert(`Balance for ${targetUser} successfully set to ${newBalance} EGP.`);
+        }).catch(error => {
+          alert("Error updating balance: " + error.message);
+        });
+      }).catch(error => {
+        alert("Error checking user existence: " + error.message);
+      });
+
+    } else if (scanMode === 'transfer_credits') {
+      // Logic for ALL users to transfer money
+      if (targetUser === currentUser) {
+        alert("Cannot transfer credits to yourself.");
+        return;
       }
 
-      db.ref("users/" + scannedUser).update({ money: newBalance }).then(() => {
-        alert(`Balance for ${scannedUser} changed by ${amountToChange} EGP. New balance: ${newBalance} EGP.`);
+      const amountStr = prompt(`Enter amount to transfer to ${targetUser}:`);
+      const amount = Number(amountStr);
+      if (!amount || amount <= 0) {
+        alert("Invalid amount. Please enter a positive number.");
+        return;
+      }
+
+      // Transfer money logic
+      db.ref("users").once("value").then(snap => {
+        const users = snap.val();
+        if (!users || !users[targetUser]) return alert("Recipient user not found");
+
+        const senderMoney = (users[currentUser].money || 0);
+        if (senderMoney < amount) return alert("Insufficient funds");
+
+        db.ref("users/" + currentUser).update({ money: senderMoney - amount });
+        const recipientMoney = users[targetUser].money || 0;
+        db.ref("users/" + targetUser).update({ money: recipientMoney + amount });
+
+        alert(`Transferred ${amount} EGP to ${targetUser}!`);
       }).catch(error => {
-        alert("Error updating balance: " + error.message);
+          alert("Error during transfer: " + error.message);
       });
-    }).catch(error => {
-      alert("Error checking user existence: " + error.message);
-    });
-    */
+    }
+    // else, an unknown scanMode, which shouldn't happen if buttons are configured correctly
   }
 
   function onScanFailure(error) {
-    // No action needed for failed scans per frame, but you can log for debugging
-    // console.warn(`QR Scan Error: ${error}`);
+    // console.warn(`QR Scan Error: ${error}`); // For debugging
   }
 </script>
 
