@@ -1,54 +1,220 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AYA Game</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AYA Game with Styled Card & SIM</title>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- QR Code -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #e2e8f0;
+    margin: 0; padding: 0; min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  h2 {
+    margin-top: 20px;
+    color: #2d3748;
+  }
+  #loginArea, #mainApp {
+    background: white;
+    padding: 20px 30px;
+    margin: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.1);
+    width: 360px;
+  }
+  input, button {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1.5px solid #cbd5e0;
+    margin: 8px 0;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+  }
+  input:focus {
+    outline: none;
+    border-color: #3182ce;
+  }
+  button {
+    background: #3182ce;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button:hover {
+    background: #2c5282;
+  }
+  button.small {
+    width: auto;
+    padding: 8px 16px;
+    margin-right: 8px;
+  }
+  #info {
+    margin: 10px 0 0;
+    font-weight: 600;
+    color: #4a5568;
+  }
+  #cardDiv {
+    background: linear-gradient(135deg, #ff7e5f, #feb47b);
+    width: 340px;
+    height: 200px;
+    border-radius: 18px;
+    color: white;
+    padding: 20px 25px;
+    box-shadow: 0 10px 20px rgb(0 0 0 / 0.2);
+    margin: 20px auto;
+    position: relative;
+    font-family: 'Roboto', sans-serif;
+  }
+  #cardDiv .chip {
+    width: 50px;
+    height: 35px;
+    background: linear-gradient(45deg, #e0c68e, #c2b57a);
+    border-radius: 5px;
+    margin-bottom: 15px;
+  }
+  #cardDiv .mastercard-logo {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 40px;
+  }
+  #cardDiv .username {
+    font-size: 1.4rem;
+    letter-spacing: 1.2px;
+    margin-top: 10px;
+  }
+  #qrcode {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+  }
+  #simApp {
+    background: white;
+    margin-top: 20px;
+    padding: 15px 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgb(0 0 0 / 0.1);
+  }
+  #bundles button {
+    margin: 6px 5px 6px 0;
+  }
+  #posts {
+    margin-top: 10px;
+    max-height: 250px;
+    overflow-y: auto;
+  }
+  #posts div.post {
+    background: #f7fafc;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+  }
+  #posts img {
+    max-width: 100%;
+    border-radius: 8px;
+  }
+  #qrReader {
+    margin-top: 20px;
+  }
+</style>
 </head>
 <body>
-  <h2 id="info">Money: -- | Phone: --</h2>
-  <div id="loginArea">
-    <input id="username" placeholder="Username">
-    <input id="pin" placeholder="PIN">
-    <button onclick="login()">Login</button>
+
+<h2>AYA Game</h2>
+
+<div id="loginArea">
+  <input id="username" placeholder="Username" autocomplete="off" />
+  <input id="pin" placeholder="PIN" type="password" autocomplete="off" />
+  <button onclick="login()">Login</button>
+</div>
+
+<div id="mainApp" style="display:none;">
+  <p id="info">Money: -- | Phone: --</p>
+
+  <button onclick="makeCard()">Make Card</button>
+  <button onclick="openCard()">Open Card</button>
+  <button onclick="buyPhone()">Buy Phone Number</button>
+  <button onclick="toggleSimApp()">SIM App</button>
+  <button onclick="startQRScanner()">Scan QR (Transfer Credits)</button>
+
+  <div id="cardDiv" style="display:none;">
+    <div class="chip"></div>
+    <div class="username" id="cardUser"></div>
+    <div id="qrcode"></div>
+    <!-- Mastercard SVG logo -->
+    <svg class="mastercard-logo" viewBox="0 0 504 318" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="168" cy="159" r="140" fill="#EB001B"/>
+      <circle cx="336" cy="159" r="140" fill="#F79E1B"/>
+      <path fill="#FF5F00" d="M235 159a108 108 0 0 0 98-75 108 108 0 0 0-98-75 108 108 0 0 0-98 75 108 108 0 0 0 98 75z"/>
+    </svg>
   </div>
 
-  <div id="mainApp" style="display:none;">
-    <button onclick="makeCard()">Make Card</button>
-    <button onclick="openCard()">Open Card</button>
-    <button onclick="buyPhone()">Buy Phone Number</button>
-    <button onclick="openSim()">SIM App</button>
-    <button onclick="openScanner()">Scan QR (Send)</button>
+  <div id="simApp" style="display:none;">
+    <h3>SIM App</h3>
+    <p>Company: <span id="simCompany">-</span></p>
+    <p>Phone Number: <span id="simNumber">-</span></p>
+    <p>Raseed: <span id="raseed">0</span> EGP</p>
 
-    <div id="qrcodeContainer" style="margin:10px;"></div>
-
-    <div id="simApp" style="display:none;">
-      <h3>Internet Bundles</h3>
-      <div id="bundles"></div>
-      <p>Raseed: <span id="raseed">0</span></p>
+    <div id="bundles">
+      <button onclick="buyBundle(40,1500)">40 EGP → 1500 MB</button>
+      <button onclick="buyBundle(50,1750)">50 EGP → 1750 MB</button>
+      <button onclick="buyBundle(60,2250)">60 EGP → 2250 MB</button>
+      <button onclick="buyBundle(70,2500)">70 EGP → 2500 MB</button>
+      <button onclick="buyBundle(80,2750)">80 EGP → 2750 MB</button>
     </div>
 
-    <hr>
-    <h3>Facenet</h3>
-    <input id="title" placeholder="Post title"><br>
-    <input type="file" id="fileInput"><br>
-    <button onclick="post()">Post</button>
-    <div id="posts"></div>
+    <p>Internet Left: <span id="internet">0</span> MB</p>
 
-    <hr>
-    <h3>Secret Code</h3>
-    <input id="secretCode"><button onclick="checkSecret()">Enter</button>
+    <input type="password" id="raseedSecret" placeholder="Enter secret code to add Raseed" />
+    <button onclick="addRaseed()">Add Raseed</button>
   </div>
 
-  <script>
+  <hr>
+
+  <div id="facenet">
+    <h3>Facenet (Social Feed)</h3>
+    <input id="postTitle" placeholder="Post Title" />
+    <input type="file" id="postFile" />
+    <button onclick="submitPost()">Post</button>
+    <div id="posts"></div>
+  </div>
+
+  <hr>
+
+  <div>
+    <input type="password" id="balanceSecret" placeholder="Enter secret code to edit balance" />
+    <button onclick="editBalance()">Change Balance</button>
+  </div>
+
+  <div id="qrReader" style="margin-top:20px; display:none;">
+    <div id="reader" style="width:300px;"></div>
+    <button onclick="stopQRScanner()">Stop Scanner</button>
+  </div>
+</div>
+
+<script>
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
     databaseURL: "https://aya-game-e579b-default-rtdb.firebaseio.com",
     projectId: "aya-game-e579b",
-    storageBucket: "aya-game-e579b.firebasestorage.app",
+    storageBucket: "aya-game-e579b.appspot.com",
     messagingSenderId: "609706801625",
     appId: "1:609706801625:web:1e128b6f2c001133c1c1c8",
   };
@@ -56,158 +222,256 @@
   const db = firebase.database();
 
   let currentUser = null;
+  let qrScanner = null;
+  let internetDrainTimer = null;
 
   function login() {
-    const user = document.getElementById("username").value;
-    const pin = document.getElementById("pin").value;
+    const user = document.getElementById("username").value.trim();
+    const pin = document.getElementById("pin").value.trim();
+    if (!user || !pin) return alert("Please enter username and PIN");
+
     db.ref("users/" + user).once("value", snap => {
-      if (snap.exists() && snap.val().pin == pin) {
-        currentUser = user;
-        document.getElementById("loginArea").style.display = "none";
-        document.getElementById("mainApp").style.display = "block";
-        updateInfo();
-        loadPosts();
-        setInterval(() => {
-          db.ref("users/" + currentUser).once("value", s => {
-            let internet = s.val().internet || 0;
-            internet = Math.max(0, internet - 150);
-            db.ref("users/" + currentUser + "/internet").set(internet);
-          });
-        }, 60000);
-      } else alert("Wrong info");
+      if (!snap.exists()) return alert("User not found");
+      const data = snap.val();
+      if (data.pin !== pin) return alert("Wrong PIN");
+
+      currentUser = user;
+      document.getElementById("loginArea").style.display = "none";
+      document.getElementById("mainApp").style.display = "block";
+
+      loadUserData();
+      startInternetDrain();
+      loadPosts();
     });
   }
 
-  function updateInfo() {
+  function loadUserData() {
     db.ref("users/" + currentUser).on("value", snap => {
-      const d = snap.val();
-      document.getElementById("info").innerText = `Money: ${d.money || 0} | Phone: ${d.phone || 'None'}`;
-      document.getElementById("raseed").innerText = d.raseed || 0;
+      const data = snap.val();
+      document.getElementById("info").innerText = `Money: ${data.money || 0} | Phone: ${data.phone || "-"}`;
+      document.getElementById("raseed").innerText = data.raseed || 0;
+      document.getElementById("internet").innerText = data.internet || 0;
+      document.getElementById("simCompany").innerText = data.company || "-";
+      document.getElementById("simNumber").innerText = data.phone || "-";
     });
   }
 
   function makeCard() {
-    const p = prompt("Set 3-digit PIN:");
-    if (!p) return;
-    db.ref("cards/" + currentUser).set({ pin: p });
+    const pin = prompt("Set a 3-digit PIN for your card:");
+    if (!pin || !/^[0-9]{3}$/.test(pin)) return alert("PIN must be exactly 3 digits");
+
+    db.ref("cards/" + currentUser).set({ pin }).then(() => {
+      alert("Card created successfully!");
+    });
   }
 
   function openCard() {
-    const p = prompt("Enter PIN:");
-    db.ref("cards/" + currentUser).once("value", snap => {
-      if (snap.exists() && snap.val().pin == p) {
-        db.ref("users/" + currentUser).once("value", s => {
-          const d = s.val();
-          const container = document.getElementById("qrcodeContainer");
-          container.innerHTML = `<h3>${currentUser}</h3>`;
-          new QRCode(container, `CARD:${currentUser}`);
-        });
-      } else alert("Wrong PIN");
+    const pin = prompt("Enter your card PIN:");
+    if (!pin) return;
+
+    db.ref("cards/" + currentUser).once("value").then(snap => {
+      const card = snap.val();
+      if (!card || card.pin !== pin) return alert("Incorrect PIN or card does not exist");
+
+      // Show card UI
+      const cardDiv = document.getElementById("cardDiv");
+      cardDiv.style.display = "block";
+      document.getElementById("cardUser").innerText = currentUser;
+
+      // Generate QR code with user info and PIN masked
+      const qrCodeDiv = document.getElementById("qrcode");
+      qrCodeDiv.innerHTML = "";
+      new QRCode(qrCodeDiv, {
+        text: `CARD:${currentUser}`,
+        width: 120,
+        height: 120,
+      });
     });
   }
 
   function buyPhone() {
-    const company = prompt("Choose: Orange / Vodafone / e&");
-    if (!company) return;
-    db.ref("users/" + currentUser).once("value", snap => {
-      let data = snap.val();
-      if (data.money < 250) return alert("Not enough money");
-      data.money -= 250;
-      data.phone = company + "-" + Math.floor(1000000 + Math.random() * 8999999);
-      db.ref("users/" + currentUser).set(data);
+    const providers = ["orange", "vodafone", "e&"];
+    const choice = prompt(`Choose phone provider:\n1. Orange\n2. Vodafone\n3. e&`);
+    const idx = Number(choice) - 1;
+    if (idx < 0 || idx >= providers.length) return alert("Invalid choice");
+
+    const provider = providers[idx];
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.money || 0) < 250) return alert("Not enough money");
+
+      const phoneNum = generatePhoneNumber(provider);
+      db.ref("users/" + currentUser).update({
+        money: data.money - 250,
+        phone: phoneNum,
+        company: provider
+      }).then(() => {
+        alert(`Phone number bought: ${phoneNum}`);
+      });
     });
   }
 
-  function openSim() {
-    document.getElementById("simApp").style.display = "block";
-    const bundleDiv = document.getElementById("bundles");
-    bundleDiv.innerHTML = '';
-    const bundles = {
-      40: 1500, 50: 1750, 60: 2250, 70: 2500, 80: 2750
-    };
-    for (let price in bundles) {
-      const mb = bundles[price];
-      let btn = document.createElement("button");
-      btn.innerText = `${price} EGP = ${mb}MB`;
-      btn.onclick = () => {
-        db.ref("users/" + currentUser).once("value", snap => {
-          const d = snap.val();
-          if ((d.raseed || 0) < price) return alert("Not enough Raseed");
-          d.raseed -= Number(price);
-          d.internet = (d.internet || 0) + mb;
-          db.ref("users/" + currentUser).set(d);
-        });
-      };
-      bundleDiv.appendChild(btn);
-    }
+  function generatePhoneNumber(provider) {
+    let prefix = "";
+    if (provider === "orange") prefix = "0101";
+    else if (provider === "vodafone") prefix = "0102";
+    else prefix = "0103";
+    return prefix + Math.floor(1000000 + Math.random() * 8999999);
   }
 
-  function post() {
-    db.ref("users/" + currentUser).once("value", s => {
-      if ((s.val().internet || 0) <= 0) return alert("No internet");
-      const t = document.getElementById("title").value;
-      const f = document.getElementById("fileInput").files[0];
-      if (!t || !f) return alert("Need title & file");
+  function toggleSimApp() {
+    const simApp = document.getElementById("simApp");
+    simApp.style.display = simApp.style.display === "none" ? "block" : "none";
+  }
+
+  function buyBundle(price, mb) {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.raseed || 0) < price) return alert("Not enough Raseed");
+
+      db.ref("users/" + currentUser).update({
+        raseed: data.raseed - price,
+        internet: (data.internet || 0) + mb
+      });
+    });
+  }
+
+  function addRaseed() {
+    const secret = document.getElementById("raseedSecret").value.trim();
+    if (secret !== "999") return alert("Wrong secret code");
+    const amountStr = prompt("How much Raseed do you want to add?");
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+
+    db.ref("users/" + currentUser + "/raseed").transaction(old => (old || 0) + amount).then(() => {
+      alert("Raseed added!");
+      document.getElementById("raseedSecret").value = "";
+    });
+  }
+
+  function submitPost() {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.internet || 0) <= 0) return alert("No internet left to post");
+
+      const title = document.getElementById("postTitle").value.trim();
+      const file = document.getElementById("postFile").files[0];
+      if (!title || !file) return alert("Title and file required");
+
       const reader = new FileReader();
-      reader.onload = function(e) {
-        db.ref("posts").push({ title: t, file: e.target.result, user: currentUser });
+      reader.onload = e => {
+        db.ref("posts").push({
+          user: currentUser,
+          title,
+          fileData: e.target.result,
+          time: Date.now()
+        }).then(() => {
+          alert("Posted!");
+          document.getElementById("postTitle").value = "";
+          document.getElementById("postFile").value = null;
+        });
       };
-      reader.readAsDataURL(f);
+      reader.readAsDataURL(file);
     });
   }
 
   function loadPosts() {
     db.ref("posts").on("value", snap => {
-      db.ref("users/" + currentUser).once("value", s => {
-        if ((s.val().internet || 0) <= 0) {
-          document.getElementById("posts").innerHTML = "No internet to load posts";
+      db.ref("users/" + currentUser).once("value").then(snapUser => {
+        if ((snapUser.val().internet || 0) <= 0) {
+          document.getElementById("posts").innerHTML = "No internet left to load posts";
           return;
         }
-        const p = document.getElementById("posts");
-        p.innerHTML = '';
-        snap.forEach(post => {
-          const d = post.val();
-          let div = document.createElement("div");
-          div.innerHTML = `<h4>${d.title}</h4><img src="${d.file}" width="150"><p>by ${d.user}</p>`;
-          p.appendChild(div);
+        const postsDiv = document.getElementById("posts");
+        postsDiv.innerHTML = "";
+        snap.forEach(postSnap => {
+          const post = postSnap.val();
+          const postElem = document.createElement("div");
+          postElem.className = "post";
+          postElem.innerHTML = `
+            <h4>${post.title}</h4>
+            <img src="${post.fileData}" alt="Post Image" />
+            <p>by ${post.user} at ${new Date(post.time).toLocaleString()}</p>
+          `;
+          postsDiv.prepend(postElem);
         });
       });
     });
   }
 
-  function openScanner() {
-    const scannerDiv = document.createElement("div");
-    scannerDiv.id = "reader";
-    document.body.appendChild(scannerDiv);
-    const html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: 200 },
-      (decoded) => {
-        html5QrCode.stop();
-        document.getElementById("reader").remove();
-        if (decoded.startsWith("CARD:")) {
-          const target = decoded.split(":")[1];
-          const amount = prompt("How much to send?");
-          db.ref("users/" + currentUser).once("value", s1 => {
-            if (s1.val().money < amount) return alert("Not enough");
-            db.ref("users/" + target).once("value", s2 => {
-              db.ref("users/" + currentUser + "/money").set(s1.val().money - Number(amount));
-              db.ref("users/" + target + "/money").set(s2.val().money + Number(amount));
-              alert("Transfer complete");
-            });
-          });
-        }
+  function startInternetDrain() {
+    if (internetDrainTimer) clearInterval(internetDrainTimer);
+    internetDrainTimer = setInterval(() => {
+      db.ref("users/" + currentUser + "/internet").transaction(current => {
+        if (!current || current < 150) return 0;
+        return current - 150;
       });
+    }, 60000);
   }
 
-  function checkSecret() {
-    const val = document.getElementById("secretCode").value;
-    if (val === "555") {
-      const newVal = prompt("Enter new balance:");
-      db.ref("users/" + currentUser + "/money").set(Number(newVal));
+  function startQRScanner() {
+    document.getElementById("qrReader").style.display = "block";
+    qrScanner = new Html5Qrcode("reader");
+    qrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: 250 },
+      decoded => {
+        qrScanner.stop();
+        document.getElementById("qrReader").style.display = "none";
+
+        if (decoded.startsWith("CARD:")) {
+          const targetUser = decoded.split(":")[1];
+          if (!targetUser) return alert("Invalid QR code");
+
+          const amountStr = prompt(`Enter amount to send to ${targetUser}:`);
+          const amount = Number(amountStr);
+          if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+
+          db.ref("users/" + currentUser).once("value").then(snapFrom => {
+            const fromData = snapFrom.val();
+            if ((fromData.money || 0) < amount) return alert("Not enough money");
+
+            db.ref("users/" + targetUser).once("value").then(snapTo => {
+              if (!snapTo.exists()) return alert("User does not exist");
+
+              // Update balances
+              db.ref("users/" + currentUser + "/money").set(fromData.money - amount);
+              db.ref("users/" + targetUser + "/money").set((snapTo.val().money || 0) + amount);
+              alert(`Transferred ${amount} EGP to ${targetUser}`);
+            });
+          });
+        } else {
+          alert("QR code format not recognized");
+        }
+      },
+      error => {
+        // scanning errors, ignore
+      }
+    );
+  }
+
+  function stopQRScanner() {
+    if (qrScanner) {
+      qrScanner.stop().then(() => {
+        document.getElementById("qrReader").style.display = "none";
+      });
     }
   }
-  </script>
+
+  function editBalance() {
+    const secret = document.getElementById("balanceSecret").value.trim();
+    if (secret !== "555") return alert("Wrong secret code");
+
+    const newBalanceStr = prompt("Enter new money balance:");
+    const newBalance = Number(newBalanceStr);
+    if (isNaN(newBalance) || newBalance < 0) return alert("Invalid balance");
+
+    db.ref("users/" + currentUser + "/money").set(newBalance).then(() => {
+      alert("Balance updated!");
+      document.getElementById("balanceSecret").value = "";
+    });
+  }
+</script>
+
 </body>
 </html>
