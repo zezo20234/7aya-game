@@ -12,6 +12,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -160,6 +161,7 @@
   #posts img {
     max-width: 100%;
     border-radius: 8px;
+    margin-top: 5px;
   }
   #qrReader {
     margin-top: 20px;
@@ -229,7 +231,7 @@
   <div id="facenet">
     <h3>Facenet (Social Feed)</h3>
     <input id="postTitle" placeholder="Post Title" />
-    <input type="file" id="postFile" />
+    <input type="file" id="postFile" accept="image/*" />
     <button onclick="submitPost()">Post</button>
     <div id="posts"></div>
   </div>
@@ -261,6 +263,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+  const storage = firebase.storage();
 
   let currentUser = null;
   let qrScanner = null;
@@ -279,7 +282,7 @@
           loadUserData();
           startInternetDrain();
           loadPosts();
-          checkZezoAdminStatus(); // Check if currentUser is "zezo"
+          checkZezoAdminStatus();
         }
       });
     }
@@ -292,7 +295,7 @@
 
     if (!user || !pin) return alert("Please enter username and PIN");
 
-    db.ref("users/" + user).once("value").then(snap => {
+    db.ref("users/" + user).once("value", snap => {
       if (!snap.exists()) return alert("User not found");
       const data = snap.val();
       if (data.pin !== pin) return alert("Wrong PIN");
@@ -313,7 +316,7 @@
       loadUserData();
       startInternetDrain();
       loadPosts();
-      checkZezoAdminStatus(); // Check if currentUser is "zezo" after login
+      checkZezoAdminStatus();
     });
   }
 
@@ -328,21 +331,22 @@
       const data = snap.val();
       document.getElementById("info").innerText = `Money: ${data.money || 0} | Phone: ${data.phone || "-"}`;
       document.getElementById("raseed").innerText = data.raseed || 0;
-      // Display internet rounded to 0 decimals (for nicer display)
       document.getElementById("internet").innerText = Math.round(data.internet || 0);
       document.getElementById("simCompany").innerText = data.company || "-";
       document.getElementById("simNumber").innerText = data.phone || "-";
-    });
-  }
 
-  // New function to check and display Zezo's admin button
-  function checkZezoAdminStatus() {
-    const zezoAdminBtn = document.getElementById("zezoAdminScanBtn");
-    if (currentUser === "zezo") {
-      zezoAdminBtn.style.display = "block";
-    } else {
-      zezoAdminBtn.style.display = "none";
-    }
+      // Enable/disable Facenet post button and posts display based on internet
+      const postBtn = document.querySelector("#facenet button");
+      const postsDiv = document.getElementById("posts");
+
+      if ((data.internet || 0) <= 0) {
+        postBtn.disabled = true;
+        postsDiv.innerHTML = "<p style='color:#c53030;'>No internet - Facenet unavailable</p>";
+      } else {
+        postBtn.disabled = false;
+        loadPosts();
+      }
+    });
   }
 
   function makeCard() {
@@ -433,124 +437,97 @@
 
     const provider = providers[idx];
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val();
-      if ((data.money || 0) < 250) return alert("You don't have enough money (250 EGP needed)");
+      const user = snap.val();
+      if ((user.money || 0) < 250) return alert("Not enough money (250 needed)");
 
-      if (data.phone && data.phone !== "") return alert("You already have a phone number");
-
-      // Deduct 250 and assign phone and company
-      const phoneNum = generatePhoneNumber();
+      // Deduct 250 and assign phone number & company
+      const phoneNumber = "010" + Math.floor(10000000 + Math.random() * 89999999);
       db.ref("users/" + currentUser).update({
-        money: (data.money || 0) - 250,
-        phone: phoneNum,
+        money: user.money - 250,
+        phone: phoneNumber,
         company: provider,
         internet: 0,
         raseed: 0,
       }).then(() => {
-        alert(`Phone number ${phoneNum} from ${provider} assigned!`);
+        alert(`Bought phone number: ${phoneNumber} (${provider.toUpperCase()})`);
         loadUserData();
       });
     });
-  }
-
-  // Generates a phone number starting with 07 and random 8 digits
-  function generatePhoneNumber() {
-    let num = "07";
-    for (let i = 0; i < 8; i++) {
-      num += Math.floor(Math.random() * 10);
-    }
-    return num;
   }
 
   function toggleSimApp() {
-    const simApp = document.getElementById("simApp");
-    simApp.style.display = simApp.style.display === "none" ? "block" : "none";
+    const simDiv = document.getElementById("simApp");
+    simDiv.style.display = simDiv.style.display === "block" ? "none" : "block";
   }
 
-  // Buy internet bundle with Raseed
-  function buyBundle(cost, mb) {
+  function buyBundle(price, mb) {
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val();
-      if ((data.raseed || 0) < cost) return alert("Not enough Raseed to buy this bundle");
-
-      const newInternet = (data.internet || 0) + mb;
-      const newRaseed = (data.raseed || 0) - cost;
-
+      const user = snap.val();
+      if ((user.raseed || 0) < price) return alert("Not enough Raseed to buy this bundle");
+      const newInternet = (user.internet || 0) + mb;
+      const newRaseed = (user.raseed || 0) - price;
       db.ref("users/" + currentUser).update({
         internet: newInternet,
-        raseed: newRaseed,
+        raseed: newRaseed
       }).then(() => {
-        alert(`Bought ${mb} MB for ${cost} EGP`);
+        alert(`Bought ${mb} MB for ${price} EGP`);
         loadUserData();
       });
     });
   }
 
-  // Secret code to add Raseed
   function addRaseed() {
     const secret = document.getElementById("raseedSecret").value.trim();
-    if (secret === "555") {
-      db.ref("users/" + currentUser).once("value").then(snap => {
-        const data = snap.val();
-        const newRaseed = (data.raseed || 0) + 1000; // Add 1000 EGP Raseed
-        db.ref("users/" + currentUser).update({ raseed: newRaseed });
-        alert("Added 1000 EGP Raseed!");
+    if (secret !== "555") return alert("Wrong secret code");
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const user = snap.val();
+      const newRaseed = (user.raseed || 0) + 100;
+      db.ref("users/" + currentUser).update({ raseed: newRaseed }).then(() => {
+        alert("Added 100 Raseed!");
         document.getElementById("raseedSecret").value = "";
+        loadUserData();
       });
-    } else {
-      alert("Wrong secret code");
-    }
+    });
   }
 
-  // Constant internet drain function (150 MB per minute)
-  function startInternetDrain() {
-    if (internetDrainTimer) clearInterval(internetDrainTimer);
-    internetDrainTimer = setInterval(() => {
-      db.ref("users/" + currentUser).once("value").then(snap => {
-        if (!snap.exists()) return;
-        let internetLeft = snap.val().internet || 0;
-        if (internetLeft <= 0) {
-          internetLeft = 0;
-          // No need to update to avoid flooding writes if already zero
-          return;
-        }
-        internetLeft -= 150;
-        if (internetLeft < 0) internetLeft = 0;
-        // Save as number rounded to 1 decimal (no string)
-        db.ref("users/" + currentUser).update({ internet: Math.round(internetLeft * 10) / 10 });
-      });
-    }, 60000); // every 60 seconds
-  }
-
-  // Submit Facenet post (only if internet > 0)
-  function submitPost() {
+  // Facenet posting feature with internet check and image upload
+  async function submitPost() {
     const title = document.getElementById("postTitle").value.trim();
     const fileInput = document.getElementById("postFile");
     if (!title || fileInput.files.length === 0) return alert("Please enter title and select a file");
-    db.ref("users/" + currentUser).once("value").then(snap => {
-      const internetLeft = snap.val().internet || 0;
-      if (internetLeft <= 0) return alert("You need internet to use Facenet");
 
-      // Consume 150 MB per minute usage for Facenet - handled by drain
+    const userDataSnap = await db.ref("users/" + currentUser).once("value");
+    const internetLeft = userDataSnap.val().internet || 0;
+    if (internetLeft <= 0) return alert("You need internet to use Facenet");
 
-      // Upload file to storage or just save post as placeholder (simplified)
-      // Here we'll just simulate a post without real file upload
+    // Upload file to Firebase Storage
+    const file = fileInput.files[0];
+    const storageRef = storage.ref();
+    const postImageRef = storageRef.child(`posts/${currentUser}_${Date.now()}_${file.name}`);
+
+    try {
+      await postImageRef.put(file);
+      const imageUrl = await postImageRef.getDownloadURL();
 
       const postData = {
         user: currentUser,
         title: title,
+        imageUrl: imageUrl,
         timestamp: Date.now(),
       };
+
       const newPostKey = db.ref("posts").push().key;
       const updates = {};
       updates["posts/" + newPostKey] = postData;
-      db.ref().update(updates).then(() => {
-        alert("Posted!");
-        document.getElementById("postTitle").value = "";
-        fileInput.value = "";
-        loadPosts();
-      });
-    });
+      await db.ref().update(updates);
+
+      alert("Posted!");
+      document.getElementById("postTitle").value = "";
+      fileInput.value = "";
+      loadPosts();
+    } catch (error) {
+      alert("Error uploading image: " + error.message);
+    }
   }
 
   function loadPosts() {
@@ -558,7 +535,10 @@
       const postsDiv = document.getElementById("posts");
       postsDiv.innerHTML = "";
       const posts = snap.val();
-      if (!posts) return;
+      if (!posts) {
+        postsDiv.innerHTML = "<p>No posts yet</p>";
+        return;
+      }
 
       // Sort posts ascending by timestamp
       const sorted = Object.values(posts).sort((a,b) => a.timestamp - b.timestamp);
@@ -566,115 +546,161 @@
       sorted.forEach(p => {
         const div = document.createElement("div");
         div.className = "post";
-        div.innerText = `${p.user.toUpperCase()} says: ${p.title}`;
+        const imgHTML = p.imageUrl ? `<img src="${p.imageUrl}" alt="Post image" />` : "";
+        div.innerHTML = `<strong>${p.user.toUpperCase()} says:</strong> ${p.title}<br/>${imgHTML}`;
         postsDiv.appendChild(div);
       });
     });
   }
 
-  // Change own balance by secret code input
+  // Internet drain function - 150MB per minute
+  function startInternetDrain() {
+    if (internetDrainTimer) clearInterval(internetDrainTimer);
+    internetDrainTimer = setInterval(() => {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        const user = snap.val();
+        if (!user) return;
+
+        let internetLeft = user.internet || 0;
+        if (internetLeft <= 0) {
+          // No internet left, stop timer maybe or just do nothing
+          loadUserData();
+          return;
+        }
+        internetLeft = Math.max(internetLeft - 150, 0);
+        db.ref("users/" + currentUser).update({ internet: internetLeft });
+      });
+    }, 60000);
+  }
+
+  // QR Scanner related
+  function startQRScanner(mode) {
+    scanMode = mode;
+    document.getElementById("qrReader").style.display = "block";
+
+    if (qrScanner) {
+      qrScanner.clear().then(() => {
+        initScanner();
+      }).catch(() => {
+        initScanner();
+      });
+    } else {
+      initScanner();
+    }
+  }
+
+  function initScanner() {
+    qrScanner = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        qrScanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+          },
+          onScanSuccess,
+          onScanFailure
+        );
+      } else {
+        alert("No camera found");
+      }
+    }).catch(err => alert(err));
+  }
+
+  function stopQRScanner() {
+    if (qrScanner) {
+      qrScanner.stop().then(() => {
+        document.getElementById("qrReader").style.display = "none";
+      });
+    }
+  }
+
+  function onScanSuccess(decodedText, decodedResult) {
+    stopQRScanner();
+
+    if (!decodedText.startsWith("CARD:")) {
+      return alert("Invalid card QR");
+    }
+    const scannedUser = decodedText.replace("CARD:", "").trim();
+
+    if (scanMode === "transfer_credits") {
+      // Prompt amount to transfer
+      const amount = parseInt(prompt(`Enter amount to transfer to ${scannedUser}:`));
+      if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+
+      if (scannedUser === currentUser) return alert("Cannot transfer to yourself");
+
+      transferCredits(currentUser, scannedUser, amount);
+    } else if (scanMode === "admin_change_balance") {
+      // Only zezo admin can do this (extra check)
+      if (currentUser !== "zezo") return alert("Unauthorized");
+
+      const amount = parseInt(prompt(`Enter amount to add/subtract for ${scannedUser}:`));
+      if (isNaN(amount)) return alert("Invalid amount");
+
+      changeUserBalance(scannedUser, amount);
+    }
+  }
+
+  function onScanFailure(error) {
+    // Ignore scan failure messages
+  }
+
+  function transferCredits(fromUser, toUser, amount) {
+    if (amount <= 0) return alert("Invalid amount");
+
+    // Deduct from fromUser money, add to toUser money
+    db.ref("users").once("value").then(snap => {
+      const users = snap.val();
+      if (!users[fromUser] || !users[toUser]) return alert("User(s) not found");
+
+      if ((users[fromUser].money || 0) < amount) return alert("Not enough money to transfer");
+
+      db.ref("users/" + fromUser).update({ money: (users[fromUser].money || 0) - amount });
+      db.ref("users/" + toUser).update({ money: (users[toUser].money || 0) + amount }).then(() => {
+        alert(`Transferred ${amount} credits to ${toUser}`);
+        loadUserData();
+      });
+    });
+  }
+
+  function changeUserBalance(user, amount) {
+    db.ref("users/" + user).once("value").then(snap => {
+      const userData = snap.val();
+      if (!userData) return alert("User not found");
+
+      const newMoney = (userData.money || 0) + amount;
+      db.ref("users/" + user).update({ money: newMoney }).then(() => {
+        alert(`User ${user} balance updated by ${amount}`);
+      });
+    });
+  }
+
+  function checkZezoAdminStatus() {
+    if (currentUser === "zezo") {
+      document.getElementById("zezoAdminScanBtn").style.display = "inline-block";
+    }
+  }
+
   function changeMyOwnBalance() {
     const secret = document.getElementById("myBalanceSecret").value.trim();
     if (secret !== "555") return alert("Wrong secret code");
 
-    const newBalStr = prompt("Enter new balance (money):");
-    if (newBalStr === null) return;
-    const newBal = Number(newBalStr);
-    if (isNaN(newBal)) return alert("Invalid number");
+    const amount = parseInt(prompt("Enter amount to add or subtract from your balance (use negative for subtract):"));
+    if (isNaN(amount)) return alert("Invalid amount");
 
-    db.ref("users/" + currentUser).update({ money: newBal }).then(() => {
-      alert(`Balance changed to ${newBal}`);
-      document.getElementById("myBalanceSecret").value = "";
-    });
-  }
-
-  // QR Code Scanner
-  function startQRScanner(mode) {
-    if (qrScanner) {
-      alert("Scanner already running");
-      return;
-    }
-    scanMode = mode;
-    document.getElementById("qrReader").style.display = "block";
-
-    qrScanner = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: 250 };
-
-    qrScanner.start({ facingMode: "environment" }, config, qrCodeMessage => {
-      // On successful scan
-      processScannedQR(qrCodeMessage);
-    }).catch(err => {
-      alert("Unable to start scanner: " + err);
-    });
-  }
-
-  function stopQRScanner() {
-    if (!qrScanner) return;
-    qrScanner.stop().then(() => {
-      qrScanner.clear();
-      qrScanner = null;
-      document.getElementById("qrReader").style.display = "none";
-    });
-  }
-
-  // QR code format: "CARD:username"
-  function processScannedQR(text) {
-    if (!text.startsWith("CARD:")) {
-      alert("Invalid card QR code");
-      return;
-    }
-    const scannedUser = text.substring(5);
-
-    if (scanMode === "admin_change_balance") {
-      if (currentUser !== "zezo") {
-        alert("Only Zezo can use this feature");
-        stopQRScanner();
-        return;
-      }
-      const newBalStr = prompt(`Enter new balance for ${scannedUser}:`);
-      if (newBalStr === null) return;
-      const newBal = Number(newBalStr);
-      if (isNaN(newBal)) return alert("Invalid balance");
-      db.ref("users/" + scannedUser).update({ money: newBal }).then(() => {
-        alert(`Balance for ${scannedUser} updated to ${newBal}`);
-        stopQRScanner();
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const user = snap.val();
+      const newMoney = (user.money || 0) + amount;
+      db.ref("users/" + currentUser).update({ money: newMoney }).then(() => {
+        alert("Your balance has been updated");
+        document.getElementById("myBalanceSecret").value = "";
+        loadUserData();
       });
-      return;
-    }
-
-    if (scanMode === "transfer_credits") {
-      if (scannedUser === currentUser) return alert("Cannot scan your own card");
-      const amountStr = prompt(`Enter amount to transfer to ${scannedUser}:`);
-      if (amountStr === null) return;
-      const amount = Number(amountStr);
-      if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
-
-      // Transfer credits: deduct from currentUser, add to scannedUser
-      db.ref("users/" + currentUser).once("value").then(snap => {
-        const data = snap.val();
-        if ((data.money || 0) < amount) return alert("Insufficient balance to transfer");
-
-        db.ref("users/" + scannedUser).once("value").then(snap2 => {
-          if (!snap2.exists()) return alert("Recipient user not found");
-          const recipientMoney = snap2.val().money || 0;
-
-          const updates = {};
-          updates["users/" + currentUser + "/money"] = (data.money || 0) - amount;
-          updates["users/" + scannedUser + "/money"] = recipientMoney + amount;
-
-          db.ref().update(updates).then(() => {
-            alert(`Transferred ${amount} to ${scannedUser}`);
-            stopQRScanner();
-            loadUserData();
-          });
-        });
-      });
-      return;
-    }
-
-    alert("Unknown scan mode");
-    stopQRScanner();
+    });
   }
 </script>
+
 </body>
 </html>
