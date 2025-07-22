@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AYA Game with Styled Card & SIM</title>
+<title>7AYA-GAME</title>
 
 <!-- Add to Home Screen support for Safari -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="AYA Game">
-<link rel="apple-touch-icon" href="logo.png" />
+<meta name="apple-mobile-web-app-title" content="7AYA-GAME">
+<link rel="apple-touch-icon" href="IMG_0318.jpeg" />
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -72,42 +72,72 @@
     font-weight: 600;
     color: #4a5568;
   }
+
+  /* Realistic card styling */
   #cardDiv {
-    background: linear-gradient(135deg, #ff7e5f, #feb47b);
+    background: linear-gradient(135deg, #1a237e, #3949ab);
     width: 340px;
-    height: 200px;
-    border-radius: 18px;
+    height: 210px;
+    border-radius: 20px;
     color: white;
-    padding: 20px 25px;
-    box-shadow: 0 10px 20px rgb(0 0 0 / 0.2);
+    padding: 25px 30px;
+    box-shadow:
+      inset 0 0 15px rgba(255, 255, 255, 0.15),
+      0 15px 30px rgba(0, 0, 0, 0.3);
     margin: 20px auto;
     position: relative;
     font-family: 'Roboto', sans-serif;
+    letter-spacing: 1.2px;
+    user-select: none;
   }
   #cardDiv .chip {
-    width: 50px;
-    height: 35px;
-    background: linear-gradient(45deg, #e0c68e, #c2b57a);
-    border-radius: 5px;
-    margin-bottom: 15px;
+    width: 55px;
+    height: 40px;
+    background: linear-gradient(45deg, #c5a35a, #816f3f);
+    border-radius: 6px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
   }
   #cardDiv .mastercard-logo {
     position: absolute;
     bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 40px;
+    right: 25px;
+    width: 70px;
+    height: 46px;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.25));
   }
   #cardDiv .username {
-    font-size: 1.4rem;
-    letter-spacing: 1.2px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 3px;
     margin-top: 10px;
+    text-transform: uppercase;
   }
-  #qrcode {
+  #cardDiv .card-number {
+    font-size: 1.3rem;
+    letter-spacing: 3px;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+  #cardDiv .expiry-cvv {
+    margin-top: 14px;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    max-width: 300px;
+    font-weight: 400;
+    opacity: 0.85;
+  }
+  #cardDiv #qrcode {
     position: absolute;
     bottom: 20px;
     left: 20px;
+    background: white;
+    padding: 4px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
   }
+
   #simApp {
     background: white;
     margin-top: 20px;
@@ -166,6 +196,7 @@
   <div id="cardDiv" style="display:none;">
     <div class="chip"></div>
     <div class="username" id="cardUser"></div>
+    <!-- card number & expiry/cvv inserted dynamically here -->
     <div id="qrcode"></div>
     <!-- Mastercard SVG logo -->
     <svg class="mastercard-logo" viewBox="0 0 504 318" xmlns="http://www.w3.org/2000/svg">
@@ -321,17 +352,65 @@
       // Show card UI
       const cardDiv = document.getElementById("cardDiv");
       cardDiv.style.display = "block";
-      document.getElementById("cardUser").innerText = currentUser;
+      document.getElementById("cardUser").innerText = currentUser.toUpperCase();
+
+      // Generate a consistent 16-digit card number per user
+      const cardNumber = generateCardNumber(currentUser);
+      const formattedNumber = cardNumber.match(/.{1,4}/g).join(' ');
+
+      // Generate random expiry (MM/YY) and CVV for demo
+      const expiry = randomExpiry();
+      const cvv = Math.floor(100 + Math.random() * 899);
+
+      // Remove previous dynamic elements
+      let oldNumber = cardDiv.querySelector(".card-number");
+      if (oldNumber) oldNumber.remove();
+      let oldExpiry = cardDiv.querySelector(".expiry-cvv");
+      if (oldExpiry) oldExpiry.remove();
+
+      // Create card number div
+      const numberDiv = document.createElement("div");
+      numberDiv.className = "card-number";
+      numberDiv.textContent = formattedNumber;
+      cardDiv.appendChild(numberDiv);
+
+      // Create expiry and cvv container
+      const expCvvDiv = document.createElement("div");
+      expCvvDiv.className = "expiry-cvv";
+      expCvvDiv.innerHTML = `<div>Expiry: ${expiry}</div><div>CVV: ${cvv}</div>`;
+      cardDiv.appendChild(expCvvDiv);
 
       // Generate QR code with user info and PIN masked
       const qrCodeDiv = document.getElementById("qrcode");
       qrCodeDiv.innerHTML = "";
       new QRCode(qrCodeDiv, {
         text: `CARD:${currentUser}`,
-        width: 120,
-        height: 120,
+        width: 110,
+        height: 110,
       });
     });
+  }
+
+  // Helper function to generate consistent card number from username
+  function generateCardNumber(user) {
+    // Simple hash from username to generate 16 digits
+    let hash = 0;
+    for (let i = 0; i < user.length; i++) {
+      hash = user.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let num = '';
+    for (let i = 0; i < 16; i++) {
+      const digit = Math.abs((hash + i) * (i + 1)) % 10;
+      num += digit.toString();
+    }
+    return num;
+  }
+
+  // Helper function for expiry date MM/YY
+  function randomExpiry() {
+    const month = Math.floor(1 + Math.random() * 12);
+    const year = new Date().getFullYear() % 100 + Math.floor(Math.random() * 4) + 1; // 1 to 4 years in future
+    return (month < 10 ? '0' + month : month) + '/' + year;
   }
 
   function buyPhone() {
@@ -369,52 +448,80 @@
     simApp.style.display = simApp.style.display === "none" ? "block" : "none";
   }
 
-  function buyBundle(price, mb) {
+  function buyBundle(cost, mb) {
     db.ref("users/" + currentUser).once("value").then(snap => {
       const data = snap.val();
-      if ((data.raseed || 0) < price) return alert("Not enough Raseed");
-
+      if ((data.raseed || 0) < cost) return alert("Not enough Raseed");
+      const newInternet = (data.internet || 0) + mb;
       db.ref("users/" + currentUser).update({
-        raseed: data.raseed - price,
-        internet: (data.internet || 0) + mb
+        raseed: data.raseed - cost,
+        internet: newInternet
       });
+      alert(`Bought ${mb}MB for ${cost} EGP`);
     });
   }
 
   function addRaseed() {
-    const secret = document.getElementById("raseedSecret").value.trim();
-    if (secret !== "999") return alert("Wrong secret code");
-    const amountStr = prompt("How much Raseed do you want to add?");
-    const amount = Number(amountStr);
-    if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
-
-    db.ref("users/" + currentUser + "/raseed").once("value").then(snap => {
-      const oldRaseed = snap.val() || 0;
-      db.ref("users/" + currentUser).update({ raseed: oldRaseed + amount });
-      alert("Raseed added!");
-      document.getElementById("raseedSecret").value = "";
-    });
+    const code = document.getElementById("raseedSecret").value.trim();
+    if (code === "secret555") {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        const data = snap.val();
+        const newRaseed = (data.raseed || 0) + 1000;
+        db.ref("users/" + currentUser).update({ raseed: newRaseed });
+        alert("Added 1000 Raseed!");
+        document.getElementById("raseedSecret").value = "";
+      });
+    } else alert("Wrong secret code");
   }
 
+  function editBalance() {
+    const code = document.getElementById("balanceSecret").value.trim();
+    if (code === "555") {
+      const amountStr = prompt("Enter new money amount:");
+      const amount = Number(amountStr);
+      if (isNaN(amount)) return alert("Invalid number");
+      db.ref("users/" + currentUser).update({ money: amount });
+      alert("Balance updated!");
+      document.getElementById("balanceSecret").value = "";
+    } else {
+      alert("Wrong secret code");
+    }
+  }
+
+  // Internet decreases 150MB per minute (2.5MB per second)
+  function startInternetDrain() {
+    if (internetDrainTimer) clearInterval(internetDrainTimer);
+    internetDrainTimer = setInterval(() => {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        const data = snap.val();
+        if (!data) return;
+        let internetLeft = data.internet || 0;
+        internetLeft -= 2.5;
+        if (internetLeft < 0) internetLeft = 0;
+        db.ref("users/" + currentUser).update({ internet: internetLeft.toFixed(1) });
+      });
+    }, 1000);
+  }
+
+  // Facenet (Social feed)
   function submitPost() {
     const title = document.getElementById("postTitle").value.trim();
     const fileInput = document.getElementById("postFile");
-    if (!title) return alert("Please enter a post title");
-    if (fileInput.files.length === 0) return alert("Please select a file");
+    if (!title) return alert("Enter post title");
+    if (!fileInput.files.length) return alert("Select a file");
 
     const file = fileInput.files[0];
+    // For demo: We'll simulate a simple upload by reading as data URL (not storing in Firebase Storage)
     const reader = new FileReader();
-    reader.onload = function() {
-      const dataUrl = reader.result;
-
-      const newPostRef = db.ref("posts").push();
-      newPostRef.set({
+    reader.onload = function(e) {
+      const post = {
         user: currentUser,
         title,
-        file: dataUrl,
+        fileUrl: e.target.result,
         timestamp: Date.now()
-      }).then(() => {
-        alert("Post uploaded!");
+      };
+      db.ref("posts").push(post).then(() => {
+        alert("Post added!");
         document.getElementById("postTitle").value = "";
         fileInput.value = "";
         loadPosts();
@@ -425,60 +532,27 @@
 
   function loadPosts() {
     const postsDiv = document.getElementById("posts");
-    postsDiv.innerHTML = "Loading posts...";
-
+    postsDiv.innerHTML = "";
     db.ref("posts").orderByChild("timestamp").limitToLast(20).once("value").then(snap => {
-      postsDiv.innerHTML = "";
-      const posts = [];
-      snap.forEach(childSnap => posts.push(childSnap.val()));
-      posts.reverse();
-
-      posts.forEach(post => {
-        const div = document.createElement("div");
-        div.className = "post";
-
-        const title = document.createElement("h4");
-        title.innerText = post.title;
-        div.appendChild(title);
-
-        if (post.file && post.file.startsWith("data:image")) {
-          const img = document.createElement("img");
-          img.src = post.file;
-          div.appendChild(img);
+      if (!snap.exists()) return;
+      const posts = snap.val();
+      // Sort by timestamp desc
+      const sorted = Object.values(posts).sort((a,b) => b.timestamp - a.timestamp);
+      sorted.forEach(p => {
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.innerHTML = `<strong>${p.user}</strong>: ${p.title}<br>`;
+        if (p.fileUrl.startsWith("data:image")) {
+          postDiv.innerHTML += `<img src="${p.fileUrl}" alt="Post image" />`;
         } else {
-          const p = document.createElement("p");
-          p.innerText = "File attached (not image).";
-          div.appendChild(p);
+          postDiv.innerHTML += `<a href="${p.fileUrl}" target="_blank">File</a>`;
         }
-        const user = document.createElement("p");
-        user.style.fontSize = "0.8rem";
-        user.style.color = "#718096";
-        user.innerText = "Posted by " + post.user;
-        div.appendChild(user);
-
-        postsDiv.appendChild(div);
+        postsDiv.appendChild(postDiv);
       });
-
-      if (posts.length === 0) {
-        postsDiv.innerText = "No posts yet.";
-      }
     });
   }
 
-  function startInternetDrain() {
-    if (internetDrainTimer) clearInterval(internetDrainTimer);
-    internetDrainTimer = setInterval(() => {
-      db.ref("users/" + currentUser).once("value").then(snap => {
-        const data = snap.val();
-        let internet = data.internet || 0;
-        if (internet <= 0) return;
-        internet -= 150;
-        if (internet < 0) internet = 0;
-        db.ref("users/" + currentUser).update({ internet });
-      });
-    }, 60 * 1000);
-  }
-
+  // QR scanner for transferring credits
   function startQRScanner() {
     document.getElementById("qrReader").style.display = "block";
     if (qrScanner) {
@@ -490,14 +564,13 @@
     qrScanner.start(
       { facingMode: "environment" },
       {
-        fps: 10,
-        qrbox: 250
+        fps: 20,      // Increased fps for faster scan
+        qrbox: 220    // Smaller scan box for speed
       },
       onScanSuccess,
       onScanFailure
     ).catch(err => alert("Error starting QR scanner: " + err));
   }
-
   function stopQRScanner() {
     if (qrScanner) {
       qrScanner.stop().then(() => {
@@ -507,56 +580,38 @@
   }
 
   function onScanSuccess(decodedText, decodedResult) {
-    stopQRScanner();
+    // Expecting text like "CARD:username"
+    if (!decodedText.startsWith("CARD:")) return;
 
-    // Assume scanned QR code is format: CARD:username
-    if (!decodedText.startsWith("CARD:")) {
-      alert("Invalid QR code");
-      return;
-    }
-    const targetUser = decodedText.substring(5);
-
+    const targetUser = decodedText.split(":")[1];
     if (targetUser === currentUser) {
-      alert("Cannot scan your own card");
+      alert("Cannot transfer credits to yourself.");
       return;
     }
+    qrScanner.stop();
+    document.getElementById("qrReader").style.display = "none";
 
-    const amountStr = prompt(`Enter amount of credits to transfer to ${targetUser}:`);
+    const amountStr = prompt(`Enter amount to transfer to ${targetUser}:`);
     const amount = Number(amountStr);
-    if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+    if (!amount || amount <= 0) return alert("Invalid amount");
 
-    // Transfer credits
-    db.ref("users/" + currentUser).once("value").then(snap => {
-      const sender = snap.val();
-      if ((sender.money || 0) < amount) return alert("Insufficient balance");
+    // Transfer money logic
+    db.ref("users").once("value").then(snap => {
+      const users = snap.val();
+      if (!users || !users[targetUser]) return alert("Recipient user not found");
 
-      db.ref("users/" + targetUser).once("value").then(snap2 => {
-        if (!snap2.exists()) return alert("Target user not found");
-        const receiver = snap2.val();
+      const senderMoney = (users[currentUser].money || 0);
+      if (senderMoney < amount) return alert("Insufficient funds");
 
-        db.ref("users/" + currentUser).update({ money: sender.money - amount });
-        db.ref("users/" + targetUser).update({ money: (receiver.money || 0) + amount });
-        alert(`Transferred ${amount} credits to ${targetUser}`);
-      });
+      db.ref("users/" + currentUser).update({ money: senderMoney - amount });
+      const recipientMoney = users[targetUser].money || 0;
+      db.ref("users/" + targetUser).update({ money: recipientMoney + amount });
+
+      alert(`Transferred ${amount} EGP to ${targetUser}!`);
     });
   }
-
   function onScanFailure(error) {
-    // can ignore or log error
-    // console.log(`QR scan error: ${error}`);
-  }
-
-  function editBalance() {
-    const code = document.getElementById("balanceSecret").value.trim();
-    if (code !== "555") return alert("Wrong secret code");
-
-    const newBalanceStr = prompt("Enter your new balance:");
-    const newBalance = Number(newBalanceStr);
-    if (isNaN(newBalance) || newBalance < 0) return alert("Invalid balance");
-
-    db.ref("users/" + currentUser).update({ money: newBalance });
-    alert("Balance updated!");
-    document.getElementById("balanceSecret").value = "";
+    // No action needed for failed scans per frame
   }
 </script>
 
