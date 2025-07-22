@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>7aya-game</title>
+<title>AYA Game with Styled Card & SIM</title>
 
 <!-- Add to Home Screen support for Safari -->
-<meta name="apple-mobile-web-app-capable" content="yes"> <!-- ADDED -->
-<meta name="apple-mobile-web-app-status-bar-style" content="default"> <!-- ADDED -->
-<meta name="apple-mobile-web-app-title" content="7aya-game"> <!-- ADDED -->
-<link rel="apple-touch-icon" href="IMG_0318.jpeg" /> <!-- ADDED: Add your 180x180 icon named logo.png in root -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="AYA Game">
+<link rel="apple-touch-icon" href="logo.png" />
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -161,7 +161,7 @@
   <button onclick="toggleSimApp()">SIM App</button>
   <button onclick="startQRScanner()">Scan QR (Transfer Credits)</button>
   
-  <button onclick="logout()" style="margin-top:10px; background:#e53e3e;">Logout</button> <!-- ADDED -->
+  <button onclick="logout()" style="margin-top:10px; background:#e53e3e;">Logout</button>
 
   <div id="cardDiv" style="display:none;">
     <div class="chip"></div>
@@ -236,7 +236,7 @@
   let qrScanner = null;
   let internetDrainTimer = null;
 
-  // On page load: try to auto-login from storage (ADDED)
+  // On page load, auto-login if remembered
   window.onload = () => {
     const savedUser = localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser");
     if (savedUser) {
@@ -256,7 +256,7 @@
   function login() {
     const user = document.getElementById("username").value.trim();
     const pin = document.getElementById("pin").value.trim();
-    const keepSignedIn = document.getElementById("keepSignedIn").checked; // ADDED
+    const keepSignedIn = document.getElementById("keepSignedIn").checked;
 
     if (!user || !pin) return alert("Please enter username and PIN");
 
@@ -267,7 +267,6 @@
 
       currentUser = user;
 
-      // Store login info based on keep me signed in (ADDED)
       if (keepSignedIn) {
         localStorage.setItem("currentUser", user);
         sessionStorage.removeItem("currentUser");
@@ -285,7 +284,6 @@
     });
   }
 
-  // Logout function (ADDED)
   function logout() {
     localStorage.removeItem("currentUser");
     sessionStorage.removeItem("currentUser");
@@ -303,11 +301,263 @@
     });
   }
 
-  // ... rest of your existing functions remain unchanged ...
-  // makeCard(), openCard(), buyPhone(), toggleSimApp(), buyBundle(), addRaseed(), submitPost(), loadPosts(), startInternetDrain(), startQRScanner(), stopQRScanner(), editBalance()
+  function makeCard() {
+    const pin = prompt("Set a 3-digit PIN for your card:");
+    if (!pin || !/^[0-9]{3}$/.test(pin)) return alert("PIN must be exactly 3 digits");
 
-  // For brevity I didn't paste all unchanged functions here, they remain exactly as you gave them.
+    db.ref("cards/" + currentUser).set({ pin }).then(() => {
+      alert("Card created successfully!");
+    });
+  }
 
+  function openCard() {
+    const pin = prompt("Enter your card PIN:");
+    if (!pin) return;
+
+    db.ref("cards/" + currentUser).once("value").then(snap => {
+      const card = snap.val();
+      if (!card || card.pin !== pin) return alert("Incorrect PIN or card does not exist");
+
+      // Show card UI
+      const cardDiv = document.getElementById("cardDiv");
+      cardDiv.style.display = "block";
+      document.getElementById("cardUser").innerText = currentUser;
+
+      // Generate QR code with user info and PIN masked
+      const qrCodeDiv = document.getElementById("qrcode");
+      qrCodeDiv.innerHTML = "";
+      new QRCode(qrCodeDiv, {
+        text: `CARD:${currentUser}`,
+        width: 120,
+        height: 120,
+      });
+    });
+  }
+
+  function buyPhone() {
+    const providers = ["orange", "vodafone", "e&"];
+    const choice = prompt(`Choose phone provider:\n1. Orange\n2. Vodafone\n3. e&`);
+    const idx = Number(choice) - 1;
+    if (idx < 0 || idx >= providers.length) return alert("Invalid choice");
+
+    const provider = providers[idx];
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.money || 0) < 250) return alert("Not enough money");
+
+      const phoneNum = generatePhoneNumber(provider);
+      db.ref("users/" + currentUser).update({
+        money: data.money - 250,
+        phone: phoneNum,
+        company: provider
+      }).then(() => {
+        alert(`Phone number bought: ${phoneNum}`);
+      });
+    });
+  }
+
+  function generatePhoneNumber(provider) {
+    let prefix = "";
+    if (provider === "orange") prefix = "0101";
+    else if (provider === "vodafone") prefix = "0102";
+    else prefix = "0103";
+    return prefix + Math.floor(1000000 + Math.random() * 8999999);
+  }
+
+  function toggleSimApp() {
+    const simApp = document.getElementById("simApp");
+    simApp.style.display = simApp.style.display === "none" ? "block" : "none";
+  }
+
+  function buyBundle(price, mb) {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.raseed || 0) < price) return alert("Not enough Raseed");
+
+      db.ref("users/" + currentUser).update({
+        raseed: data.raseed - price,
+        internet: (data.internet || 0) + mb
+      });
+    });
+  }
+
+  function addRaseed() {
+    const secret = document.getElementById("raseedSecret").value.trim();
+    if (secret !== "999") return alert("Wrong secret code");
+    const amountStr = prompt("How much Raseed do you want to add?");
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+
+    db.ref("users/" + currentUser + "/raseed").once("value").then(snap => {
+      const oldRaseed = snap.val() || 0;
+      db.ref("users/" + currentUser).update({ raseed: oldRaseed + amount });
+      alert("Raseed added!");
+      document.getElementById("raseedSecret").value = "";
+    });
+  }
+
+  function submitPost() {
+    const title = document.getElementById("postTitle").value.trim();
+    const fileInput = document.getElementById("postFile");
+    if (!title) return alert("Please enter a post title");
+    if (fileInput.files.length === 0) return alert("Please select a file");
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onload = function() {
+      const dataUrl = reader.result;
+
+      const newPostRef = db.ref("posts").push();
+      newPostRef.set({
+        user: currentUser,
+        title,
+        file: dataUrl,
+        timestamp: Date.now()
+      }).then(() => {
+        alert("Post uploaded!");
+        document.getElementById("postTitle").value = "";
+        fileInput.value = "";
+        loadPosts();
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function loadPosts() {
+    const postsDiv = document.getElementById("posts");
+    postsDiv.innerHTML = "Loading posts...";
+
+    db.ref("posts").orderByChild("timestamp").limitToLast(20).once("value").then(snap => {
+      postsDiv.innerHTML = "";
+      const posts = [];
+      snap.forEach(childSnap => posts.push(childSnap.val()));
+      posts.reverse();
+
+      posts.forEach(post => {
+        const div = document.createElement("div");
+        div.className = "post";
+
+        const title = document.createElement("h4");
+        title.innerText = post.title;
+        div.appendChild(title);
+
+        if (post.file && post.file.startsWith("data:image")) {
+          const img = document.createElement("img");
+          img.src = post.file;
+          div.appendChild(img);
+        } else {
+          const p = document.createElement("p");
+          p.innerText = "File attached (not image).";
+          div.appendChild(p);
+        }
+        const user = document.createElement("p");
+        user.style.fontSize = "0.8rem";
+        user.style.color = "#718096";
+        user.innerText = "Posted by " + post.user;
+        div.appendChild(user);
+
+        postsDiv.appendChild(div);
+      });
+
+      if (posts.length === 0) {
+        postsDiv.innerText = "No posts yet.";
+      }
+    });
+  }
+
+  function startInternetDrain() {
+    if (internetDrainTimer) clearInterval(internetDrainTimer);
+    internetDrainTimer = setInterval(() => {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        const data = snap.val();
+        let internet = data.internet || 0;
+        if (internet <= 0) return;
+        internet -= 150;
+        if (internet < 0) internet = 0;
+        db.ref("users/" + currentUser).update({ internet });
+      });
+    }, 60 * 1000);
+  }
+
+  function startQRScanner() {
+    document.getElementById("qrReader").style.display = "block";
+    if (qrScanner) {
+      qrScanner.start({ facingMode: "environment" }, {}, onScanSuccess, onScanFailure);
+      return;
+    }
+    qrScanner = new Html5Qrcode("reader");
+
+    qrScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 10,
+        qrbox: 250
+      },
+      onScanSuccess,
+      onScanFailure
+    ).catch(err => alert("Error starting QR scanner: " + err));
+  }
+
+  function stopQRScanner() {
+    if (qrScanner) {
+      qrScanner.stop().then(() => {
+        document.getElementById("qrReader").style.display = "none";
+      });
+    }
+  }
+
+  function onScanSuccess(decodedText, decodedResult) {
+    stopQRScanner();
+
+    // Assume scanned QR code is format: CARD:username
+    if (!decodedText.startsWith("CARD:")) {
+      alert("Invalid QR code");
+      return;
+    }
+    const targetUser = decodedText.substring(5);
+
+    if (targetUser === currentUser) {
+      alert("Cannot scan your own card");
+      return;
+    }
+
+    const amountStr = prompt(`Enter amount of credits to transfer to ${targetUser}:`);
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+
+    // Transfer credits
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const sender = snap.val();
+      if ((sender.money || 0) < amount) return alert("Insufficient balance");
+
+      db.ref("users/" + targetUser).once("value").then(snap2 => {
+        if (!snap2.exists()) return alert("Target user not found");
+        const receiver = snap2.val();
+
+        db.ref("users/" + currentUser).update({ money: sender.money - amount });
+        db.ref("users/" + targetUser).update({ money: (receiver.money || 0) + amount });
+        alert(`Transferred ${amount} credits to ${targetUser}`);
+      });
+    });
+  }
+
+  function onScanFailure(error) {
+    // can ignore or log error
+    // console.log(`QR scan error: ${error}`);
+  }
+
+  function editBalance() {
+    const code = document.getElementById("balanceSecret").value.trim();
+    if (code !== "555") return alert("Wrong secret code");
+
+    const newBalanceStr = prompt("Enter your new balance:");
+    const newBalance = Number(newBalanceStr);
+    if (isNaN(newBalance) || newBalance < 0) return alert("Invalid balance");
+
+    db.ref("users/" + currentUser).update({ money: newBalance });
+    alert("Balance updated!");
+    document.getElementById("balanceSecret").value = "";
+  }
 </script>
 
 </body>
