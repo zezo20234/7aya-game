@@ -5,17 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>7AYA-GAME</title>
 
-<!-- Add to Home Screen support for Safari -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
 <link rel="apple-touch-icon" href="IMG_0297.jpeg" />
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- QR Code -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -189,16 +186,14 @@
   <button onclick="openCard()">Open Card</button>
   <button onclick="buyPhone()">Buy Phone Number</button>
   <button onclick="toggleSimApp()">SIM App</button>
-  <button onclick="startQRScanner()">Scan QR (Transfer Credits)</button>
+  <button onclick="startQRScanner()">Scan Card (Change Balance)</button>
   
   <button onclick="logout()" style="margin-top:10px; background:#e53e3e;">Logout</button>
 
   <div id="cardDiv" style="display:none;">
     <div class="chip"></div>
     <div class="username" id="cardUser"></div>
-    <!-- card number & expiry/cvv inserted dynamically here -->
     <div id="qrcode"></div>
-    <!-- Mastercard SVG logo -->
     <svg class="mastercard-logo" viewBox="0 0 504 318" xmlns="http://www.w3.org/2000/svg">
       <circle cx="168" cy="159" r="140" fill="#EB001B"/>
       <circle cx="336" cy="159" r="140" fill="#F79E1B"/>
@@ -238,11 +233,6 @@
 
   <hr>
 
-  <div>
-    <input type="password" id="balanceSecret" placeholder="Enter secret code to edit balance" />
-    <button onclick="editBalance()">Change Balance</button>
-  </div>
-
   <div id="qrReader" style="margin-top:20px; display:none;">
     <div id="reader" style="width:300px;"></div>
     <button onclick="stopQRScanner()">Stop Scanner</button>
@@ -250,7 +240,7 @@
 </div>
 
 <script>
-  // Firebase config
+  // Firebase config (Ensure this is correct for your project)
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -380,11 +370,11 @@
       expCvvDiv.innerHTML = `<div>Expiry: ${expiry}</div><div>CVV: ${cvv}</div>`;
       cardDiv.appendChild(expCvvDiv);
 
-      // Generate QR code with user info and PIN masked
+      // Generate QR code with user info (the `CARD:username` format is crucial here)
       const qrCodeDiv = document.getElementById("qrcode");
       qrCodeDiv.innerHTML = "";
       new QRCode(qrCodeDiv, {
-        text: `CARD:${currentUser}`,
+        text: `CARD:${currentUser}`, // This ensures the QR contains the username
         width: 110,
         height: 110,
       });
@@ -393,7 +383,6 @@
 
   // Helper function to generate consistent card number from username
   function generateCardNumber(user) {
-    // Simple hash from username to generate 16 digits
     let hash = 0;
     for (let i = 0; i < user.length; i++) {
       hash = user.charCodeAt(i) + ((hash << 5) - hash);
@@ -409,7 +398,7 @@
   // Helper function for expiry date MM/YY
   function randomExpiry() {
     const month = Math.floor(1 + Math.random() * 12);
-    const year = new Date().getFullYear() % 100 + Math.floor(Math.random() * 4) + 1; // 1 to 4 years in future
+    const year = new Date().getFullYear() % 100 + Math.floor(Math.random() * 4) + 1;
     return (month < 10 ? '0' + month : month) + '/' + year;
   }
 
@@ -474,20 +463,6 @@
     } else alert("Wrong secret code");
   }
 
-  function editBalance() {
-    const code = document.getElementById("balanceSecret").value.trim();
-    if (code === "555") {
-      const amountStr = prompt("Enter new money amount:");
-      const amount = Number(amountStr);
-      if (isNaN(amount)) return alert("Invalid number");
-      db.ref("users/" + currentUser).update({ money: amount });
-      alert("Balance updated!");
-      document.getElementById("balanceSecret").value = "";
-    } else {
-      alert("Wrong secret code");
-    }
-  }
-
   // Internet decreases 150MB per minute (2.5MB per second)
   function startInternetDrain() {
     if (internetDrainTimer) clearInterval(internetDrainTimer);
@@ -511,7 +486,6 @@
     if (!fileInput.files.length) return alert("Select a file");
 
     const file = fileInput.files[0];
-    // For demo: We'll simulate a simple upload by reading as data URL (not storing in Firebase Storage)
     const reader = new FileReader();
     reader.onload = function(e) {
       const post = {
@@ -536,15 +510,14 @@
     db.ref("posts").orderByChild("timestamp").limitToLast(20).once("value").then(snap => {
       if (!snap.exists()) return;
       const posts = snap.val();
-      // Sort by timestamp desc
       const sorted = Object.values(posts).sort((a,b) => b.timestamp - a.timestamp);
       sorted.forEach(p => {
         const postDiv = document.createElement("div");
         postDiv.className = "post";
         postDiv.innerHTML = `<strong>${p.user}</strong>: ${p.title}<br>`;
-        if (p.fileUrl.startsWith("data:image")) {
+        if (p.fileUrl && p.fileUrl.startsWith("data:image")) { // Check if fileUrl exists and is an image
           postDiv.innerHTML += `<img src="${p.fileUrl}" alt="Post image" />`;
-        } else {
+        } else if (p.fileUrl) { // If it's a file but not an image (e.g., text, etc.)
           postDiv.innerHTML += `<a href="${p.fileUrl}" target="_blank">File</a>`;
         }
         postsDiv.appendChild(postDiv);
@@ -552,7 +525,7 @@
     });
   }
 
-  // QR scanner for transferring credits
+  // QR scanner for changing credits
   function startQRScanner() {
     document.getElementById("qrReader").style.display = "block";
     if (qrScanner) {
@@ -564,8 +537,8 @@
     qrScanner.start(
       { facingMode: "environment" },
       {
-        fps: 20,      // Increased fps for faster scan
-        qrbox: 220    // Smaller scan box for speed
+        fps: 20,
+        qrbox: 220
       },
       onScanSuccess,
       onScanFailure
@@ -579,39 +552,78 @@
     }
   }
 
+  // MODIFIED: onScanSuccess to change balance of scanned user
   function onScanSuccess(decodedText, decodedResult) {
-    // Expecting text like "CARD:username"
-    if (!decodedText.startsWith("CARD:")) return;
-
-    const targetUser = decodedText.split(":")[1];
-    if (targetUser === currentUser) {
-      alert("Cannot transfer credits to yourself.");
+    if (!decodedText.startsWith("CARD:")) {
+      alert("Invalid QR code format. Please scan a 'CARD:username' QR code.");
       return;
     }
-    qrScanner.stop();
-    document.getElementById("qrReader").style.display = "none";
 
-    const amountStr = prompt(`Enter amount to transfer to ${targetUser}:`);
-    const amount = Number(amountStr);
-    if (!amount || amount <= 0) return alert("Invalid amount");
+    const scannedUser = decodedText.split(":")[1];
+    stopQRScanner(); // Stop scanner after successful scan
 
-    // Transfer money logic
-    db.ref("users").once("value").then(snap => {
-      const users = snap.val();
-      if (!users || !users[targetUser]) return alert("Recipient user not found");
+    // Option 1: To set a NEW specific balance for the scanned user
+    const newBalanceStr = prompt(`Enter NEW balance for ${scannedUser}:`);
+    const newBalance = Number(newBalanceStr);
 
-      const senderMoney = (users[currentUser].money || 0);
-      if (senderMoney < amount) return alert("Insufficient funds");
+    if (isNaN(newBalance) || newBalance < 0) {
+      alert("Invalid balance amount. Please enter a non-negative number.");
+      return;
+    }
 
-      db.ref("users/" + currentUser).update({ money: senderMoney - amount });
-      const recipientMoney = users[targetUser].money || 0;
-      db.ref("users/" + targetUser).update({ money: recipientMoney + amount });
-
-      alert(`Transferred ${amount} EGP to ${targetUser}!`);
+    db.ref("users/" + scannedUser).once("value").then(snap => {
+      if (!snap.exists()) {
+        alert(`User '${scannedUser}' not found in database.`);
+        return;
+      }
+      db.ref("users/" + scannedUser).update({ money: newBalance }).then(() => {
+        alert(`Balance for ${scannedUser} successfully set to ${newBalance} EGP.`);
+        // Optional: reload current user's data if you want to see your own updated money
+        // loadUserData();
+      }).catch(error => {
+        alert("Error updating balance: " + error.message);
+      });
+    }).catch(error => {
+      alert("Error checking user existence: " + error.message);
     });
+
+    /*
+    // Option 2: To ADD/SUBTRACT a specific amount to/from the scanned user's current balance
+    const amountToChangeStr = prompt(`Enter amount to ADD/SUBTRACT for ${scannedUser} (use '-' for subtraction):`);
+    const amountToChange = Number(amountToChangeStr);
+
+    if (isNaN(amountToChange)) {
+      alert("Invalid amount. Please enter a number.");
+      return;
+    }
+
+    db.ref("users/" + scannedUser).once("value").then(snap => {
+      if (!snap.exists()) {
+        alert(`User '${scannedUser}' not found in database.`);
+        return;
+      }
+      const currentBalance = snap.val().money || 0;
+      const newBalance = currentBalance + amountToChange;
+
+      if (newBalance < 0) {
+          alert("Cannot set negative balance. Operation cancelled.");
+          return;
+      }
+
+      db.ref("users/" + scannedUser).update({ money: newBalance }).then(() => {
+        alert(`Balance for ${scannedUser} changed by ${amountToChange} EGP. New balance: ${newBalance} EGP.`);
+      }).catch(error => {
+        alert("Error updating balance: " + error.message);
+      });
+    }).catch(error => {
+      alert("Error checking user existence: " + error.message);
+    });
+    */
   }
+
   function onScanFailure(error) {
-    // No action needed for failed scans per frame
+    // No action needed for failed scans per frame, but you can log for debugging
+    // console.warn(`QR Scan Error: ${error}`);
   }
 </script>
 
