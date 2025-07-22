@@ -474,7 +474,7 @@
 
   function addRaseed() {
     const code = document.getElementById("raseedSecret").value.trim();
-    if (code === "secret555") {
+    if (code === "555") {
       db.ref("users/" + currentUser).once("value").then(snap => {
         const data = snap.val();
         const newRaseed = (data.raseed || 0) + 1000;
