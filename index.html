@@ -83,6 +83,14 @@
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
   <button onclick="addRaseed()">Add Raseed</button>
 
+  <h3>🔍 QR Code Scanner (Send Money)</h3>
+<button onclick="startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
+<div id="scannerContainer" style="margin-top: 10px;">
+  <div id="scanner" style="width: 300px; display: none;"></div>
+  <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
+</div>
+
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
@@ -152,21 +160,47 @@
   }
 
   function openCard() {
-    const pin = document.getElementById("openCardPin").value.trim();
-    if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN");
-    db.ref("users/" + currentUser + "/card").once("value").then(snap => {
-      if (!snap.exists()) return alert("No card found");
-      const card = snap.val();
-      if (card.pin !== pin) return alert("Wrong PIN");
-      const cardView = document.getElementById("cardView");
-      cardView.innerHTML = `
-        <strong>Card Number:</strong> ${card.number} <br/>
-        <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
-      `;
-      cardView.classList.remove("hidden");
-    });
+  let colors = [
+    ["#4e54c8", "#8f94fb"], // Blue-purple
+    ["#43cea2", "#185a9d"], // Green-blue
+    ["#f7971e", "#ffd200"], // Orange-yellow
+    ["#ee9ca7", "#ffdde1"], // Pink gradient
+    ["#00c6ff", "#0072ff"]  // Sky blue
+  ];
+
+  // Pick gradient based on username hash
+  let hash = 0;
+  for (let i = 0; i < currentUser.length; i++) {
+    hash = currentUser.charCodeAt(i) + ((hash << 5) - hash);
   }
+  let colorIndex = Math.abs(hash) % colors.length;
+  let gradient = colors[colorIndex];
+
+  const cardHTML = `
+    <div style="
+      width: 300px;
+      height: 180px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, ${gradient[0]}, ${gradient[1]});
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      color: white;
+      font-family: Arial, sans-serif;
+      position: relative;
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0;">${currentUser.toUpperCase()}</h3>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" style="height: 30px;" />
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${currentUser}" style="background: white; padding: 5px; border-radius: 10px;" />
+        <p style="margin-top: 10px;">Scan to pay this user</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("cardContainer").innerHTML = cardHTML;
+}
 
   function buyNumber() {
     const company = document.getElementById("company").value;
@@ -297,6 +331,117 @@
       loadUser();
     }
   };
+</script>
+<script>
+  let qrCodeScanner = null;
+
+  function startQrMoneyTransfer() {
+    document.getElementById("scanner").style.display = "block";
+    document.getElementById("qrStatus").innerText = "Initializing scanner...";
+
+    if (!qrCodeScanner) {
+      qrCodeScanner = new Html5Qrcode("scanner");
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (!devices || devices.length === 0) {
+        alert("No camera devices found.");
+        return;
+      }
+
+      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+
+      qrCodeScanner.start(
+        backCam.id,
+        {
+          fps: 30,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0,
+          disableFlip: true
+        },
+        onQrDetected,
+        error => {
+          document.getElementById("qrStatus").innerText = "Scanning error...";
+          console.error("Scan error", error);
+        }
+      ).then(() => {
+        document.getElementById("qrStatus").innerText = "Scanning... Hold QR code still";
+      }).catch(err => {
+        console.error("Start error", err);
+        alert("Could not start scanner: " + err);
+      });
+
+    }).catch(err => {
+      alert("Camera access error: " + err);
+    });
+  }
+
+  function onQrDetected(qrData) {
+    qrCodeScanner.stop().then(() => {
+      document.getElementById("scanner").style.display = "none";
+      document.getElementById("qrStatus").innerText = "";
+
+      const recipient = qrData.trim().toLowerCase();
+
+      if (recipient === currentUser) {
+        return alert("You can't send money to yourself.");
+      }
+
+      db.ref("users/" + recipient).once("value").then(snap => {
+        if (!snap.exists()) {
+          return alert("User not found.");
+        }
+
+        const amountStr = prompt(`Send how much EGP to ${recipient}?`);
+        const amount = parseInt(amountStr);
+
+        if (isNaN(amount) || amount <= 0) {
+          return alert("Invalid amount.");
+        }
+
+        db.ref("users/" + currentUser).once("value").then(currentSnap => {
+          const senderData = currentSnap.val();
+          const currentMoney = senderData.money || 0;
+
+          if (currentMoney < amount) {
+            return alert("Not enough money.");
+          }
+
+          db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
+
+          db.ref("users/" + recipient + "/money").once("value").then(recipientSnap => {
+            const newAmount = (recipientSnap.val() || 0) + amount;
+            db.ref("users/" + recipient + "/money").set(newAmount);
+          });
+
+          const now = new Date().toISOString();
+          const tx = {
+            from: currentUser,
+            to: recipient,
+            amount,
+            time: now
+          };
+          db.ref("transactions").push(tx);
+
+          triggerVibration();
+
+          alert(`✅ Sent ${amount} EGP to ${recipient}.`);
+        });
+      });
+
+    }).catch(err => {
+      console.error("Stop error", err);
+      alert("Failed to stop scanner");
+    });
+  }
+
+  function triggerVibration() {
+    if (navigator.vibrate) {
+      navigator.vibrate(200); // 🔔 iOS + Android compatible
+    } else {
+      console.log("Vibration not supported.");
+    }
+  }
 </script>
 
 </body>
