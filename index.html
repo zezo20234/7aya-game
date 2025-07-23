@@ -294,28 +294,39 @@
 
   // QR Scanner logic
   let html5QrCode = null;
-  function startScanner() {
-    document.getElementById("scanner").style.display = "block";
-    if (!html5QrCode) html5QrCode = new Html5Qrcode("scanner");
+  
+function startScanner() {
+  document.getElementById("scanner").style.display = "block";
+  document.getElementById("status").textContent = "Scanning...";
 
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices.length) {
-        html5QrCode.start(
-          devices[0].id,
-          { fps: 10, qrbox: 250 },
-          scannedText => {
-            html5QrCode.stop();
-            document.getElementById("scanner").style.display = "none";
-            handleQrScan(scannedText);
-          },
-          error => {}
-        );
-      } else {
-        alert("No camera found");
-      }
-    }).catch(err => alert("Camera error: " + err));
+  if (!html5QrCode) {
+    html5QrCode = new Html5Qrcode("scanner");
   }
 
+  Html5Qrcode.getCameras().then(devices => {
+    if (devices && devices.length) {
+      // Try to select back camera
+      let backCam = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
+      const camId = backCam.id;
+
+      html5QrCode.start(
+        camId,
+        { fps: 10, qrbox: 250 },
+        scannedText => {
+          html5QrCode.stop();
+          document.getElementById("scanner").style.display = "none";
+          document.getElementById("status").textContent = "";
+          handleQrScan(scannedText);
+        },
+        err => {}
+      );
+    } else {
+      alert("No camera found.");
+    }
+  }).catch(err => {
+    alert("Camera access error: " + err);
+  });
+}
   function handleQrScan(username) {
     if (username === currentUser) return alert("You can't send money to yourself!");
     db.ref("users/" + username).once("value").then(snap => {
