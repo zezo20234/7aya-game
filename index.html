@@ -418,10 +418,11 @@
   }
 </script>
  <hr />
-  <h3>🔍 QR Code Scanner (Send Money)</h3>
-  <button onclick="startScanner()">Scan QR to Send Money</button>
-  <div id="scanner" style="width: 300px; display: none; margin-top: 10px;"></div>
-  <div id="status" style="margin-top: 5px; color: yellow;"></div>
-</div>
+  <h3>🌐 Facenet</h3>
+  <input id="postTitle" placeholder="Post Title" autocomplete="off"/>
+  <input id="postImage" type="file" accept="image/*" />
+  <button onclick="makePost()">Post</button>
+  <div id="facenetPosts"></div>
+  <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
 </body>
 </html>
