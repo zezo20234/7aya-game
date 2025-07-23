@@ -160,21 +160,47 @@
   }
 
   function openCard() {
-    const pin = document.getElementById("openCardPin").value.trim();
-    if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN");
-    db.ref("users/" + currentUser + "/card").once("value").then(snap => {
-      if (!snap.exists()) return alert("No card found");
-      const card = snap.val();
-      if (card.pin !== pin) return alert("Wrong PIN");
-      const cardView = document.getElementById("cardView");
-      cardView.innerHTML = `
-        <strong>Card Number:</strong> ${card.number} <br/>
-        <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
-      `;
-      cardView.classList.remove("hidden");
-    });
+  let colors = [
+    ["#4e54c8", "#8f94fb"], // Blue-purple
+    ["#43cea2", "#185a9d"], // Green-blue
+    ["#f7971e", "#ffd200"], // Orange-yellow
+    ["#ee9ca7", "#ffdde1"], // Pink gradient
+    ["#00c6ff", "#0072ff"]  // Sky blue
+  ];
+
+  // Pick gradient based on username hash
+  let hash = 0;
+  for (let i = 0; i < currentUser.length; i++) {
+    hash = currentUser.charCodeAt(i) + ((hash << 5) - hash);
   }
+  let colorIndex = Math.abs(hash) % colors.length;
+  let gradient = colors[colorIndex];
+
+  const cardHTML = `
+    <div style="
+      width: 300px;
+      height: 180px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, ${gradient[0]}, ${gradient[1]});
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      color: white;
+      font-family: Arial, sans-serif;
+      position: relative;
+    ">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0;">${currentUser.toUpperCase()}</h3>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Visa.svg" style="height: 30px;" />
+      </div>
+      <div style="margin-top: 20px; text-align: center;">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${currentUser}" style="background: white; padding: 5px; border-radius: 10px;" />
+        <p style="margin-top: 10px;">Scan to pay this user</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("cardContainer").innerHTML = cardHTML;
+}
 
   function buyNumber() {
     const company = document.getElementById("company").value;
