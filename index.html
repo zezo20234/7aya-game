@@ -85,7 +85,7 @@
   <h3>🔍 QR Code Scanner (Send Money)</h3>
   <button onclick="startScanner()">Scan QR to Send Money</button>
   <div id="scanner" style="width: 300px; display: none; margin-top: 10px;"></div>
-</div>
+  <div id="status" style="margin-top: 5px; color: yellow;"></div> </div>
 
 <script>
   const firebaseConfig = {
@@ -297,7 +297,8 @@
   
 function startScanner() {
   document.getElementById("scanner").style.display = "block";
-  document.getElementById("status").innerText = "Scanning...";
+  // The line below was causing the error because #status didn't exist
+  document.getElementById("status").innerText = "Scanning..."; 
 
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("scanner");
@@ -305,8 +306,9 @@ function startScanner() {
 
   Html5Qrcode.getCameras().then(devices => {
     if (devices && devices.length) {
-      cameras = devices;
-      const camId = devices[currentCameraIndex].id;
+      // It's good practice to keep track of current camera index if you want camera switching
+      // For now, we'll just use the first available camera
+      const camId = devices[0].id; // Assuming you want to use the first camera
 
       html5QrCode.start(
         camId,
@@ -314,20 +316,30 @@ function startScanner() {
         qrCodeMessage => {
           html5QrCode.stop();
           document.getElementById("scanner").style.display = "none";
-          document.getElementById("status").innerText = "";
+          document.getElementById("status").innerText = ""; // Clear status after scan
           handleQrScan(qrCodeMessage);
         },
         error => {
-          // optional log: console.log("Scan error", error);
+          // You can log errors here for debugging
+          console.error("QR Code Scan Error:", error);
+          document.getElementById("status").innerText = "Error: " + error;
         }
-      );
+      ).catch(err => { // Catch errors from html5QrCode.start() itself
+        console.error("Failed to start scanner:", err);
+        document.getElementById("status").innerText = "Error starting scanner: " + err;
+        alert("Error starting scanner: " + err);
+      });
     } else {
       alert("No cameras found.");
+      document.getElementById("status").innerText = "No cameras found.";
     }
-  }).catch(err => {
+  }).catch(err => { // Catch errors from Html5Qrcode.getCameras()
+    console.error("Camera detection error: ", err);
     alert("Camera error: " + err);
+    document.getElementById("status").innerText = "Camera error: " + err;
   });
 }
+
   function handleQrScan(username) {
     if (username === currentUser) return alert("You can't send money to yourself!");
     db.ref("users/" + username).once("value").then(snap => {
