@@ -3,170 +3,210 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>7AYA‑GAME with Facenet & Wi‑Fi</title>
+  <title>7AYA‑GAME with Facenet</title>
   <style>
-    body { font-family: sans-serif; text-align: center; background: #f5f5f5; }
-    #topBar { background: black; color: white; padding:10px; }
-    .btn { padding:10px 15px; margin:5px; border:none; background:#333; color:white; border-radius:8px; }
-    input,img,video { margin:5px; }
-    #facenet, #card, #simApp, #scannerDiv { display:none; margin-top:20px; }
-    #card { width:300px;height:180px;margin:20px auto;padding:20px;border-radius:15px;background:#444;color:white;position:relative; }
-    #card .chip{width:40px;height:30px;background:gold;position:absolute;left:15px;top:15px;border-radius:5px;}
-    #card .card-number{margin-top:60px;font-size:18px;}
-    #card .name{position:absolute;bottom:15px;left:15px;font-weight:bold;}
-    #qrcode{position:absolute;right:15px;top:60px;}
-    #wifiBundles button{margin:3px;}
-    .post { border:1px solid #aaa; margin:10px auto; padding:10px; max-width:300px; background:white; }
-    .post img { width:100%; }
+    body { font-family: sans-serif; background: #f5f5f5; text-align: center; }
+    #topBar { background: black; color: white; padding: 10px; font-size: 16px; }
+    .btn { padding: 10px 15px; margin: 5px; font-size: 16px; border: none; background: #333; color: white; border-radius: 8px; }
+    input,img { margin: 5px; }
+    #card, #simApp, #facenet, #scannerDiv { display: none; margin-top: 20px; }
+    #card { width: 300px; height: 180px; margin: 20px auto; padding: 20px; border-radius: 15px; background: #333; color: white; position: relative; }
+    .chip { width: 40px; height: 30px; background: gold; border-radius: 5px; position: absolute; left: 15px; top: 15px; }
+    .card-number { margin-top: 60px; font-size: 18px; }
+    .name { position: absolute; bottom: 15px; left: 15px; font-weight: bold; }
+    #qrcode { position: absolute; right: 15px; top: 60px; }
+    .post { border: 1px solid #aaa; margin: 10px auto; padding: 10px; max-width: 300px; background: white; }
+    .post img { width: 100%; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getDatabase, ref, set, push, onValue } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
-    const firebaseConfig = { /* YOUR CONFIG */ };
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
+      authDomain: "aya-game-e579b.firebaseapp.com",
+      databaseURL: "https://aya-game-e579b-default-rtdb.firebaseio.com",
+      projectId: "aya-game-e579b",
+      storageBucket: "aya-game-e579b.appspot.com",
+      messagingSenderId: "609706801625",
+      appId: "1:609706801625:web:1e128b6f2c001133c1c1c8",
+      measurementId: "G-E6BK1J3X3R"
+    };
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
     const users = {
-      zezo: { pin:"123", money:200, phone:"", raseed:0, mb:0 },
-      asser: { pin:"1234", money:200, phone:"", raseed:0, mb:0 },
-      layan: { pin:"12345", money:200, phone:"", raseed:0, mb:0 },
-      bank: { pin:"555", money:1000, phone:"", raseed:0, mb:0 }
+      zezo: { pin: "123", money: 200, phone: "", raseed: 0, mb: 0 },
+      asser: { pin: "1234", money: 200, phone: "", raseed: 0, mb: 0 },
+      layan: { pin: "12345", money: 200, phone: "", raseed: 0, mb: 0 },
+      bank: { pin: "555", money: 1000, phone: "", raseed: 0, mb: 0 }
     };
-    let currentUser="", cardPIN="";
-    let mbInterval=null;
 
-    function updateTopBar(){
-      const u=users[currentUser];
-      document.getElementById("topBar").innerText=
-        `${currentUser.toUpperCase()} | Money: ${u.money} EGP | Phone: ${u.phone||"None"} | Raseed: ${u.raseed} | MB: ${u.mb}`;
+    let currentUser = "", cardPIN = "", mbInterval = null;
+
+    function updateTopBar() {
+      const u = users[currentUser];
+      document.getElementById("topBar").innerText =
+        `${currentUser.toUpperCase()} | Money: ${u.money} EGP | Phone: ${u.phone || "None"} | Raseed: ${u.raseed} | MB: ${u.mb}`;
     }
 
-    function login(){
-      const u=document.getElementById("username").value.toLowerCase();
-      const p=document.getElementById("pin").value;
-      if(users[u] && users[u].pin===p){
-        currentUser=u;
-        document.getElementById("loginDiv").style.display="none";
-        document.getElementById("mainApp").style.display="block";
+    function saveSession() {
+      const storage = document.getElementById("keep").checked ? localStorage : sessionStorage;
+      storage.setItem("user", currentUser);
+    }
+
+    function login() {
+      const u = document.getElementById("username").value.toLowerCase();
+      const p = document.getElementById("pin").value;
+      if (users[u] && users[u].pin === p) {
+        currentUser = u;
+        saveSession();
+        document.getElementById("loginDiv").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
         updateTopBar(); loadFacenet();
       } else alert("Invalid login");
     }
 
-    function makeCard(){
-      const p=prompt("Set 3-digit card PIN:");
-      if(p.length===3){ cardPIN=p; alert("Card created."); }
+    function autoLogin() {
+      const u = localStorage.getItem("user") || sessionStorage.getItem("user");
+      if (u && users[u]) {
+        currentUser = u;
+        document.getElementById("loginDiv").style.display = "none";
+        document.getElementById("mainApp").style.display = "block";
+        updateTopBar(); loadFacenet();
+      }
     }
-    function openCard(){
-      if(prompt("PIN?")===cardPIN){
-        const u=users[currentUser], c=document.getElementById("card");
-        c.style.display="block"; c.innerHTML=
+
+    function makeCard() {
+      const p = prompt("Set 3-digit card PIN:");
+      if (p.length === 3) { cardPIN = p; alert("Card created."); }
+    }
+
+    function openCard() {
+      if (prompt("PIN?") === cardPIN) {
+        const u = users[currentUser], c = document.getElementById("card");
+        c.style.display = "block";
+        c.innerHTML =
           `<div class="chip"></div>
-           <div class="card-number">${Math.floor(1e15+Math.random()*9e15)}</div>
+           <div class="card-number">${Math.floor(1e15 + Math.random() * 9e15)}</div>
            <div class="name">${currentUser.toUpperCase()}</div>
            <div id="qrcode"></div>`;
-        QRCode.toCanvas(c.querySelector("#qrcode"), currentUser, {width:60});
+        QRCode.toCanvas(c.querySelector("#qrcode"), currentUser, { width: 60 });
       } else alert("Wrong PIN");
     }
 
-    function makeNumber(){
-      const co=prompt("Choose: Orange, Vodafone, e&").toLowerCase();
-      if(!["orange","vodafone","e&"].includes(co)) return;
-      const u=users[currentUser];
-      if(u.money<250){ alert("Low money"); return; }
+    function makeNumber() {
+      const co = prompt("Choose: Orange, Vodafone, e&").toLowerCase();
+      if (!["orange", "vodafone", "e&"].includes(co)) return;
+      const u = users[currentUser];
+      if (u.money < 250) { alert("Low money"); return; }
       u.money -= 250;
-      u.phone = `${co.toUpperCase()}-01${Math.floor(1e7+Math.random()*9e7)}`;
-      alert("Number bought!");
-      showSimApp(); updateTopBar();
+      u.phone = `${co.toUpperCase()}-01${Math.floor(1e7 + Math.random() * 9e7)}`;
+      alert("Number bought!"); showSimApp(); updateTopBar();
     }
 
-    function showSimApp(){
-      const s=document.getElementById("simApp");
-      s.style.display="block"; s.innerHTML=`
+    function showSimApp() {
+      const u = users[currentUser];
+      const s = document.getElementById("simApp");
+      s.style.display = "block";
+      s.innerHTML = `
         <h3>SIM APP</h3>
-        <p>Raseed: ${users[currentUser].raseed} | MB: ${users[currentUser].mb}</p>
-        <div id="wifiBundles">
+        <p>Raseed: ${u.raseed} | MB: ${u.mb}</p>
+        <div>
           <button onclick="buyBundle(40,1000)">40=1000MB</button>
           <button onclick="buyBundle(50,1250)">50=1250MB</button>
           <button onclick="buyBundle(60,1750)">60=1750MB</button>
           <button onclick="buyBundle(70,2000)">70=2000MB</button>
           <button onclick="buyBundle(80,2500)">80=2500MB</button>
         </div>
+        <input placeholder="Secret Code" id="raseedCode">
+        <button onclick="addRaseed()">Add Raseed</button>
       `;
     }
-    function buyBundle(cost,mb){
-      const u=users[currentUser];
-      if(u.raseed<cost){ alert("Low Raseed"); return; }
+
+    window.buyBundle = function (cost, mb) {
+      const u = users[currentUser];
+      if (u.raseed < cost) return alert("Low Raseed");
       u.raseed -= cost; u.mb += mb;
-      alert(`${mb}MB added!`);
-      showSimApp(); updateTopBar();
-    }
+      alert(`Bought ${mb}MB`); updateTopBar(); showSimApp();
+    };
 
-    function startMBTimer(){
-      if(mbInterval) clearInterval(mbInterval);
-      mbInterval = setInterval(()=>{
-        if(users[currentUser].mb>0){
-          users[currentUser].mb -=150;
-          if(users[currentUser].mb<0) users[currentUser].mb=0;
+    window.addRaseed = function () {
+      const c = document.getElementById("raseedCode").value;
+      if (c === "555") {
+        const amt = parseInt(prompt("Amount to add:"), 10);
+        users[currentUser].raseed += amt || 0;
+        alert("Raseed added."); showSimApp(); updateTopBar();
+      }
+    };
+
+    function startMBTimer() {
+      if (mbInterval) clearInterval(mbInterval);
+      mbInterval = setInterval(() => {
+        const u = users[currentUser];
+        if (u.mb > 0) {
+          u.mb -= 150;
+          if (u.mb < 0) u.mb = 0;
           updateTopBar();
-          if(users[currentUser].mb===0) stopMBTimer();
+          if (u.mb === 0) {
+            alert("Internet finished.");
+            document.getElementById("facenet").style.display = "none";
+            clearInterval(mbInterval);
+          }
         }
-      },60000);
-    }
-    function stopMBTimer(){
-      clearInterval(mbInterval); mbInterval=null;
-      document.getElementById("facenet").style.display="none";
+      }, 60000);
     }
 
-    function loadFacenet(){
-      const f=document.getElementById("facenet");
+    function loadFacenet() {
+      const f = document.getElementById("facenet");
       f.innerHTML = `
-        <h3>Facenet Feed</h3>
+        <h3>Facenet</h3>
         <input id="postTitle" placeholder="Title"><br>
         <input type="file" id="postImg"><br>
-        <button class="btn" onclick="post()">Post</button>
+        <button onclick="post()">Post</button>
         <div id="posts"></div>`;
-      f.style.display = users[currentUser].mb>0 ? "block":"none";
-      if(users[currentUser].mb>0) startMBTimer();
+      if (users[currentUser].mb > 0) {
+        f.style.display = "block"; startMBTimer();
+      } else f.style.display = "none";
 
       const postsRef = ref(db, 'posts');
       onValue(postsRef, snapshot => {
-        const data=snapshot.val()||{};
-        const html = Object.values(data).map(p=>`
-          <div class="post"><h4>${p.u}</h4><p>${p.t}</p><img src="${p.i}"></div>`).join('');
+        const data = snapshot.val() || {};
+        const html = Object.values(data).map(p =>
+          `<div class="post"><h4>${p.u}</h4><p>${p.t}</p><img src="${p.i}"></div>`).join('');
         document.getElementById("posts").innerHTML = html;
       });
     }
 
-    function post(){
-      if(users[currentUser].mb<=0){ alert("No internet"); return; }
-      const t=document.getElementById("postTitle").value;
-      const imgFile=document.getElementById("postImg").files[0];
-      if(!t||!imgFile){ alert("Add title & photo"); return; }
-      const reader=new FileReader();
+    window.post = function () {
+      if (users[currentUser].mb <= 0) return alert("No internet");
+      const t = document.getElementById("postTitle").value;
+      const file = document.getElementById("postImg").files[0];
+      if (!t || !file) return alert("Add title and photo");
+      const reader = new FileReader();
       reader.onload = e => {
-        push(ref(db, 'posts'), { u:currentUser, t, i: e.target.result });
+        push(ref(db, 'posts'), { u: currentUser, t, i: e.target.result });
         alert("Posted!");
       };
-      reader.readAsDataURL(imgFile);
-    }
+      reader.readAsDataURL(file);
+    };
 
-    function checkCode(){
-      if(document.getElementById("codeInput").value==="555"){
-        const n=prompt("New balance:");
-        users[currentUser].money=parseInt(n)||0;
-        alert("Updated"); updateTopBar();
+    window.checkCode = function () {
+      if (document.getElementById("codeInput").value === "555") {
+        const newAmt = prompt("New balance:");
+        users[currentUser].money = parseInt(newAmt || "0", 10);
+        alert("Balance changed"); updateTopBar();
       }
-    }
+    };
 
-    window.login=login;
-    window.makeCard=makeCard; window.openCard=openCard;
-    window.makeNumber=makeNumber; window.showSimApp=showSimApp;
-    window.buyBundle=buyBundle;
-    window.startMBTimer = startMBTimer;
-    window.post=post;
-    window.checkCode=checkCode;
+    window.makeCard = makeCard;
+    window.openCard = openCard;
+    window.makeNumber = makeNumber;
+    window.showSimApp = showSimApp;
+    window.login = login;
 
+    window.onload = autoLogin;
   </script>
 </head>
 <body>
@@ -175,8 +215,10 @@
     <h2>Login</h2>
     <input id="username" placeholder="Username"><br>
     <input id="pin" placeholder="PIN" type="password"><br>
+    <label><input type="checkbox" id="keep"> Keep me signed in</label><br>
     <button class="btn" onclick="login()">Login</button>
   </div>
+
   <div id="mainApp" style="display:none;">
     <button class="btn" onclick="makeCard()">Make Card</button>
     <button class="btn" onclick="openCard()">Open Card</button>
