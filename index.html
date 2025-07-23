@@ -5,15 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>7AYA-GAME</title>
 
+<!-- Add to Home Screen support for Safari -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
 <link rel="apple-touch-icon" href="IMG_0297.jpeg" />
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
+<!-- QR Code -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -187,17 +189,16 @@
   <button onclick="openCard()">Open Card</button>
   <button onclick="buyPhone()">Buy Phone Number</button>
   <button onclick="toggleSimApp()">SIM App</button>
-  
-  <button id="zezoAdminScanBtn" style="display:none; background:#4CAF50;" onclick="startQRScanner('admin_change_balance')">Scan Card (Admin Change Balance)</button>
-  
-  <button onclick="startQRScanner('transfer_credits')">Scan Card (Transfer Credits)</button>
+  <button onclick="startQRScanner()">Scan QR (Transfer Credits)</button>
   
   <button onclick="logout()" style="margin-top:10px; background:#e53e3e;">Logout</button>
 
   <div id="cardDiv" style="display:none;">
     <div class="chip"></div>
     <div class="username" id="cardUser"></div>
+    <!-- card number & expiry/cvv inserted dynamically here -->
     <div id="qrcode"></div>
+    <!-- Mastercard SVG logo -->
     <svg class="mastercard-logo" viewBox="0 0 504 318" xmlns="http://www.w3.org/2000/svg">
       <circle cx="168" cy="159" r="140" fill="#EB001B"/>
       <circle cx="336" cy="159" r="140" fill="#F79E1B"/>
@@ -238,9 +239,8 @@
   <hr>
 
   <div>
-    <h3>Your Balance Management</h3>
-    <input type="password" id="myBalanceSecret" placeholder="Enter secret code to change your balance" />
-    <button onclick="changeMyOwnBalance()">Change My Balance</button>
+    <input type="password" id="balanceSecret" placeholder="Enter secret code to edit balance" />
+    <button onclick="editBalance()">Change Balance</button>
   </div>
 
   <div id="qrReader" style="margin-top:20px; display:none;">
@@ -250,7 +250,7 @@
 </div>
 
 <script>
-  // Firebase config (Ensure this is correct for your project)
+  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -262,12 +262,10 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-  const storage = firebase.storage();
 
   let currentUser = null;
   let qrScanner = null;
   let internetDrainTimer = null;
-  let scanMode = ''; // To distinguish between 'admin_change_balance' and 'transfer_credits'
 
   // On page load, auto-login if remembered
   window.onload = () => {
@@ -281,7 +279,6 @@
           loadUserData();
           startInternetDrain();
           loadPosts();
-          checkZezoAdminStatus(); // Check if currentUser is "zezo"
         }
       });
     }
@@ -294,7 +291,7 @@
 
     if (!user || !pin) return alert("Please enter username and PIN");
 
-    db.ref("users/" + user).once("value").then(snap => {
+    db.ref("users/" + user).once("value", snap => {
       if (!snap.exists()) return alert("User not found");
       const data = snap.val();
       if (data.pin !== pin) return alert("Wrong PIN");
@@ -315,7 +312,6 @@
       loadUserData();
       startInternetDrain();
       loadPosts();
-      checkZezoAdminStatus(); // Check if currentUser is "zezo" after login
     });
   }
 
@@ -330,27 +326,10 @@
       const data = snap.val();
       document.getElementById("info").innerText = `Money: ${data.money || 0} | Phone: ${data.phone || "-"}`;
       document.getElementById("raseed").innerText = data.raseed || 0;
-      document.getElementById("internet").innerText = Math.floor(data.internet) || 0;
+      document.getElementById("internet").innerText = data.internet || 0;
       document.getElementById("simCompany").innerText = data.company || "-";
       document.getElementById("simNumber").innerText = data.phone || "-";
-      // Hide/show Facenet and posting based on internet > 0
-      const facenetDiv = document.getElementById("facenet");
-      if ((data.internet || 0) > 0) {
-        facenetDiv.style.display = "block";
-      } else {
-        facenetDiv.style.display = "none";
-      }
     });
-  }
-
-  // New function to check and display Zezo's admin button
-  function checkZezoAdminStatus() {
-    const zezoAdminBtn = document.getElementById("zezoAdminScanBtn");
-    if (currentUser === "zezo") {
-      zezoAdminBtn.style.display = "block";
-    } else {
-      zezoAdminBtn.style.display = "none";
-    }
   }
 
   function makeCard() {
@@ -373,32 +352,267 @@
       // Show card UI
       const cardDiv = document.getElementById("cardDiv");
       cardDiv.style.display = "block";
-      document.getElementById("cardUser").innerText = currentUser;
-      document.getElementById("qrcode").innerHTML = "";
-      new QRCode(document.getElementById("qrcode"), currentUser);
-    });
-  }
+      document.getElementById("cardUser").innerText = currentUser.toUpperCase();
 
-  function addRaseed() {
-    const secret = document.getElementById("raseedSecret").value.trim();
-    if (secret !== "555") return alert("Wrong secret code");
+      // Generate a consistent 16-digit card number per user
+      const cardNumber = generateCardNumber(currentUser);
+      const formattedNumber = cardNumber.match(/.{1,4}/g).join(' ');
 
-    const amountStr = prompt("Enter amount of Raseed to ADD:");
-    const amount = parseInt(amountStr);
-    if (isNaN(amount) || amount <= 0) return alert("Invalid amount");
+      // Generate random expiry (MM/YY) and CVV for demo
+      const expiry = randomExpiry();
+      const cvv = Math.floor(100 + Math.random() * 899);
 
-    db.ref("users/" + currentUser).once("value").then(snap => {
-      const user = snap.val();
-      const newRaseed = (user.raseed || 0) + amount;
-      db.ref("users/" + currentUser).update({ raseed: newRaseed }).then(() => {
-        alert(`Added ${amount} Raseed!`);
-        document.getElementById("raseedSecret").value = "";
-        loadUserData();
+      // Remove previous dynamic elements
+      let oldNumber = cardDiv.querySelector(".card-number");
+      if (oldNumber) oldNumber.remove();
+      let oldExpiry = cardDiv.querySelector(".expiry-cvv");
+      if (oldExpiry) oldExpiry.remove();
+
+      // Create card number div
+      const numberDiv = document.createElement("div");
+      numberDiv.className = "card-number";
+      numberDiv.textContent = formattedNumber;
+      cardDiv.appendChild(numberDiv);
+
+      // Create expiry and cvv container
+      const expCvvDiv = document.createElement("div");
+      expCvvDiv.className = "expiry-cvv";
+      expCvvDiv.innerHTML = `<div>Expiry: ${expiry}</div><div>CVV: ${cvv}</div>`;
+      cardDiv.appendChild(expCvvDiv);
+
+      // Generate QR code with user info and PIN masked
+      const qrCodeDiv = document.getElementById("qrcode");
+      qrCodeDiv.innerHTML = "";
+      new QRCode(qrCodeDiv, {
+        text: `CARD:${currentUser}`,
+        width: 110,
+        height: 110,
       });
     });
   }
 
-  // (More functions continue here… I'll send the rest in next message)
+  // Helper function to generate consistent card number from username
+  function generateCardNumber(user) {
+    // Simple hash from username to generate 16 digits
+    let hash = 0;
+    for (let i = 0; i < user.length; i++) {
+      hash = user.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let num = '';
+    for (let i = 0; i < 16; i++) {
+      const digit = Math.abs((hash + i) * (i + 1)) % 10;
+      num += digit.toString();
+    }
+    return num;
+  }
+
+  // Helper function for expiry date MM/YY
+  function randomExpiry() {
+    const month = Math.floor(1 + Math.random() * 12);
+    const year = new Date().getFullYear() % 100 + Math.floor(Math.random() * 4) + 1; // 1 to 4 years in future
+    return (month < 10 ? '0' + month : month) + '/' + year;
+  }
+
+  function buyPhone() {
+    const providers = ["orange", "vodafone", "e&"];
+    const choice = prompt(`Choose phone provider:\n1. Orange\n2. Vodafone\n3. e&`);
+    const idx = Number(choice) - 1;
+    if (idx < 0 || idx >= providers.length) return alert("Invalid choice");
+
+    const provider = providers[idx];
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.money || 0) < 250) return alert("Not enough money");
+
+      const phoneNum = generatePhoneNumber(provider);
+      db.ref("users/" + currentUser).update({
+        money: data.money - 250,
+        phone: phoneNum,
+        company: provider
+      }).then(() => {
+        alert(`Phone number bought: ${phoneNum}`);
+      });
+    });
+  }
+
+  function generatePhoneNumber(provider) {
+    let prefix = "";
+    if (provider === "orange") prefix = "0101";
+    else if (provider === "vodafone") prefix = "0102";
+    else prefix = "0103";
+    return prefix + Math.floor(1000000 + Math.random() * 8999999);
+  }
+
+  function toggleSimApp() {
+    const simApp = document.getElementById("simApp");
+    simApp.style.display = simApp.style.display === "none" ? "block" : "none";
+  }
+
+  function buyBundle(cost, mb) {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.raseed || 0) < cost) return alert("Not enough Raseed");
+      const newInternet = (data.internet || 0) + mb;
+      db.ref("users/" + currentUser).update({
+        raseed: data.raseed - cost,
+        internet: newInternet
+      });
+      alert(`Bought ${mb}MB for ${cost} EGP`);
+    });
+  }
+
+  function addRaseed() {
+    const code = document.getElementById("raseedSecret").value.trim();
+    if (code === "secret555") {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        const data = snap.val();
+        const newRaseed = (data.raseed || 0) + 1000;
+        db.ref("users/" + currentUser).update({ raseed: newRaseed });
+        alert("Added 1000 Raseed!");
+        document.getElementById("raseedSecret").value = "";
+      });
+    } else alert("Wrong secret code");
+  }
+
+  function editBalance() {
+    const code = document.getElementById("balanceSecret").value.trim();
+    if (code === "555") {
+      const amountStr = prompt("Enter new money amount:");
+      const amount = Number(amountStr);
+      if (isNaN(amount)) return alert("Invalid number");
+      db.ref("users/" + currentUser).update({ money: amount });
+      alert("Balance updated!");
+      document.getElementById("balanceSecret").value = "";
+    } else {
+      alert("Wrong secret code");
+    }
+  }
+
+  // Internet decreases 150MB per minute (2.5MB per second)
+  function startInternetDrain() {
+    if (internetDrainTimer) clearInterval(internetDrainTimer);
+    internetDrainTimer = setInterval(() => {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        const data = snap.val();
+        if (!data) return;
+        let internetLeft = data.internet || 0;
+        internetLeft -= 2.5;
+        if (internetLeft < 0) internetLeft = 0;
+        db.ref("users/" + currentUser).update({ internet: internetLeft.toFixed(1) });
+      });
+    }, 1000);
+  }
+
+  // Facenet (Social feed)
+  function submitPost() {
+    const title = document.getElementById("postTitle").value.trim();
+    const fileInput = document.getElementById("postFile");
+    if (!title) return alert("Enter post title");
+    if (!fileInput.files.length) return alert("Select a file");
+
+    const file = fileInput.files[0];
+    // For demo: We'll simulate a simple upload by reading as data URL (not storing in Firebase Storage)
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const post = {
+        user: currentUser,
+        title,
+        fileUrl: e.target.result,
+        timestamp: Date.now()
+      };
+      db.ref("posts").push(post).then(() => {
+        alert("Post added!");
+        document.getElementById("postTitle").value = "";
+        fileInput.value = "";
+        loadPosts();
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function loadPosts() {
+    const postsDiv = document.getElementById("posts");
+    postsDiv.innerHTML = "";
+    db.ref("posts").orderByChild("timestamp").limitToLast(20).once("value").then(snap => {
+      if (!snap.exists()) return;
+      const posts = snap.val();
+      // Sort by timestamp desc
+      const sorted = Object.values(posts).sort((a,b) => b.timestamp - a.timestamp);
+      sorted.forEach(p => {
+        const postDiv = document.createElement("div");
+        postDiv.className = "post";
+        postDiv.innerHTML = `<strong>${p.user}</strong>: ${p.title}<br>`;
+        if (p.fileUrl.startsWith("data:image")) {
+          postDiv.innerHTML += `<img src="${p.fileUrl}" alt="Post image" />`;
+        } else {
+          postDiv.innerHTML += `<a href="${p.fileUrl}" target="_blank">File</a>`;
+        }
+        postsDiv.appendChild(postDiv);
+      });
+    });
+  }
+
+  // QR scanner for transferring credits
+  function startQRScanner() {
+    document.getElementById("qrReader").style.display = "block";
+    if (qrScanner) {
+      qrScanner.start({ facingMode: "environment" }, {}, onScanSuccess, onScanFailure);
+      return;
+    }
+    qrScanner = new Html5Qrcode("reader");
+
+    qrScanner.start(
+      { facingMode: "environment" },
+      {
+        fps: 20,      // Increased fps for faster scan
+        qrbox: 220    // Smaller scan box for speed
+      },
+      onScanSuccess,
+      onScanFailure
+    ).catch(err => alert("Error starting QR scanner: " + err));
+  }
+  function stopQRScanner() {
+    if (qrScanner) {
+      qrScanner.stop().then(() => {
+        document.getElementById("qrReader").style.display = "none";
+      });
+    }
+  }
+
+  function onScanSuccess(decodedText, decodedResult) {
+    // Expecting text like "CARD:username"
+    if (!decodedText.startsWith("CARD:")) return;
+
+    const targetUser = decodedText.split(":")[1];
+    if (targetUser === currentUser) {
+      alert("Cannot transfer credits to yourself.");
+      return;
+    }
+    qrScanner.stop();
+    document.getElementById("qrReader").style.display = "none";
+
+    const amountStr = prompt(`Enter amount to transfer to ${targetUser}:`);
+    const amount = Number(amountStr);
+    if (!amount || amount <= 0) return alert("Invalid amount");
+
+    // Transfer money logic
+    db.ref("users").once("value").then(snap => {
+      const users = snap.val();
+      if (!users || !users[targetUser]) return alert("Recipient user not found");
+
+      const senderMoney = (users[currentUser].money || 0);
+      if (senderMoney < amount) return alert("Insufficient funds");
+
+      db.ref("users/" + currentUser).update({ money: senderMoney - amount });
+      const recipientMoney = users[targetUser].money || 0;
+      db.ref("users/" + targetUser).update({ money: recipientMoney + amount });
+
+      alert(`Transferred ${amount} EGP to ${targetUser}!`);
+    });
+  }
+  function onScanFailure(error) {
+    // No action needed for failed scans per frame
+  }
 </script>
 
 </body>
