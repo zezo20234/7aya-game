@@ -520,80 +520,91 @@
     });
   }
 
-  // Facenet posting feature with internet check and image upload
+  
   async function submitPost() {
-    const title = document.getElementById("postTitle").value.trim();
-    const fileInput = document.getElementById("postFile");
-    if (!title || fileInput.files.length === 0) return alert("Please enter title and select a file");
+  const title = document.getElementById("postTitle").value.trim();
+  const fileInput = document.getElementById("postFile");
+  if (!title || fileInput.files.length === 0) return alert("Please enter title and select a file");
 
-    const userDataSnap = await db.ref("users/" + currentUser).once("value");
-    const internetLeft = userDataSnap.val().internet || 0;
-    if (internetLeft <= 0) return alert("You need internet to use Facenet");
+  const userDataSnap = await db.ref("users/" + currentUser).once("value");
+  const internetLeft = userDataSnap.val().internet || 0;
+  if (internetLeft <= 0) return alert("You need internet to use Facenet");
 
-    // Upload file to Firebase Storage
-    const file = fileInput.files[0];
-    const storageRef = storage.ref();
-    const postImageRef = storageRef.child(`posts/${currentUser}_${Date.now()}_${file.name}`);
+  // Read file as Base64
+  const file = fileInput.files[0];
+  const base64Image = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = e => reject(e);
+    reader.readAsDataURL(file);
+  });
 
-    try {
-      await postImageRef.put(file);
-      const imageUrl = await postImageRef.getDownloadURL();
-
-      const postData = {
-        user: currentUser,
-        title: title,
-        imageUrl: imageUrl,
-        timestamp: Date.now(),
-      };
-
-      const newPostKey = db.ref("posts").push().key;
-      const updates = {};
-      updates["posts/" + newPostKey] = postData;
-      await db.ref().update(updates);
-
-      alert("Posted!");
-      document.getElementById("postTitle").value = "";
-      fileInput.value = "";
-      loadPosts(); // Reload posts after a new one is submitted
-    } catch (error) {
-      alert("Error uploading image: " + error.message);
+  // Find an empty post slot (0 to 49)
+  const postsSnap = await db.ref("posts").once("value");
+  const posts = postsSnap.val() || {};
+  let emptySlot = null;
+  for (let i = 0; i < 50; i++) {
+    if (!posts[i]) {
+      emptySlot = i;
+      break;
     }
   }
+  if (emptySlot === null) return alert("No empty post slots available, please reset later.");
 
-  function loadPosts() {
-    db.ref("posts").orderByChild("timestamp").limitToLast(50).once("value").then(snap => {
-      const postsDiv = document.getElementById("posts");
-      postsDiv.innerHTML = "";
-      const posts = snap.val();
-      if (!posts) {
-        postsDiv.innerHTML = "<p>No posts yet</p>";
-        return;
-      }
+  // Create post data with Base64 image
+  const postData = {
+    user: currentUser,
+    title: title,
+    imageBase64: base64Image,
+    timestamp: Date.now(),
+  };
 
-      // Sort posts ascending by timestamp
-      const sorted = Object.values(posts).sort((a,b) => b.timestamp - a.timestamp); // Sort in descending order for latest first
+  // Save post in the empty slot
+  await db.ref(`posts/${emptySlot}`).set(postData);
 
-      sorted.forEach(p => {
-        const div = document.createElement("div");
-        div.className = "post";
-        const imgHTML = p.imageUrl ? `<img src="${p.imageUrl}" alt="Post image" />` : "";
-        div.innerHTML = `<strong>${p.user.toUpperCase()} says:</strong> ${p.title}<br/>${imgHTML}`;
-        postsDiv.appendChild(div);
-      });
-    });
-  }
-
+  alert("Posted!");
+  document.getElementById("postTitle").value = "";
+  fileInput.value = "";
+  loadPosts();
+}
   function resetFacenet() {
     if (currentUser.toLowerCase() !== "zezo") return alert("Unauthorized to reset Facenet.");
     if (!confirm("Are you sure you want to delete all Facenet posts? This cannot be undone.")) return;
 
     db.ref("posts").remove().then(() => {
       alert("All Facenet posts have been deleted.");
-      loadPosts(); // Reload to show no posts
-    }).catch(error => {
-      alert("Error deleting posts: " + error.message);
-    });
+      function loadPosts() {
+  db.ref("posts").once("value").then(snap => {
+    const postsDiv = document.getElementById("posts");
+    postsDiv.innerHTML = "";
+    const posts = snap.val() || {};
+
+    for (let i = 0; i < 50; i++) {
+      const p = posts[i];
+      if (!p) continue; // Skip empty slots
+
+      const div = document.createElement("div");
+      div.className = "post";
+
+      const imgHTML = p.imageBase64 ? `<img src="${p.imageBase64}" alt="Post image" />` : "";
+      div.innerHTML = `<strong>${p.user.toUpperCase()} says:</strong> ${p.title}<br/>${imgHTML}`;
+      postsDiv.appendChild(div);
+    }
+  });
+}
+function resetPosts() {
+  if (currentUser !== "zezo") return alert("Unauthorized");
+  if (!confirm("Are you sure you want to reset all posts?")) return;
+  let updates = {};
+  for (let i = 0; i < 50; i++) {
+    updates[`posts/${i}`] = null;
   }
+  db.ref().update(updates).then(() => {
+    alert("All posts reset!");
+    loadPosts();
+  });
+}
+<button onclick="resetPosts()" style="background:#e53e3e; color:white;">Reset Facenet Posts (Admin)</button>
 
   // Internet drain function - 150MB per minute
   function startInternetDrain() {
