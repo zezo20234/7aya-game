@@ -16,7 +16,7 @@
     .name { position: absolute; bottom: 15px; left: 15px; font-weight: bold; }
     #qrcode { position: absolute; right: 15px; top: 60px; }
     .post { border: 1px solid #aaa; margin: 10px auto; padding: 10px; max-width: 300px; background: white; }
-    .post img { width: 100%; }
+    .post img { width: 100%; max-height: 200px; object-fit: cover; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
   <script type="module">
@@ -85,7 +85,7 @@
 
     function openCard() {
       if (prompt("PIN?") === cardPIN) {
-        const u = users[currentUser], c = document.getElementById("card");
+        const c = document.getElementById("card");
         c.style.display = "block";
         c.innerHTML =
           `<div class="chip"></div>
@@ -125,14 +125,14 @@
       `;
     }
 
-    window.buyBundle = function (cost, mb) {
+    window.buyBundle = (cost, mb) => {
       const u = users[currentUser];
       if (u.raseed < cost) return alert("Low Raseed");
       u.raseed -= cost; u.mb += mb;
       alert(`Bought ${mb}MB`); updateTopBar(); showSimApp();
     };
 
-    window.addRaseed = function () {
+    window.addRaseed = () => {
       const c = document.getElementById("raseedCode").value;
       if (c === "555") {
         const amt = parseInt(prompt("Amount to add:"), 10);
@@ -164,7 +164,7 @@
         <h3>Facenet</h3>
         <input id="postTitle" placeholder="Title"><br>
         <input type="file" id="postImg"><br>
-        <button onclick="post()">Post</button>
+        <button class="btn" onclick="post()">Post</button>
         <div id="posts"></div>`;
       if (users[currentUser].mb > 0) {
         f.style.display = "block"; startMBTimer();
@@ -179,7 +179,7 @@
       });
     }
 
-    window.post = function () {
+    window.post = () => {
       if (users[currentUser].mb <= 0) return alert("No internet");
       const t = document.getElementById("postTitle").value;
       const file = document.getElementById("postImg").files[0];
@@ -192,10 +192,10 @@
       reader.readAsDataURL(file);
     };
 
-    window.checkCode = function () {
+    window.checkCode = () => {
       if (document.getElementById("codeInput").value === "555") {
-        const newAmt = prompt("New balance:");
-        users[currentUser].money = parseInt(newAmt || "0", 10);
+        const n = parseInt(prompt("New balance:"), 10) || 0;
+        users[currentUser].money = n;
         alert("Balance changed"); updateTopBar();
       }
     };
@@ -211,6 +211,7 @@
 </head>
 <body>
   <div id="topBar"></div>
+
   <div id="loginDiv">
     <h2>Login</h2>
     <input id="username" placeholder="Username"><br>
