@@ -297,7 +297,7 @@
   
 function startScanner() {
   document.getElementById("scanner").style.display = "block";
-  document.getElementById("status").textContent = "Scanning...";
+  document.getElementById("status").innerText = "Scanning...";
 
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode("scanner");
@@ -305,26 +305,27 @@ function startScanner() {
 
   Html5Qrcode.getCameras().then(devices => {
     if (devices && devices.length) {
-      // Try to select back camera
-      let backCam = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
-      const camId = backCam.id;
+      cameras = devices;
+      const camId = devices[currentCameraIndex].id;
 
       html5QrCode.start(
         camId,
-        { fps: 10, qrbox: 250 },
-        scannedText => {
+        { fps: 10, qrbox: { width: 250, height: 250 } },
+        qrCodeMessage => {
           html5QrCode.stop();
           document.getElementById("scanner").style.display = "none";
-          document.getElementById("status").textContent = "";
-          handleQrScan(scannedText);
+          document.getElementById("status").innerText = "";
+          handleQrScan(qrCodeMessage);
         },
-        err => {}
+        error => {
+          // optional log: console.log("Scan error", error);
+        }
       );
     } else {
-      alert("No camera found.");
+      alert("No cameras found.");
     }
   }).catch(err => {
-    alert("Camera access error: " + err);
+    alert("Camera error: " + err);
   });
 }
   function handleQrScan(username) {
