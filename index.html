@@ -83,21 +83,6 @@
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
   <button onclick="addRaseed()">Add Raseed</button>
 
-  <hr />
-  <h3>🌐 Facenet</h3>
-  <input id="postTitle" placeholder="Post Title" autocomplete="off"/>
-  <input id="postImage" type="file" accept="image/*" />
-  <button onclick="makePost()">Post</button>
-  <div id="facenetPosts"></div>
-  <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
-
-  <hr />
-  <h3>🔍 QR Code Scanner (Send Money)</h3>
-  <button onclick="startScanner()">Scan QR to Send Money</button>
-  <div id="scanner" style="width: 300px; display: none; margin-top: 10px;"></div>
-  <div id="status" style="margin-top: 5px; color: yellow;"></div>
-</div>
-
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
@@ -303,82 +288,7 @@
     }, 60000);
   }
 
-  // QR Scanner logic
-  let html5QrCode = null;
-  
-  function startScanner() {
-    document.getElementById("scanner").style.display = "block";
-    document.getElementById("status").innerText = "Scanning...";
 
-    if (!html5QrCode) {
-      html5QrCode = new Html5Qrcode("scanner");
-    }
-
-    Html5Qrcode.getCameras().then(devices => {
-      if (devices && devices.length) {
-        let cameraId = null;
-        // Try to find an environment-facing (back) camera
-        const backCamera = devices.find(device => device.facingMode === 'environment');
-
-        if (backCamera) {
-          cameraId = backCamera.id;
-          console.log("Using back camera:", backCamera.label);
-          document.getElementById("status").innerText = "Scanning (Back Camera)...";
-        } else {
-          // Fallback to the first available camera if no explicit back camera is found
-          cameraId = devices[0].id;
-          console.log("No explicit back camera found, using default:", devices[0].label);
-          document.getElementById("status").innerText = "Scanning (Default Camera)...";
-        }
-
-        html5QrCode.start(
-          cameraId, // Use the selected camera ID
-          { fps: 10, qrbox: { width: 250, height: 250 } },
-          qrCodeMessage => {
-            html5QrCode.stop();
-            document.getElementById("scanner").style.display = "none";
-            document.getElementById("status").innerText = "";
-            handleQrScan(qrCodeMessage);
-          },
-          error => {
-            console.error("QR Code Scan Error:", error);
-            document.getElementById("status").innerText = "Scan Error: " + error;
-          }
-        ).catch(err => {
-          console.error("Failed to start scanner:", err);
-          document.getElementById("status").innerText = "Error starting scanner: " + err;
-          alert("Error starting scanner: " + err);
-        });
-      } else {
-        alert("No cameras found.");
-        document.getElementById("status").innerText = "No cameras found.";
-      }
-    }).catch(err => {
-      console.error("Camera detection error: ", err);
-      alert("Camera error: " + err);
-      document.getElementById("status").innerText = "Camera error: " + err;
-    });
-  }
-
-  function handleQrScan(username) {
-    if (username === currentUser) return alert("You can't send money to yourself!");
-    db.ref("users/" + username).once("value").then(snap => {
-      if (!snap.exists()) return alert("User not found");
-      const amount = prompt("Enter amount to send to " + username + ":");
-      const amt = parseInt(amount);
-      if (isNaN(amt) || amt <= 0) return alert("Invalid amount");
-      db.ref("users/" + currentUser).once("value").then(snap => {
-        const data = snap.val();
-        if ((data.money || 0) < amt) return alert("Not enough money");
-        db.ref("users/" + currentUser + "/money").set(data.money - amt);
-        db.ref("users/" + username + "/money").once("value").then(targetSnap => {
-          const current = targetSnap.val() || 0;
-          db.ref("users/" + username + "/money").set(current + amt);
-          alert("Sent " + amt + " EGP to " + username);
-        });
-      });
-    });
-  }
 
   window.onload = function() {
     const savedUser = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
