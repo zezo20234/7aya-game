@@ -134,6 +134,19 @@
       document.getElementById("phone").textContent = data.phone || "None";
       document.getElementById("raseed").textContent = data.raseed ?? 0;
       document.getElementById("internet").textContent = data.internet ?? 0;
+        // Toggle Facenet visibility based on internet
+  if (data.internet > 0) {
+    document.getElementById("facenetPosts").style.display = "block";
+    document.getElementById("postTitle").style.display = "inline";
+    document.getElementById("postImage").style.display = "inline";
+    document.querySelector("button[onclick='makePost()']").style.display = "inline";
+  } else {
+    document.getElementById("facenetPosts").style.display = "none";
+    document.getElementById("postTitle").style.display = "none";
+    document.getElementById("postImage").style.display = "none";
+    document.querySelector("button[onclick='makePost()']").style.display = "none";
+  }
+
       if (data.company) {
         document.getElementById("simApp").classList.remove("hidden");
         document.getElementById("simCompany").textContent = data.company;
