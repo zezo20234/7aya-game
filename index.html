@@ -459,6 +459,79 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
   <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
   <!-- Apple Pay Send Sound -->
 <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
+<hr />
+<h3>🛰️ Passport Scanner (Admin)</h3>
+<button onclick="startPassportScanner()">Scan Passport</button>
+<div id="passportScannerBox" style="margin-top: 10px;">
+  <div id="passportScanner" style="width: 280px; display: none;"></div>
+  <div id="passportScanStatus" style="color: yellow;"></div>
+</div>
+
+<!-- QR Code generator for passport (if not already loaded) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+  // ✅ Show passport card
+  function showPassport() {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if (!data || !data.name || !data.country || !data.photo) return;
+
+      document.getElementById("passportPhoto").src = data.photo;
+      document.getElementById("passportName").textContent = data.name;
+      document.getElementById("passportCountry").textContent = data.country;
+
+      QRCode.toCanvas(document.getElementById("passportQR"), currentUser);
+      document.getElementById("passport").classList.remove("hidden");
+    });
+  }
+
+  // ✅ Passport QR scanner (admin tool)
+  let passportQrScanner = null;
+
+  function startPassportScanner() {
+    document.getElementById("passportScanner").style.display = "block";
+    document.getElementById("passportScanStatus").innerText = "Starting scanner...";
+
+    if (!passportQrScanner) {
+      passportQrScanner = new Html5Qrcode("passportScanner");
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+      const cam = devices[0];
+      passportQrScanner.start(
+        cam.id,
+        { fps: 10, qrbox: 200 },
+        passportQrDetected,
+        error => {
+          document.getElementById("passportScanStatus").innerText = "Scanning error.";
+          console.warn(error);
+        }
+      ).then(() => {
+        document.getElementById("passportScanStatus").innerText = "Scan a passport QR...";
+      });
+    }).catch(err => {
+      alert("Camera error: " + err);
+    });
+  }
+
+  function passportQrDetected(qrData) {
+    const userId = qrData.trim().toLowerCase();
+
+    passportQrScanner.stop().then(() => {
+      document.getElementById("passportScanner").style.display = "none";
+      document.getElementById("passportScanStatus").innerText = "";
+
+      const newCountry = prompt(`Change country for ${userId} to:`);
+      if (!newCountry) return;
+
+      db.ref("users/" + userId + "/country").set(newCountry).then(() => {
+        alert(`✅ ${userId}'s passport updated to ${newCountry}`);
+      });
+    });
+  }
+</script>
+
 
 </body>
 </html>
