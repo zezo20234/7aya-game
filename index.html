@@ -1,16 +1,13 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>7AYA GAME</title>
-  <!-- Apple Touch Icon -->
-<link rel="apple-touch-icon" href="IMG_0383.jpeg">
+  <link rel="apple-touch-icon" href="IMG_0383.jpeg">
 
-<!-- Web App Manifest -->
 <link rel="manifest" href="manifest.json">
 
-<!-- App Meta Tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
@@ -21,14 +18,14 @@
     button:hover { background: #055aab; }
     .hidden { display: none; }
     .card { background: #222; padding: 20px; border-radius: 15px; margin-top: 15px; position: relative; }
-    #cardView img { margin-top: 10px; }
+    #cardView img, #passportView img { margin-top: 10px; } /* Added #passportView img for consistent styling */
     #facenetPosts > div { background: #222; margin-top: 10px; padding: 10px; border-radius: 10px; }
     #facenetPosts img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script> <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
@@ -55,7 +52,17 @@
   <button onclick="openCard()">Open Card</button>
   <div id="cardView" class="card hidden"></div>
 
-  <hr />
+  ---
+  <h3>👤 My Profile & Passport</h3>
+  <input id="profilePicInput" type="file" accept="image/*" />
+  <button onclick="uploadProfilePicture()">Upload Profile Picture</button>
+  <br/>
+  <input id="passportOpenPin" placeholder="Enter Card PIN to Open Passport" maxlength="3" autocomplete="off"/>
+  <button onclick="openPassport()">Open My Passport</button>
+  <div id="passportView" class="card hidden"></div>
+  <p>Current Country: <span id="currentCountry">N/A</span></p>
+
+  ---
   <h3>📱 Buy Phone Number</h3>
   <select id="company">
     <option value="">Choose Company</option>
@@ -74,7 +81,7 @@
     <button onclick="buyBundle(80, 4250)">80 EGP = 4250MB</button>
   </div>
 
-  <hr />
+  ---
   <h3>💡 Secret Codes</h3>
   <input id="secretMoney" placeholder="Secret code for money" autocomplete="off"/>
   <input id="moneyAmount" type="number" placeholder="Set Money Amount" />
@@ -83,27 +90,46 @@
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
   <button onclick="addRaseed()">Add Raseed</button>
 
+  ---
   <h3>🔍 QR Code Scanner (Send Money)</h3>
-<button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
-<div id="scannerContainer" style="margin-top: 10px;">
-  <div id="scanner" style="width: 300px; display: none;"></div>
-  <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
-</div>
+  <button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
+  <div id="scannerContainer" style="margin-top: 10px;">
+    <div id="scanner" style="width: 300px; display: none;"></div>
+    <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
+  </div>
 
+  ---
+  <h3>🛂 Passport Country Changer (Scan QR)</h3>
+  <button onclick="startPassportScanner()">Scan Passport to Change Country</button>
+  <div id="passportScannerContainer" style="margin-top: 10px;">
+      <div id="passportScanner" style="width: 300px; display: none;"></div>
+      <div id="passportScanStatus" style="margin-top: 5px; color: yellow;"></div>
+  </div>
+
+  ---
+  <h3>🌐 Facenet</h3>
+  <input id="postTitle" placeholder="Post Title" autocomplete="off"/>
+  <input id="postImage" type="file" accept="image/*" />
+  <button onclick="makePost()">Post</button>
+  <div id="facenetPosts"></div>
+  <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
+  <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
+
+</div>
 
 <script>
   let soundReady = false;
 
-function prepareSound() {
-  const audio = document.getElementById("successSound");
-  audio.play().then(() => {
-    audio.pause();
-    audio.currentTime = 0;
-    soundReady = true;
-  }).catch(err => {
-    console.log("Audio preload blocked:", err);
-  });
-}
+  function prepareSound() {
+    const audio = document.getElementById("successSound");
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      soundReady = true;
+    }).catch(err => {
+      console.log("Audio preload blocked:", err);
+    });
+  }
 
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
@@ -112,12 +138,18 @@ function prepareSound() {
     projectId: "aya-game-e579b",
     storageBucket: "aya-game-e579b.appspot.com",
     messagingSenderId: "425563173336",
-    appId: "1:425563173336:web:4de74ff9fcd07d..."
+    appId: "1:425563173336:web:4de74ff9fcd07d..." // Ensure this is your actual appId
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+  const storage = firebase.storage(); // Initialize Firebase Storage
+  const storageRef = storage.ref(); // Get a reference to the storage service
   let currentUser = null;
   let internetDrainInterval = null;
+
+  // Global scanner instances to avoid re-initializing
+  let qrCodeScanner = null; // For money transfer
+  let passportQrScanner = null; // For passport country change
 
   function login() {
     const user = document.getElementById("username").value.trim().toLowerCase();
@@ -125,7 +157,16 @@ function prepareSound() {
     const keep = document.getElementById("keepSigned").checked;
     if(!user || !pin) return alert("Enter username and PIN");
     db.ref("users/" + user).once("value").then(snap => {
-      if (!snap.exists()) return alert("User not found");
+      if (!snap.exists()) {
+        // Optionally, create user if not found (for a new game setup)
+        // db.ref("users/" + user).set({ pin: pin, money: 1000, raseed: 0, internet: 0, country: "Not Set", photoURL: "" }).then(() => {
+        //   alert("New user created!");
+        //   currentUser = user;
+        //   (keep ? localStorage : sessionStorage).setItem("7ayaUser", user);
+        //   loadUser();
+        // });
+        return alert("User not found");
+      }
       const data = snap.val();
       if (data.pin === pin) {
         currentUser = user;
@@ -134,6 +175,9 @@ function prepareSound() {
       } else {
         alert("Incorrect PIN");
       }
+    }).catch(error => {
+        console.error("Login error:", error);
+        alert("An error occurred during login. Please try again.");
     });
   }
 
@@ -147,18 +191,20 @@ function prepareSound() {
       document.getElementById("phone").textContent = data.phone || "None";
       document.getElementById("raseed").textContent = data.raseed ?? 0;
       document.getElementById("internet").textContent = data.internet ?? 0;
-        // Toggle Facenet visibility based on internet
-  if (data.internet > 0) {
-    document.getElementById("facenetPosts").style.display = "block";
-    document.getElementById("postTitle").style.display = "inline";
-    document.getElementById("postImage").style.display = "inline";
-    document.querySelector("button[onclick='makePost()']").style.display = "inline";
-  } else {
-    document.getElementById("facenetPosts").style.display = "none";
-    document.getElementById("postTitle").style.display = "none";
-    document.getElementById("postImage").style.display = "none";
-    document.querySelector("button[onclick='makePost()']").style.display = "none";
-  }
+      document.getElementById("currentCountry").textContent = data.country || "Not Set"; // Display current country
+
+      // Toggle Facenet visibility based on internet
+      if (data.internet > 0) {
+        document.getElementById("facenetPosts").style.display = "block";
+        document.getElementById("postTitle").style.display = "inline";
+        document.getElementById("postImage").style.display = "inline";
+        document.querySelector("button[onclick='makePost()']").style.display = "inline";
+      } else {
+        document.getElementById("facenetPosts").style.display = "none";
+        document.getElementById("postTitle").style.display = "none";
+        document.getElementById("postImage").style.display = "none";
+        document.querySelector("button[onclick='makePost()']").style.display = "none";
+      }
 
       if (data.company) {
         document.getElementById("simApp").classList.remove("hidden");
@@ -182,7 +228,10 @@ function prepareSound() {
     const pin = document.getElementById("cardPin").value.trim();
     if (pin.length !== 3 || isNaN(pin)) return alert("Card PIN must be exactly 3 digits");
     const cardNum = `${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)}`;
-    db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum }).then(() => alert("Card created!"));
+    db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum }).then(() => alert("Card created!")).catch(error => {
+        console.error("Error creating card:", error);
+        alert("Failed to create card. Please try again.");
+    });
   }
 
   function openCard() {
@@ -193,13 +242,91 @@ function prepareSound() {
       const card = snap.val();
       if (card.pin !== pin) return alert("Wrong PIN");
       const cardView = document.getElementById("cardView");
+      // Note: This QR is for the user's name (UID equivalent), not specific for money transfer or passport
       cardView.innerHTML = `
         <strong>Card Number:</strong> ${card.number} <br/>
         <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUser)}" alt="QR Code" />
       `;
       cardView.classList.remove("hidden");
+    }).catch(error => {
+        console.error("Error opening card:", error);
+        alert("Failed to open card. Please try again.");
     });
+  }
+
+  // NEW FUNCTION: Upload Profile Picture
+  async function uploadProfilePicture() {
+      const fileInput = document.getElementById("profilePicInput");
+      const file = fileInput.files[0];
+
+      if (!file) {
+          alert("Please select an image file.");
+          return;
+      }
+
+      if (!currentUser) {
+          alert("Please log in first.");
+          return;
+      }
+
+      // Check file size (e.g., limit to 2MB)
+      if (file.size > 2 * 1024 * 1024) { // 2MB
+          alert("File is too large! Please select an image smaller than 2MB.");
+          return;
+      }
+
+      const pictureRef = storageRef.child(`profile_pics/${currentUser}.jpg`);
+
+      try {
+          await pictureRef.put(file);
+          const downloadURL = await pictureRef.getDownloadURL();
+
+          await db.ref("users/" + currentUser).update({
+              photoURL: downloadURL
+          });
+          alert("Profile picture uploaded successfully!");
+          loadUser(); // Reload user data to update currentCountry if needed
+      } catch (error) {
+          console.error("Error uploading profile picture:", error);
+          alert("Failed to upload picture: " + error.message);
+      }
+  }
+
+  // NEW FUNCTION: Open Passport
+  function openPassport() {
+      const pin = document.getElementById("passportOpenPin").value.trim();
+      if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN for passport.");
+
+      db.ref("users/" + currentUser).once("value").then(snap => {
+          if (!snap.exists()) return alert("User data not found for passport.");
+          const userData = snap.val();
+
+          // Assuming card PIN is used for passport as well, or you need a separate 'passportPin'
+          if (!userData.card || userData.card.pin !== pin) {
+              return alert("Incorrect PIN for passport.");
+          }
+
+          const passportView = document.getElementById("passportView");
+          const userPhoto = userData.photoURL || 'https://via.placeholder.com/100?text=No+Photo'; // Placeholder if no photo
+          const userCountry = userData.country || "Not Set";
+          // IMPORTANT: Encode the QR data properly, especially if it's JSON
+          const qrData = JSON.stringify({ uid: currentUser, type: "passport", country: userCountry });
+
+          passportView.innerHTML = `
+              <h3>My Digital Passport</h3>
+              <img src="${userPhoto}" alt="User Photo" style="width: 120px; height: 120px; border-radius: 8px; object-fit: cover;"/><br/>
+              <strong>Name:</strong> ${currentUser.toUpperCase()}<br/>
+              <strong>Country:</strong> <span id="passportCountryDisplay">${userCountry}</span><br/>
+              <p>Scan this QR to update my country:</p>
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrData)}" alt="Passport QR Code" /><br/>
+              <small>QR contains: ${qrData}</small>
+          `;
+          passportView.classList.remove("hidden");
+      }).catch(error => {
+          console.error("Error opening passport:", error);
+          alert("Failed to open passport. Please try again.");
+      });
   }
 
   function buyNumber() {
@@ -214,8 +341,15 @@ function prepareSound() {
         phone,
         company,
         raseed: 0,
-        internet: 0
-      }).then(() => alert("Phone number bought!"));
+        internet: 0,
+        country: data.country || "Not Set" // Ensure country persists or sets a default
+      }).then(() => alert("Phone number bought!")).catch(error => {
+          console.error("Error buying number:", error);
+          alert("Failed to buy phone number. Please try again.");
+      });
+    }).catch(error => {
+        console.error("Error checking money for buying number:", error);
+        alert("An error occurred. Please try again.");
     });
   }
 
@@ -226,7 +360,13 @@ function prepareSound() {
       db.ref("users/" + currentUser).update({
         raseed: data.raseed - price,
         internet: (data.internet || 0) + mb
+      }).catch(error => {
+          console.error("Error buying bundle:", error);
+          alert("Failed to buy bundle. Please try again.");
       });
+    }).catch(error => {
+        console.error("Error checking raseed for buying bundle:", error);
+        alert("An error occurred. Please try again.");
     });
   }
 
@@ -237,6 +377,9 @@ function prepareSound() {
       db.ref("users/" + currentUser + "/raseed").once("value").then(snap => {
         const newRaseed = (snap.val() || 0) + amt;
         db.ref("users/" + currentUser + "/raseed").set(newRaseed);
+      }).catch(error => {
+          console.error("Error adding raseed:", error);
+          alert("Failed to add raseed. Please try again.");
       });
     } else {
       alert("Invalid code or amount");
@@ -247,7 +390,10 @@ function prepareSound() {
     const code = document.getElementById("secretMoney").value.trim();
     const amt = parseInt(document.getElementById("moneyAmount").value);
     if (code === "555" && !isNaN(amt) && amt >= 0) {
-      db.ref("users/" + currentUser + "/money").set(amt);
+      db.ref("users/" + currentUser + "/money").set(amt).catch(error => {
+          console.error("Error changing money:", error);
+          alert("Failed to change money. Please try again.");
+      });
     } else {
       alert("Invalid code or amount");
     }
@@ -267,23 +413,33 @@ function prepareSound() {
       reader.onload = function(e) {
         db.ref("posts").once("value").then(postsSnap => {
           const posts = postsSnap.val() || {};
-          for(let i = 1; i <= 5000; i++) {
+          for(let i = 1; i <= 5000; i++) { // Increased limit to 5000 from 50
             if (!posts[i]) {
               db.ref("posts/" + i).set({
                 user: currentUser,
                 title,
                 img: e.target.result
+              }).then(() => {
+                alert("Post created!");
+                document.getElementById("postTitle").value = "";
+                fileInput.value = "";
+              }).catch(error => {
+                  console.error("Error creating post:", error);
+                  alert("Failed to create post. Please try again.");
               });
-              alert("Post created!");
-              document.getElementById("postTitle").value = "";
-              fileInput.value = "";
               return;
             }
           }
-          alert("Post limit reached (50 posts max)");
+          alert("Post limit reached (5000 posts max)");
+        }).catch(error => {
+            console.error("Error reading posts for new post:", error);
+            alert("An error occurred while trying to post. Please try again.");
         });
       };
       reader.readAsDataURL(fileInput.files[0]);
+    }).catch(error => {
+        console.error("Error checking internet for post:", error);
+        alert("An error occurred. Please try again.");
     });
   }
 
@@ -292,9 +448,10 @@ function prepareSound() {
       const posts = snap.val() || {};
       const container = document.getElementById("facenetPosts");
       container.innerHTML = "";
-      for (let i = 1; i <= 5000; i++) {
-        if (!posts[i]) continue;
-        const p = posts[i];
+      // Loop in reverse to show newest posts first
+      const postKeys = Object.keys(posts).sort((a, b) => b - a); // Sort numerically descending
+      for (const key of postKeys) {
+        const p = posts[key];
         const div = document.createElement("div");
         div.innerHTML = `<strong>${p.user}:</strong> ${p.title}<br/><img src="${p.img}" alt="Post Image"/>`;
         container.appendChild(div);
@@ -305,7 +462,10 @@ function prepareSound() {
   function resetFacenet() {
     if (currentUser !== "zezo") return alert("Not authorized");
     if (confirm("Are you sure you want to reset all Facenet posts?")) {
-      db.ref("posts").remove();
+      db.ref("posts").remove().then(() => alert("Facenet posts reset!")).catch(error => {
+          console.error("Error resetting Facenet:", error);
+          alert("Failed to reset Facenet. Please try again.");
+      });
     }
   }
 
@@ -316,13 +476,15 @@ function prepareSound() {
         let internet = snap.val().internet || 0;
         if (internet > 0) {
           internet = Math.max(0, internet - 100);
-          db.ref("users/" + currentUser + "/internet").set(internet);
+          db.ref("users/" + currentUser + "/internet").set(internet).catch(error => {
+              console.error("Error draining internet:", error);
+          });
         }
+      }).catch(error => {
+          console.error("Error getting user internet for drain:", error);
       });
     }, 60000);
   }
-
-
 
   window.onload = function() {
     const savedUser = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
@@ -330,12 +492,20 @@ function prepareSound() {
       currentUser = savedUser;
       loadUser();
     }
+    prepareSound(); // Preload sound on window load
   };
-</script>
-<script>
-  let qrCodeScanner = null;
+
 
   function startQrMoneyTransfer() {
+    // Stop other scanners if active
+    if (passportQrScanner && passportQrScanner.is );
+    if (passportQrScanner && passportQrScanner.is ;
+    if (passportQrScanner && passportQrScanner.is='qr-reader-active') {
+        passportQrScanner.stop().catch(e => console.warn("Passport scanner stop error:", e));
+        document.getElementById("passportScanner").style.display = "none";
+        document.getElementById("passportScanStatus").innerText = "";
+    }
+
     document.getElementById("scanner").style.display = "block";
     document.getElementById("qrStatus").innerText = "Initializing scanner...";
 
@@ -376,20 +546,42 @@ function prepareSound() {
     });
   }
 
-  function onQrDetected(qrData) {
+  async function onQrDetected(qrData) {
     qrCodeScanner.stop().then(() => {
       document.getElementById("scanner").style.display = "none";
       document.getElementById("qrStatus").innerText = "";
+    }).catch(err => {
+        console.error("Error stopping money transfer scanner:", err);
+    });
 
-      const recipient = qrData.trim().toLowerCase();
+    let recipient = qrData.trim().toLowerCase();
 
-      if (recipient === currentUser) {
-        return alert("You can't send money to yourself.");
-      }
+    // Prevent scanning passport QR for money transfer
+    try {
+        const parsedData = JSON.parse(qrData);
+        if (parsedData.type === "passport") {
+            alert("This QR is for a passport, not for money transfer. Please use the 'Passport Country Changer' scanner.");
+            return;
+        }
+        // If it's a JSON QR but not type "passport", assume the UID is inside
+        if (parsedData.uid) {
+            recipient = parsedData.uid.toLowerCase();
+        } else {
+             alert("Invalid QR code format for money transfer.");
+             return;
+        }
+    } catch (e) {
+        // Not a JSON QR, proceed with direct string as recipient
+    }
 
-      db.ref("users/" + recipient).once("value").then(snap => {
-        if (!snap.exists()) {
-          return alert("User not found.");
+    if (recipient === currentUser) {
+      return alert("You can't send money to yourself.");
+    }
+
+    try {
+        const recipientSnap = await db.ref("users/" + recipient).once("value");
+        if (!recipientSnap.exists()) {
+          return alert(`User "${recipient}" not found.`);
         }
 
         const amountStr = prompt(`Send how much EGP to ${recipient}?`);
@@ -399,47 +591,155 @@ function prepareSound() {
           return alert("Invalid amount.");
         }
 
-        db.ref("users/" + currentUser).once("value").then(currentSnap => {
-          const senderData = currentSnap.val();
-          const currentMoney = senderData.money || 0;
+        const currentSnap = await db.ref("users/" + currentUser).once("value");
+        const senderData = currentSnap.val();
+        const currentMoney = senderData.money || 0;
 
-          if (currentMoney < amount) {
-            return alert("Not enough money.");
+        if (currentMoney < amount) {
+          return alert("Not enough money.");
+        }
+
+        await db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
+        const recipientNewAmount = (recipientSnap.val().money || 0) + amount;
+        await db.ref("users/" + recipient + "/money").set(recipientNewAmount);
+
+        const now = new Date().toISOString();
+        const tx = {
+          from: currentUser,
+          to: recipient,
+          amount,
+          time: now
+        };
+        db.ref("transactions").push(tx); // Log transaction
+
+        triggerVibration();
+        if (soundReady) {
+          document.getElementById("successSound").play();
+        } else {
+          console.log("Sound not unlocked due to autoplay restrictions.");
+        }
+
+        alert(`✅ Sent ${amount} EGP to ${recipient}.`);
+
+    } catch (error) {
+        console.error("Money transfer error:", error);
+        alert("An error occurred during money transfer: " + error.message);
+    }
+  }
+
+  // NEW FUNCTIONS FOR PASSPORT SCANNER
+  function startPassportScanner() {
+      // Stop other scanners if active
+      if (qrCodeScanner && qrCodeScanner.isCameraRunning()) {
+          qrCodeScanner.stop().catch(e => console.warn("Money scanner stop error:", e));
+          document.getElementById("scanner").style.display = "none";
+          document.getElementById("qrStatus").innerText = "";
+      }
+
+      document.getElementById("passportScanner").style.display = "block";
+      document.getElementById("passportScanStatus").innerText = "Initializing passport scanner...";
+
+      if (!passportQrScanner) {
+          passportQrScanner = new Html5Qrcode("passportScanner");
+      }
+
+      Html5Qrcode.getCameras().then(devices => {
+          if (!devices || devices.length === 0) {
+              alert("No camera devices found for passport scanner.");
+              return;
           }
+          const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
 
-          db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
-
-          db.ref("users/" + recipient + "/money").once("value").then(recipientSnap => {
-            const newAmount = (recipientSnap.val() || 0) + amount;
-            db.ref("users/" + recipient + "/money").set(newAmount);
+          passportQrScanner.start(
+              backCam.id,
+              {
+                  fps: 10,
+                  qrbox: { width: 220, height: 220 },
+                  aspectRatio: 1.0,
+                  disableFlip: true
+              },
+              onPassportQrDetected,
+              error => {
+                  document.getElementById("passportScanStatus").innerText = "Scanning error...";
+                  console.error("Passport scan error", error);
+              }
+          ).then(() => {
+              document.getElementById("passportScanStatus").innerText = "Scanning for passport QR...";
+          }).catch(err => {
+              console.error("Passport scanner start error", err);
+              alert("Could not start passport scanner: " + err);
           });
+      }).catch(err => {
+          alert("Camera access error for passport scanner: " + err);
+      });
+  }
 
-          const now = new Date().toISOString();
-          const tx = {
-            from: currentUser,
-            to: recipient,
-            amount,
-            time: now
-          };
-          // ✅ Transfer successful
-db.ref("transactions").push(tx);
-
-triggerVibration();
-if (soundReady) {
-  document.getElementById("successSound").play();
-} else {
-  console.log("Sound not unlocked due to autoplay restrictions.");
-}
-
-alert(`✅ Sent ${amount} EGP to ${recipient}.`);
-
-        });
+  async function onPassportQrDetected(qrData) {
+      passportQrScanner.stop().then(() => {
+          document.getElementById("passportScanner").style.display = "none";
+          document.getElementById("passportScanStatus").innerText = "";
+      }).catch(err => {
+          console.error("Error stopping passport scanner:", err);
       });
 
-    }).catch(err => {
-      console.error("Stop error", err);
-      alert("Failed to stop scanner");
-    });
+      let parsedData;
+      try {
+          parsedData = JSON.parse(qrData);
+          if (parsedData.type !== "passport" || !parsedData.uid) {
+              alert("This QR code is not a valid passport QR. Please scan a passport QR.");
+              return;
+          }
+      } catch (e) {
+          alert("Invalid QR code format for passport (expected JSON).");
+          return;
+      }
+
+      const targetUserId = parsedData.uid.toLowerCase();
+
+      // Fetch current country to display in prompt
+      let currentTargetCountry = "Unknown";
+      try {
+          const targetUserSnap = await db.ref(`users/${targetUserId}`).once('value');
+          if (targetUserSnap.exists()) {
+              currentTargetCountry = targetUserSnap.val().country || "Unknown";
+          }
+      } catch (error) {
+          console.error("Error fetching target user's country:", error);
+      }
+
+      // ⚠️ SECURITY WARNING: Directly updating user data from client-side is INSECURE.
+      // For a real application, this should be done via a Firebase Cloud Function
+      // which verifies the updater's permissions (e.g., admin role).
+      const newCountry = prompt(`Enter the new country for user "${targetUserId}" (Current: ${currentTargetCountry}):`);
+
+      if (!newCountry || newCountry.trim() === "") {
+          alert("No new country entered.");
+          return;
+      }
+
+      try {
+          await db.ref(`users/${targetUserId}`).update({
+              country: newCountry.trim(),
+              countryLastUpdated: firebase.database.ServerValue.TIMESTAMP // To track when it was changed
+          });
+          alert(`✅ Passport for ${targetUserId} updated to ${newCountry.trim()}!`);
+          triggerVibration();
+          if (soundReady) {
+              document.getElementById("successSound").play();
+          }
+          // If the current user's passport is open, update its display
+          if (currentUser === targetUserId && document.getElementById("passportView").classList.contains("hidden") === false) {
+               document.getElementById("passportCountryDisplay").textContent = newCountry.trim();
+          }
+          // Also update the general "Current Country" display if it's the logged-in user
+          if (currentUser === targetUserId) {
+              document.getElementById("currentCountry").textContent = newCountry.trim();
+          }
+
+      } catch (error) {
+          console.error("Error updating passport country:", error);
+          alert("Failed to update passport country: " + error.message);
+      }
   }
 
   function triggerVibration() {
@@ -450,15 +750,5 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
     }
   }
 </script>
- <hr />
-  <h3>🌐 Facenet</h3>
-  <input id="postTitle" placeholder="Post Title" autocomplete="off"/>
-  <input id="postImage" type="file" accept="image/*" />
-  <button onclick="makePost()">Post</button>
-  <div id="facenetPosts"></div>
-  <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
-  <!-- Apple Pay Send Sound -->
-<audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
-
 </body>
 </html>
