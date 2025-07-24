@@ -267,7 +267,7 @@ function prepareSound() {
       reader.onload = function(e) {
         db.ref("posts").once("value").then(postsSnap => {
           const posts = postsSnap.val() || {};
-          for(let i = 1; i <= 50; i++) {
+          for(let i = 1; i <= 5000; i++) {
             if (!posts[i]) {
               db.ref("posts/" + i).set({
                 user: currentUser,
@@ -292,7 +292,7 @@ function prepareSound() {
       const posts = snap.val() || {};
       const container = document.getElementById("facenetPosts");
       container.innerHTML = "";
-      for (let i = 1; i <= 50; i++) {
+      for (let i = 1; i <= 5000; i++) {
         if (!posts[i]) continue;
         const p = posts[i];
         const div = document.createElement("div");
