@@ -84,7 +84,7 @@
   <button onclick="addRaseed()">Add Raseed</button>
 
   <h3>🔍 QR Code Scanner (Send Money)</h3>
-<button onclick="startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
+<button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
 <div id="scannerContainer" style="margin-top: 10px;">
   <div id="scanner" style="width: 300px; display: none;"></div>
   <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
@@ -92,6 +92,19 @@
 
 
 <script>
+  let soundReady = false;
+
+function prepareSound() {
+  const audio = document.getElementById("successSound");
+  audio.play().then(() => {
+    audio.pause();
+    audio.currentTime = 0;
+    soundReady = true;
+  }).catch(err => {
+    console.log("Audio preload blocked:", err);
+  });
+}
+
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -412,7 +425,12 @@
 db.ref("transactions").push(tx);
 
 triggerVibration();
-document.getElementById("successSound").play(); // 🔊 Play sound
+if (soundReady) {
+  document.getElementById("successSound").play();
+} else {
+  console.log("Sound not unlocked due to autoplay restrictions.");
+}
+
 alert(`✅ Sent ${amount} EGP to ${recipient}.`);
 
         });
