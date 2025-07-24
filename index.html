@@ -459,6 +459,18 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
   <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
   <!-- Apple Pay Send Sound -->
 <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
+<!-- 🛂 Virtual Passport -->
+<hr />
+<h3>🛂 Virtual Passport</h3>
+<button onclick="showPassport()">📖 Open Passport</button>
+<div id="passport" class="card hidden">
+  <img id="passportPhoto" src="" width="100" style="border-radius: 50%;" />
+  <h2 id="passportName"></h2>
+  <p><strong>Country:</strong> <span id="passportCountry"></span></p>
+  <canvas id="passportQR" width="150" height="150"></canvas>
+</div>
+
+<!-- 🛰️ Passport Scanner (Admin) -->
 <hr />
 <h3>🛰️ Passport Scanner (Admin)</h3>
 <button onclick="startPassportScanner()">Scan Passport</button>
@@ -467,11 +479,11 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
   <div id="passportScanStatus" style="color: yellow;"></div>
 </div>
 
-<!-- QR Code generator for passport (if not already loaded) -->
+<!-- QR and QR Scanner Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
 <script>
-  // ✅ Show passport card
   function showPassport() {
     db.ref("users/" + currentUser).once("value").then(snap => {
       const data = snap.val();
@@ -486,7 +498,6 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
     });
   }
 
-  // ✅ Passport QR scanner (admin tool)
   let passportQrScanner = null;
 
   function startPassportScanner() {
@@ -530,9 +541,15 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
       });
     });
   }
-</script>
-<button onclick="showPassport()">📖 Open Passport</button>
 
+  function loadUser() {
+    db.ref("users/" + currentUser).on("value", snap => {
+      const data = snap.val();
+      // Your other updates...
+      showPassport(); // or remove this if you want passport to appear only on button click
+    });
+  }
+</script>
 
 </body>
 </html>
