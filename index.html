@@ -408,11 +408,13 @@
             amount,
             time: now
           };
-          db.ref("transactions").push(tx);
+          // ✅ Transfer successful
+db.ref("transactions").push(tx);
 
-          triggerVibration();
+triggerVibration();
+document.getElementById("successSound").play(); // 🔊 Play sound
+alert(`✅ Sent ${amount} EGP to ${recipient}.`);
 
-          alert(`✅ Sent ${amount} EGP to ${recipient}.`);
         });
       });
 
