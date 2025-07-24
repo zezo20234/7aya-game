@@ -287,20 +287,56 @@ function prepareSound() {
     });
   }
 
-  function loadPosts() {
-    db.ref("posts").on("value", snap => {
-      const posts = snap.val() || {};
-      const container = document.getElementById("facenetPosts");
-      container.innerHTML = "";
-      for (let i = 1; i <= 5000; i++) {
-        if (!posts[i]) continue;
-        const p = posts[i];
-        const div = document.createElement("div");
-        div.innerHTML = `<strong>${p.user}:</strong> ${p.title}<br/><img src="${p.img}" alt="Post Image"/>`;
-        container.appendChild(div);
-      }
-    });
-  }
+function loadPosts() {
+  db.ref("posts").on("value", snap => {
+    const posts = snap.val() || {};
+    const container = document.getElementById("facenetPosts");
+    container.innerHTML = "";
+
+    for (let i = 1; i <= 5000; i++) {
+      if (!posts[i]) continue;
+      const p = posts[i];
+      const div = document.createElement("div");
+
+      div.innerHTML = `
+        <strong>${p.user}:</strong> ${p.title}<br/>
+        <img src="${p.img}" alt="Post Image" /><br/>
+        <button onclick="likePost(${i})">👍 Like</button>
+        <button onclick="dislikePost(${i})">👎 Dislike</button>
+        <span id="likes-${i}">0</span> 👍 | <span id="dislikes-${i}">0</span> 👎<br/>
+        <input id="commentInput-${i}" placeholder="Comment..." />
+        <button onclick="addComment(${i})">💬 Send</button>
+        <div id="comments-${i}" style="margin-top:5px;"></div>
+        <hr/>
+      `;
+
+      container.appendChild(div);
+
+      // ✅ Likes
+      db.ref(`posts/${i}/likes`).on("value", likeSnap => {
+        const likes = likeSnap.val() || {};
+        document.getElementById(`likes-${i}`).textContent = Object.keys(likes).length;
+      });
+
+      // ✅ Dislikes
+      db.ref(`posts/${i}/dislikes`).on("value", dislikeSnap => {
+        const dislikes = dislikeSnap.val() || {};
+        document.getElementById(`dislikes-${i}`).textContent = Object.keys(dislikes).length;
+      });
+
+      // ✅ Comments
+      db.ref(`posts/${i}/comments`).on("value", commentSnap => {
+        const comments = commentSnap.val() || {};
+        const commentDiv = document.getElementById(`comments-${i}`);
+        commentDiv.innerHTML = Object.values(comments)
+          .map(c => `<div><strong>${c.user}:</strong> ${c.text}</div>`)
+          .join("");
+      });
+    }
+  });
+}
+
+
 
   function resetFacenet() {
     if (currentUser !== "zezo") return alert("Not authorized");
@@ -449,6 +485,25 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
       console.log("Vibration not supported.");
     }
   }
+  function likePost(postId) {
+  db.ref(`posts/${postId}/likes/${currentUser}`).set(true);
+}
+
+function dislikePost(postId) {
+  db.ref(`posts/${postId}/dislikes/${currentUser}`).set(true);
+}
+
+function addComment(postId) {
+  const input = document.getElementById(`commentInput-${postId}`);
+  const text = input.value.trim();
+  if (!text) return;
+  db.ref(`posts/${postId}/comments`).push({
+    user: currentUser,
+    text
+  });
+  input.value = "";
+}
+
 </script>
  <hr />
   <h3>🌐 Facenet</h3>
@@ -459,6 +514,7 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
   <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
   <!-- Apple Pay Send Sound -->
 <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
+
 
 </body>
 </html>
