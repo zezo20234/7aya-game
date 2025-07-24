@@ -315,7 +315,7 @@ function prepareSound() {
       db.ref("users/" + currentUser).once("value").then(snap => {
         let internet = snap.val().internet || 0;
         if (internet > 0) {
-          internet = Math.max(0, internet - 150);
+          internet = Math.max(0, internet - 100);
           db.ref("users/" + currentUser + "/internet").set(internet);
         }
       });
