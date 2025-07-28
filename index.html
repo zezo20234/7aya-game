@@ -516,5 +516,85 @@ function addComment(postId) {
 <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
 
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+<script>
+// 1. Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
+    authDomain: "aya-game-e579b.firebaseapp.com",
+    databaseURL: "https://aya-game-e579b-default-rtdb.firebaseio.com",
+    projectId: "aya-game-e579b",
+    storageBucket: "aya-game-e579b.appspot.com",
+    messagingSenderId: "425563173336",
+    appId: "1:425563173336:web:4de74ff9fcd07d..."
+  // ...
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// 2. Set current logged-in user
+const currentUsername = "lilly"; // 🔁 change this per user
+
+// 3. Call function
+function startCall() {
+  const targetPhone = document.getElementById("phoneInput").value;
+
+  db.ref("users").once("value", snapshot => {
+    let found = false;
+
+    snapshot.forEach(userSnap => {
+      const user = userSnap.val();
+      const username = userSnap.key;
+
+      if (user.phone === targetPhone) {
+        found = true;
+
+        // Send incoming call to that user
+        db.ref(`users/${username}/incomingCall`).set({
+          from: currentUsername,
+          number: user.phone
+        });
+
+        // Mark caller's state
+        db.ref(`users/${currentUsername}/onCallWith`).set(username);
+
+        alert("📞 Calling...");
+      }
+    });
+
+    if (!found) {
+      alert("❌ Phone number not found.");
+    }
+  });
+}
+
+// 4. Listen for incoming calls
+db.ref(`users/${currentUsername}/incomingCall`).on("value", snap => {
+  const call = snap.val();
+  if (call && call.from) {
+    document.getElementById("incomingCall").style.display = "block";
+    document.getElementById("callerText").innerText = `📲 Incoming call from ${call.number}`;
+    window.callerUser = call.from;
+  } else {
+    document.getElementById("incomingCall").style.display = "none";
+  }
+});
+
+function acceptCall() {
+  alert("✅ Call accepted");
+  db.ref(`users/${currentUsername}/incomingCall`).remove();
+}
+
+function rejectCall() {
+  alert("❌ Call rejected");
+  db.ref(`users/${currentUsername}/incomingCall`).remove();
+  db.ref(`users/${currentUsername}/onCallWith`).remove();
+  if (window.callerUser) {
+    db.ref(`users/${window.callerUser}/onCallWith`).remove();
+  }
+}
+</script>
+
 </body>
 </html>
