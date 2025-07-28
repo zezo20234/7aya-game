@@ -89,6 +89,17 @@
   <div id="scanner" style="width: 300px; display: none;"></div>
   <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
 </div>
+  <!-- 📞 Call UI -->
+<input id="phoneInput" type="text" placeholder="Enter number to call">
+<button onclick="startCall()">Call</button>
+
+<!-- 🔔 Incoming Call UI -->
+<div id="incomingCall" style="display: none; border: 1px solid black; padding: 10px;">
+  <p id="callerText"></p>
+  <button onclick="acceptCall()">Accept</button>
+  <button onclick="rejectCall()">Reject</button>
+</div>
+
 
 
 <script>
