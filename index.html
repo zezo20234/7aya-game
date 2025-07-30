@@ -6,7 +6,6 @@
   <title>7AYA GAME</title>
   <link rel="apple-touch-icon" href="IMG_0383.jpeg">
   <link rel="manifest" href="manifest.json">
-
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
@@ -16,8 +15,8 @@
     button { background: #0a74da; color: white; cursor: pointer; }
     button:hover { background: #055aab; }
     .hidden { display: none; }
-    .card { background: #222; padding: 20px; border-radius: 15px; margin-top: 15px; position: relative; text-align: center;}
-    .card img { margin-top: 10px; border-radius: 50%; }
+    .card { background: #222; padding: 20px; border-radius: 15px; margin-top: 15px; position: relative;}
+    #cardView img { margin-top: 10px; }
     #facenetPosts > div { background: #222; margin-top: 10px; padding: 10px; border-radius: 10px; }
     #facenetPosts img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
   </style>
@@ -76,24 +75,17 @@
   <button onclick="changeMoney()">Change Money</button><br/>
   <input id="secretRaseed" placeholder="Secret code for raseed" autocomplete="off" />
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
-  <button onclick="addRaseed()">Add Raseed</button>
+  <button onclick="addRaseed()">Add Raseed</button><br/>
+  <!-- Country secret code -->
+  <input id="secretCountry" placeholder="Secret code for country" autocomplete="off"/>
+  <input id="countryName" placeholder="Enter Country Name" autocomplete="off" />
+  <button onclick="changeCountry()">Change Country</button>
 
   <h3>🔍 QR Code Scanner (Send Money)</h3>
   <button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
   <div id="scannerContainer" style="margin-top: 10px;">
     <div id="scanner" style="width: 300px; display: none;"></div>
     <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
-  </div>
-
-  <hr />
-  <h3>📞 Phone Call</h3>
-  <input id="phoneInput" type="text" placeholder="Enter number to call">
-  <button onclick="startCall()">Call</button>
-
-  <div id="incomingCall" style="display: none; border: 1px solid black; padding: 10px;">
-    <p id="callerText"></p>
-    <button onclick="acceptCall()">Accept</button>
-    <button onclick="rejectCall()">Reject</button>
   </div>
 
   <hr />
@@ -122,18 +114,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
-
   let currentUser = null;
-  let soundReady = false;
-
-  function prepareSound() {
-    const audio = document.getElementById("successSound");
-    audio.play().then(() => {
-      audio.pause();
-      audio.currentTime = 0;
-      soundReady = true;
-    }).catch(() => {});
-  }
 
   function login() {
     const user = document.getElementById("username").value.trim().toLowerCase();
@@ -161,9 +142,7 @@
     });
   }
 
-  function logout() {
-    location.reload();
-  }
+  function logout() { location.reload(); }
 
   function makeCard() {
     const pin = document.getElementById("cardPin").value.trim();
@@ -180,29 +159,41 @@
       const card = snap.val();
       if (card.pin !== pin) return alert("Wrong PIN");
       document.getElementById("cardView").innerHTML = `
-        <strong>Card Number:</strong> ${card.number}<br/>
-        <strong>User:</strong> ${currentUser.toUpperCase()}<br/>
-        <label>Country:</label><input value="${card.country || ''}" onchange="saveCountry(this.value)" /><br/>
-        <img src="${card.photo || 'https://via.placeholder.com/100'}" width="100" height="100"/><br/>
-        <input type="file" accept="image/*" onchange="uploadCardPhoto(event)" /><br/>
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${currentUser}" />
+        <strong>Card Number:</strong> ${card.number} <br/>
+        <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
+        <strong>Country:</strong> ${card.country || 'Not set'} <br/>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
       `;
       document.getElementById("cardView").classList.remove("hidden");
     });
   }
 
-  function uploadCardPhoto(event) {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = e => {
-      db.ref("users/" + currentUser + "/card/photo").set(e.target.result);
-      openCard();
-    };
-    reader.readAsDataURL(file);
+  function changeMoney() {
+    const code = document.getElementById("secretMoney").value.trim();
+    const amt = parseInt(document.getElementById("moneyAmount").value);
+    if (code === "555" && !isNaN(amt)) {
+      db.ref("users/" + currentUser + "/money").set(amt);
+    } else alert("Invalid code");
   }
 
-  function saveCountry(value) {
-    db.ref("users/" + currentUser + "/card/country").set(value);
+  function addRaseed() {
+    const code = document.getElementById("secretRaseed").value.trim();
+    const amt = parseInt(document.getElementById("raseedAmount").value);
+    if (code === "555" && !isNaN(amt)) {
+      db.ref("users/" + currentUser + "/raseed").once("value").then(snap => {
+        db.ref("users/" + currentUser + "/raseed").set((snap.val() || 0) + amt);
+      });
+    } else alert("Invalid code");
+  }
+
+  // 🔹 New: Change Country via secret code
+  function changeCountry() {
+    const code = document.getElementById("secretCountry").value.trim();
+    const country = document.getElementById("countryName").value.trim();
+    if (code === "555" && country) {
+      db.ref("users/" + currentUser + "/card/country").set(country);
+      alert("Country updated!");
+    } else alert("Invalid code or empty country name");
   }
 </script>
 </body>
