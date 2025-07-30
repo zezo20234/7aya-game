@@ -44,7 +44,7 @@
 <div id="main" class="hidden">
   <h2 id="welcome"></h2>
 
-  <!-- 🕒 Game clock (24h in 6 real minutes, synced for all users) -->
+  <!-- 🕒 Game clock (24h in ~8–9 real minutes, synced for all users) -->
   <p>🕒 Game Time: <span id="gameTime">--:--:-- --</span></p>
 
   <p>💰 Money: <span id="money"></span> EGP</p>
@@ -137,18 +137,23 @@
     serverOffsetMs = snap.val() || 0;
   });
 
+  // --- Clock speed config ---
+  // Set how many real minutes a FULL 24‑hour virtual day should take.
+  // Use 9 for ~9 minutes (slower), 8.5 for ~8m30s, or 8 for ~8 minutes (faster).
+  const FULL_DAY_REAL_MINUTES = 8.5;
+
   // 🕒 Start the shared/accelerated game clock
-  // 24h (86,400,000 ms) compressed into 6 minutes (360,000 ms) → speed x240
+  // Make 24h take FULL_DAY_REAL_MINUTES in real time
   function startGameClock() {
-    const cycleMs = 6 * 60 * 1000;           // 6 minutes real time
-    const virtualDayMs = 24 * 60 * 60 * 1000; // 24 hours in ms
-    const scale = virtualDayMs / cycleMs;     // 240
+    const cycleMs = FULL_DAY_REAL_MINUTES * 60 * 1000; // real ms per virtual 24h
+    const virtualDayMs = 24 * 60 * 60 * 1000;          // 24 hours in ms
+    const scale = virtualDayMs / cycleMs;
 
     function renderClock() {
       // Use server time for perfect sync across users
       const nowServer = Date.now() + serverOffsetMs;
 
-      // Position within a 6‑minute cycle → map to a 24‑hour "virtual" day
+      // Position within the real-time cycle → map to a 24‑hour "virtual" day
       const virtualMs = (nowServer % cycleMs) * scale;
 
       // Build a Date from the mapped milliseconds (UTC so it’s the same for everyone)
@@ -519,7 +524,7 @@
           const senderData = currentSnap.val();
           const currentMoney = senderData.money || 0;
 
-          if (currentMoney < amount) {
+        if (currentMoney < amount) {
             return alert("Not enough money.");
           }
 
