@@ -39,6 +39,10 @@
   <p>💰 Money: <span id="money"></span> EGP</p>
   <p>📞 Phone: <span id="phone"></span></p>
   <p>📶 Raseed: <span id="raseed"></span> | Internet: <span id="internet"></span> MB</p>
+
+  <!-- GTA-style in-game clock (12h), 1 day = 6 real minutes -->
+  <p>🕒 Time: <span id="gameTime">12:00 AM</span></p>
+
   <button onclick="logout()">Logout</button>
 
   <hr />
@@ -116,6 +120,57 @@
   const db = firebase.database();
   let currentUser = null;
 
+  // ===== GTA-style in-game clock (12h) =====
+  // 1 in-game day lasts 6 minutes (360,000 ms)
+  const GAME_DAY_MS = 6 * 60 * 1000;
+  let clockInterval = null;
+
+  function startGameClock() {
+    if (!currentUser) return;
+
+    const key = `clockStart_${currentUser}`;
+    let start = parseInt(localStorage.getItem(key) || '0', 10);
+    if (!start || Number.isNaN(start)) {
+      start = Date.now();
+      localStorage.setItem(key, String(start));
+    }
+
+    function tick() {
+      const now = Date.now();
+      const elapsed = now - start;
+
+      // position inside current in-game day [0..GAME_DAY_MS)
+      const intoDay = elapsed % GAME_DAY_MS;
+      const dayFraction = intoDay / GAME_DAY_MS; // 0..1
+
+      // Convert to in-game clock minutes (0..1439)
+      const totalMinutes = Math.floor(dayFraction * 24 * 60);
+      let hours24 = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+
+      // 12-hour formatting
+      const ampm = hours24 >= 12 ? "PM" : "AM";
+      let hours12 = hours24 % 12;
+      if (hours12 === 0) hours12 = 12;
+
+      const mm = String(minutes).padStart(2, "0");
+      const t = document.getElementById("gameTime");
+      if (t) t.textContent = `${hours12}:${mm} ${ampm}`;
+    }
+
+    if (clockInterval) clearInterval(clockInterval);
+    tick();
+    clockInterval = setInterval(tick, 500); // smooth updates
+  }
+
+  // Lightweight sound unlock for QR success (no-op if blocked)
+  function prepareSound() {
+    const audio = document.getElementById("successSound");
+    audio.play().then(() => {
+      audio.pause(); audio.currentTime = 0;
+    }).catch(()=>{});
+  }
+
   function login() {
     const user = document.getElementById("username").value.trim().toLowerCase();
     const pin = document.getElementById("pin").value.trim();
@@ -133,20 +188,23 @@
     document.getElementById("login").classList.add("hidden");
     document.getElementById("main").classList.remove("hidden");
     db.ref("users/" + currentUser).on("value", snap => {
-      const data = snap.val();
+      const data = snap.val() || {};
       document.getElementById("welcome").innerText = `Welcome, ${currentUser}`;
       document.getElementById("money").innerText = data.money ?? 0;
       document.getElementById("phone").innerText = data.phone || "None";
       document.getElementById("raseed").innerText = data.raseed ?? 0;
       document.getElementById("internet").innerText = data.internet ?? 0;
     });
+
+    // start the in-game clock after we know who the user is
+    startGameClock();
   }
 
   function logout() { location.reload(); }
 
   function makeCard() {
     const pin = document.getElementById("cardPin").value.trim();
-    if (pin.length !== 3) return alert("3-digit PIN");
+    if (pin.length !== 3 || isNaN(pin)) return alert("3-digit PIN");
     const cardNum = `${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)}`;
     db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum });
     alert("Card created!");
@@ -154,6 +212,7 @@
 
   function openCard() {
     const pin = document.getElementById("openCardPin").value.trim();
+    if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN");
     db.ref("users/" + currentUser + "/card").once("value").then(snap => {
       if (!snap.exists()) return alert("No card");
       const card = snap.val();
@@ -168,9 +227,37 @@
     });
   }
 
+  function buyNumber() {
+    const company = document.getElementById("company").value;
+    if (!company) return alert("Select a telecom company");
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val() || {};
+      if ((data.money || 0) < 250) return alert("Not enough money");
+      const phone = "01" + Math.floor(100000000 + Math.random()*900000000);
+      db.ref("users/" + currentUser).update({
+        money: (data.money || 0) - 250,
+        phone,
+        company,
+        raseed: 0,
+        internet: 0
+      }).then(() => alert("Phone number bought!"));
+    });
+  }
+
+  function buyBundle(price, mb) {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val() || {};
+      if ((data.raseed || 0) < price) return alert("Not enough Raseed");
+      db.ref("users/" + currentUser).update({
+        raseed: (data.raseed || 0) - price,
+        internet: (data.internet || 0) + mb
+      });
+    });
+  }
+
   function changeMoney() {
     const code = document.getElementById("secretMoney").value.trim();
-    const amt = parseInt(document.getElementById("moneyAmount").value);
+    const amt = parseInt(document.getElementById("moneyAmount").value, 10);
     if (code === "555" && !isNaN(amt)) {
       db.ref("users/" + currentUser + "/money").set(amt);
     } else alert("Invalid code");
@@ -178,7 +265,7 @@
 
   function addRaseed() {
     const code = document.getElementById("secretRaseed").value.trim();
-    const amt = parseInt(document.getElementById("raseedAmount").value);
+    const amt = parseInt(document.getElementById("raseedAmount").value, 10);
     if (code === "555" && !isNaN(amt)) {
       db.ref("users/" + currentUser + "/raseed").once("value").then(snap => {
         db.ref("users/" + currentUser + "/raseed").set((snap.val() || 0) + amt);
@@ -186,7 +273,7 @@
     } else alert("Invalid code");
   }
 
-  // 🔹 New: Change Country via secret code
+  // Change Country via secret code
   function changeCountry() {
     const code = document.getElementById("secretCountry").value.trim();
     const country = document.getElementById("countryName").value.trim();
@@ -194,6 +281,52 @@
       db.ref("users/" + currentUser + "/card/country").set(country);
       alert("Country updated!");
     } else alert("Invalid code or empty country name");
+  }
+
+  // ---- Minimal QR placeholder (so button doesn't error if clicked before you add scanner code) ----
+  let qrInitialized = false;
+  function startQrMoneyTransfer() {
+    if (!qrInitialized) {
+      document.getElementById("qrStatus").innerText = "Scanner not configured in this build.";
+      qrInitialized = true;
+    }
+    alert("QR transfer not enabled in this version.");
+  }
+
+  function makePost() {
+    const title = document.getElementById("postTitle").value.trim();
+    const fileInput = document.getElementById("postImage");
+    if (!title) return alert("Enter a title");
+    if (!fileInput.files[0]) return alert("Select an image");
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      db.ref("posts").once("value").then(postsSnap => {
+        const posts = postsSnap.val() || {};
+        for(let i = 1; i <= 5000; i++) {
+          if (!posts[i]) {
+            db.ref("posts/" + i).set({
+              user: currentUser,
+              title,
+              img: e.target.result
+            });
+            alert("Post created!");
+            document.getElementById("postTitle").value = "";
+            fileInput.value = "";
+            return;
+          }
+        }
+        alert("Post limit reached");
+      });
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  }
+
+  function resetFacenet() {
+    if (currentUser !== "zezo") return alert("Not authorized");
+    if (confirm("Are you sure you want to reset all Facenet posts?")) {
+      db.ref("posts").remove();
+    }
   }
 </script>
 </body>
