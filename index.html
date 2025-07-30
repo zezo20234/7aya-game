@@ -1,19 +1,21 @@
-\<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>7AYA GAME</title>
+
   <!-- Apple Touch Icon -->
-<link rel="apple-touch-icon" href="IMG_0383.jpeg">
+  <link rel="apple-touch-icon" href="IMG_0383.jpeg">
 
-<!-- Web App Manifest -->
-<link rel="manifest" href="manifest.json">
+  <!-- Web App Manifest -->
+  <link rel="manifest" href="manifest.json">
 
-<!-- App Meta Tags -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="7AYA-GAME">
+  <!-- App Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
+
   <style>
     body { font-family: sans-serif; background: #111; color: white; padding: 20px; max-width: 600px; margin: auto;}
     input, select, button { margin: 5px; padding: 8px; border-radius: 5px; border: none; }
@@ -26,8 +28,11 @@
     #facenetPosts img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
   </style>
 
+  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- QR -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
@@ -81,29 +86,35 @@
   <button onclick="changeMoney()">Change Money</button><br/>
   <input id="secretRaseed" placeholder="Secret code for raseed" autocomplete="off" />
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
-  <button onclick="addRaseed()">Add Raseed</button>
+  <button onclick="addRaseed()">Add Raseed</button><br/>
+
+  <!-- ADDED: Country change via secret code 555 -->
+  <input id="secretCountry" placeholder="Secret code for country" autocomplete="off"/>
+  <input id="countryName" placeholder="Enter Country Name" autocomplete="off" />
+  <button onclick="changeCountry()">Change Country</button>
 
   <h3>🔍 QR Code Scanner (Send Money)</h3>
-<button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
-<div id="scannerContainer" style="margin-top: 10px;">
-  <div id="scanner" style="width: 300px; display: none;"></div>
-  <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
+  <button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
+  <div id="scannerContainer" style="margin-top: 10px;">
+    <div id="scanner" style="width: 300px; display: none;"></div>
+    <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
+  </div>
 </div>
-
 
 <script>
   let soundReady = false;
 
-function prepareSound() {
-  const audio = document.getElementById("successSound");
-  audio.play().then(() => {
-    audio.pause();
-    audio.currentTime = 0;
-    soundReady = true;
-  }).catch(err => {
-    console.log("Audio preload blocked:", err);
-  });
-}
+  function prepareSound() {
+    const audio = document.getElementById("successSound");
+    if (!audio) return;
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      soundReady = true;
+    }).catch(err => {
+      console.log("Audio preload blocked:", err);
+    });
+  }
 
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
@@ -141,32 +152,29 @@ function prepareSound() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("main").classList.remove("hidden");
     db.ref("users/" + currentUser).on("value", snap => {
-      const data = snap.val();
-      document.getElementById("welcome").textContent = `Welcome, ${currentUser}`;
+      const data = snap.val() || {};
+      document.getElementById("welcome").textContent = Welcome, ${currentUser};
       document.getElementById("money").textContent = data.money ?? 0;
       document.getElementById("phone").textContent = data.phone || "None";
       document.getElementById("raseed").textContent = data.raseed ?? 0;
       document.getElementById("internet").textContent = data.internet ?? 0;
-        // Toggle Facenet visibility based on internet
-  if (data.internet > 0) {
-    document.getElementById("facenetPosts").style.display = "block";
-    document.getElementById("postTitle").style.display = "inline";
-    document.getElementById("postImage").style.display = "inline";
-    document.querySelector("button[onclick='makePost()']").style.display = "inline";
-  } else {
-    document.getElementById("facenetPosts").style.display = "none";
-    document.getElementById("postTitle").style.display = "none";
-    document.getElementById("postImage").style.display = "none";
-    document.querySelector("button[onclick='makePost()']").style.display = "none";
-  }
 
-      if (data.company) {
-        document.getElementById("simApp").classList.remove("hidden");
-        document.getElementById("simCompany").textContent = data.company;
+      // Toggle Facenet visibility based on internet
+      if (data.internet > 0) {
+        document.getElementById("facenetPosts")?.style && (document.getElementById("facenetPosts").style.display = "block");
+        document.getElementById("postTitle")?.style && (document.getElementById("postTitle").style.display = "inline");
+        document.getElementById("postImage")?.style && (document.getElementById("postImage").style.display = "inline");
+        const postBtn = document.querySelector("button[onclick='makePost()']");
+        if (postBtn) postBtn.style.display = "inline";
       } else {
-        document.getElementById("simApp").classList.add("hidden");
+        document.getElementById("facenetPosts")?.style && (document.getElementById("facenetPosts").style.display = "none");
+        document.getElementById("postTitle")?.style && (document.getElementById("postTitle").style.display = "none");
+        document.getElementById("postImage")?.style && (document.getElementById("postImage").style.display = "none");
+        const postBtn = document.querySelector("button[onclick='makePost()']");
+        if (postBtn) postBtn.style.display = "none";
       }
-      document.getElementById("resetBtn").classList.toggle("hidden", currentUser !== "zezo");
+
+      document.getElementById("resetBtn")?.classList?.toggle("hidden", currentUser !== "zezo");
     });
     startInternetDrain();
     loadPosts();
@@ -181,7 +189,7 @@ function prepareSound() {
   function makeCard() {
     const pin = document.getElementById("cardPin").value.trim();
     if (pin.length !== 3 || isNaN(pin)) return alert("Card PIN must be exactly 3 digits");
-    const cardNum = `${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)}`;
+    const cardNum = ${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)};
     db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum }).then(() => alert("Card created!"));
   }
 
@@ -196,6 +204,8 @@ function prepareSound() {
       cardView.innerHTML = `
         <strong>Card Number:</strong> ${card.number} <br/>
         <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
+        <!-- ADDED: Show country on the card -->
+        <strong>Country:</strong> ${card.country || 'Not set'} <br/>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
       `;
       cardView.classList.remove("hidden");
@@ -253,14 +263,49 @@ function prepareSound() {
     }
   }
 
+  // ADDED: change country via secret code 555
+  function changeCountry() {
+    const code = document.getElementById("secretCountry").value.trim();
+    const country = document.getElementById("countryName").value.trim();
+
+    if (code !== "555") {
+      alert("Invalid secret code.");
+      return;
+    }
+    if (!country) {
+      alert("Enter a country name.");
+      return;
+    }
+    // (Optional) tiny validation
+    if (country.length < 2 || country.length > 56) {
+      alert("Country name length looks invalid.");
+      return;
+    }
+
+    db.ref("users/" + currentUser + "/card").once("value").then(snap => {
+      if (!snap.exists()) {
+        alert("No card found. Create a card first.");
+        return;
+      }
+      return db.ref("users/" + currentUser + "/card/country").set(country);
+    }).then(() => {
+      alert("Country updated!");
+      // If the card is visible, refresh it by reopening with the same PIN (optional).
+      // You can also simply rely on the next open to show the new value.
+    }).catch(err => {
+      console.error(err);
+      alert("Failed to update country.");
+    });
+  }
+
   function makePost() {
-    const title = document.getElementById("postTitle").value.trim();
+    const title = document.getElementById("postTitle")?.value?.trim();
     const fileInput = document.getElementById("postImage");
     if (!title) return alert("Enter a title");
-    if (!fileInput.files[0]) return alert("Select an image");
+    if (!fileInput || !fileInput.files[0]) return alert("Select an image");
 
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val();
+      const data = snap.val() || {};
       if ((data.internet || 0) < 1) return alert("You need internet to post");
 
       const reader = new FileReader();
@@ -287,56 +332,55 @@ function prepareSound() {
     });
   }
 
-function loadPosts() {
-  db.ref("posts").on("value", snap => {
-    const posts = snap.val() || {};
-    const container = document.getElementById("facenetPosts");
-    container.innerHTML = "";
+  function loadPosts() {
+    db.ref("posts").on("value", snap => {
+      const posts = snap.val() || {};
+      const container = document.getElementById("facenetPosts");
+      if (!container) return;
+      container.innerHTML = "";
 
-    for (let i = 1; i <= 5000; i++) {
-      if (!posts[i]) continue;
-      const p = posts[i];
-      const div = document.createElement("div");
+      for (let i = 1; i <= 5000; i++) {
+        if (!posts[i]) continue;
+        const p = posts[i];
+        const div = document.createElement("div");
 
-      div.innerHTML = `
-        <strong>${p.user}:</strong> ${p.title}<br/>
-        <img src="${p.img}" alt="Post Image" /><br/>
-        <button onclick="likePost(${i})">👍 Like</button>
-        <button onclick="dislikePost(${i})">👎 Dislike</button>
-        <span id="likes-${i}">0</span> 👍 | <span id="dislikes-${i}">0</span> 👎<br/>
-        <input id="commentInput-${i}" placeholder="Comment..." />
-        <button onclick="addComment(${i})">💬 Send</button>
-        <div id="comments-${i}" style="margin-top:5px;"></div>
-        <hr/>
-      `;
+        div.innerHTML = `
+          <strong>${p.user}:</strong> ${p.title}<br/>
+          <img src="${p.img}" alt="Post Image" /><br/>
+          <button onclick="likePost(${i})">👍 Like</button>
+          <button onclick="dislikePost(${i})">👎 Dislike</button>
+          <span id="likes-${i}">0</span> 👍 | <span id="dislikes-${i}">0</span> 👎<br/>
+          <input id="commentInput-${i}" placeholder="Comment..." />
+          <button onclick="addComment(${i})">💬 Send</button>
+          <div id="comments-${i}" style="margin-top:5px;"></div>
+          <hr/>
+        `;
 
-      container.appendChild(div);
+        container.appendChild(div);
 
-      // ✅ Likes
-      db.ref(`posts/${i}/likes`).on("value", likeSnap => {
-        const likes = likeSnap.val() || {};
-        document.getElementById(`likes-${i}`).textContent = Object.keys(likes).length;
-      });
+        // Likes
+        db.ref(posts/${i}/likes).on("value", likeSnap => {
+          const likes = likeSnap.val() || {};
+          document.getElementById(likes-${i}).textContent = Object.keys(likes).length;
+        });
 
-      // ✅ Dislikes
-      db.ref(`posts/${i}/dislikes`).on("value", dislikeSnap => {
-        const dislikes = dislikeSnap.val() || {};
-        document.getElementById(`dislikes-${i}`).textContent = Object.keys(dislikes).length;
-      });
+        // Dislikes
+        db.ref(posts/${i}/dislikes).on("value", dislikeSnap => {
+          const dislikes = dislikeSnap.val() || {};
+          document.getElementById(dislikes-${i}).textContent = Object.keys(dislikes).length;
+        });
 
-      // ✅ Comments
-      db.ref(`posts/${i}/comments`).on("value", commentSnap => {
-        const comments = commentSnap.val() || {};
-        const commentDiv = document.getElementById(`comments-${i}`);
-        commentDiv.innerHTML = Object.values(comments)
-          .map(c => `<div><strong>${c.user}:</strong> ${c.text}</div>`)
-          .join("");
-      });
-    }
-  });
-}
-
-
+        // Comments
+        db.ref(posts/${i}/comments).on("value", commentSnap => {
+          const comments = commentSnap.val() || {};
+          const commentDiv = document.getElementById(comments-${i});
+          commentDiv.innerHTML = Object.values(comments)
+            .map(c => <div><strong>${c.user}:</strong> ${c.text}</div>)
+            .join("");
+        });
+      }
+    });
+  }
 
   function resetFacenet() {
     if (currentUser !== "zezo") return alert("Not authorized");
@@ -349,16 +393,14 @@ function loadPosts() {
     if (internetDrainInterval) clearInterval(internetDrainInterval);
     internetDrainInterval = setInterval(() => {
       db.ref("users/" + currentUser).once("value").then(snap => {
-        let internet = snap.val().internet || 0;
+        let internet = (snap.val() && snap.val().internet) || 0;
         if (internet > 0) {
           internet = Math.max(0, internet - 100);
           db.ref("users/" + currentUser + "/internet").set(internet);
         }
       });
-    }, 60000);
+    }, 60000); // Drains 100MB every 60 seconds (1 minute)
   }
-
-
 
   window.onload = function() {
     const savedUser = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
@@ -368,6 +410,7 @@ function loadPosts() {
     }
   };
 </script>
+
 <script>
   let qrCodeScanner = null;
 
@@ -428,7 +471,7 @@ function loadPosts() {
           return alert("User not found.");
         }
 
-        const amountStr = prompt(`Send how much EGP to ${recipient}?`);
+        const amountStr = prompt(Send how much EGP to ${recipient}?);
         const amount = parseInt(amountStr);
 
         if (isNaN(amount) || amount <= 0) {
@@ -457,17 +500,17 @@ function loadPosts() {
             amount,
             time: now
           };
-          // ✅ Transfer successful
-db.ref("transactions").push(tx);
+          // Transfer successful
+          db.ref("transactions").push(tx);
 
-triggerVibration();
-if (soundReady) {
-  document.getElementById("successSound").play();
-} else {
-  console.log("Sound not unlocked due to autoplay restrictions.");
-}
+          triggerVibration();
+          if (soundReady) {
+            document.getElementById("successSound").play();
+          } else {
+            console.log("Sound not unlocked due to autoplay restrictions.");
+          }
 
-alert(`✅ Sent ${amount} EGP to ${recipient}.`);
+          alert(✅ Sent ${amount} EGP to ${recipient}.);
 
         });
       });
@@ -480,41 +523,42 @@ alert(`✅ Sent ${amount} EGP to ${recipient}.`);
 
   function triggerVibration() {
     if (navigator.vibrate) {
-      navigator.vibrate(200); // 🔔 iOS + Android compatible
+      navigator.vibrate(200); // iOS + Android compatible
     } else {
       console.log("Vibration not supported.");
     }
   }
+
   function likePost(postId) {
-  db.ref(`posts/${postId}/likes/${currentUser}`).set(true);
-}
+    db.ref(posts/${postId}/likes/${currentUser}).set(true);
+  }
 
-function dislikePost(postId) {
-  db.ref(`posts/${postId}/dislikes/${currentUser}`).set(true);
-}
+  function dislikePost(postId) {
+    db.ref(posts/${postId}/dislikes/${currentUser}).set(true);
+  }
 
-function addComment(postId) {
-  const input = document.getElementById(`commentInput-${postId}`);
-  const text = input.value.trim();
-  if (!text) return;
-  db.ref(`posts/${postId}/comments`).push({
-    user: currentUser,
-    text
-  });
-  input.value = "";
-}
-
+  function addComment(postId) {
+    const input = document.getElementById(commentInput-${postId});
+    const text = input.value.trim();
+    if (!text) return;
+    db.ref(posts/${postId}/comments).push({
+      user: currentUser,
+      text
+    });
+    input.value = "";
+  }
 </script>
- <hr />
-  <h3>🌐 Facenet</h3>
-  <input id="postTitle" placeholder="Post Title" autocomplete="off"/>
-  <input id="postImage" type="file" accept="image/*" />
-  <button onclick="makePost()">Post</button>
-  <div id="facenetPosts"></div>
-  <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
-  <!-- Apple Pay Send Sound -->
-<audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
 
+<hr />
+<h3>🌐 Facenet</h3>
+<input id="postTitle" placeholder="Post Title" autocomplete="off"/>
+<input id="postImage" type="file" accept="image/*" />
+<button onclick="makePost()">Post</button>
+<div id="facenetPosts"></div>
+<button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
+
+<!-- Apple Pay Send Sound -->
+<audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
 
 </body>
 </html>
