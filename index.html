@@ -44,8 +44,8 @@
 <div id="main" class="hidden">
   <h2 id="welcome"></h2>
 
-  <!-- 🕒 Game clock (24h in 6 real minutes) -->
-  <p>🕒 Game Time: <span id="gameTime">--:--:--</span></p>
+  <!-- 🕒 Game clock (24h in 6 real minutes, synced for all users) -->
+  <p>🕒 Game Time: <span id="gameTime">--:--:-- --</span></p>
 
   <p>💰 Money: <span id="money"></span> EGP</p>
   <p>📞 Phone: <span id="phone"></span></p>
@@ -87,7 +87,7 @@
   <input id="secretRaseed" placeholder="Secret code for raseed" autocomplete="off" />
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
   <button onclick="addRaseed()">Add Raseed</button><br/>
-  <!-- ✨ New: change card country with secret code 555 -->
+  <!-- ✨ Change card country with secret code 555 -->
   <input id="secretCountry" placeholder="Secret code for country" autocomplete="off" />
   <input id="countryName" placeholder="Set Country (e.g., Egypt)" autocomplete="off" />
   <button onclick="changeCountry()">Change Country</button>
@@ -125,27 +125,45 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+
   let currentUser = null;
   let internetDrainInterval = null;
   let gameClockInterval = null;
 
+  // 🔁 Shared server time offset (so all devices are in sync)
+  let serverOffsetMs = 0;
+  // Firebase keeps this updated; it’s the difference between server time and device time.
+  db.ref(".info/serverTimeOffset").on("value", snap => {
+    serverOffsetMs = snap.val() || 0;
+  });
+
   // 🕒 Start the shared/accelerated game clock
   // 24h (86,400,000 ms) compressed into 6 minutes (360,000 ms) → speed x240
   function startGameClock() {
-    const cycleMs = 6 * 60 * 1000;       // 6 minutes real time
+    const cycleMs = 6 * 60 * 1000;           // 6 minutes real time
     const virtualDayMs = 24 * 60 * 60 * 1000; // 24 hours in ms
     const scale = virtualDayMs / cycleMs;     // 240
 
     function renderClock() {
-      const now = Date.now();
-      const virtualMs = (now % cycleMs) * scale; // position within a virtual day
+      // Use server time for perfect sync across users
+      const nowServer = Date.now() + serverOffsetMs;
+
+      // Position within a 6‑minute cycle → map to a 24‑hour "virtual" day
+      const virtualMs = (nowServer % cycleMs) * scale;
+
+      // Build a Date from the mapped milliseconds (UTC so it’s the same for everyone)
       const d = new Date(virtualMs);
-      // Format as HH:MM:SS (24h) in UTC so it's identical for everyone
-      const hh = String(d.getUTCHours()).padStart(2, "0");
-      const mm = String(d.getUTCMinutes()).padStart(2, "0");
-      const ss = String(d.getUTCSeconds()).padStart(2, "0");
+
+      // 12‑hour format with AM/PM
+      const h24 = d.getUTCHours();
+      const m = String(d.getUTCMinutes()).padStart(2, "0");
+      const s = String(d.getUTCSeconds()).padStart(2, "0");
+      let h12 = h24 % 12;
+      if (h12 === 0) h12 = 12;
+      const ampm = h24 >= 12 ? "PM" : "AM";
+
       const el = document.getElementById("gameTime");
-      if (el) el.textContent = `${hh}:${mm}:${ss}`;
+      if (el) el.textContent = `${h12}:${m}:${s} ${ampm}`;
     }
 
     if (gameClockInterval) clearInterval(gameClockInterval);
@@ -294,7 +312,7 @@
     }
   }
 
-  // ✨ New: change card country with secret code 555
+  // ✨ Change card country with secret code 555
   function changeCountry() {
     const code = document.getElementById("secretCountry").value.trim();
     const country = document.getElementById("countryName").value.trim();
@@ -419,7 +437,7 @@
   }
 
   window.onload = function() {
-    // Start the clock immediately so it shows even before login (once main is visible)
+    // Start the clock immediately
     startGameClock();
 
     const savedUser = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
