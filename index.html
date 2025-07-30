@@ -31,7 +31,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <!-- Removed firebase-storage.js on purpose (Realtime Database only) -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
@@ -135,34 +135,22 @@
 
   // 🔁 Shared server time offset (so all devices are in sync)
   let serverOffsetMs = 0;
-  // Firebase keeps this updated; it’s the difference between server time and device time.
   db.ref(".info/serverTimeOffset").on("value", snap => {
     serverOffsetMs = snap.val() || 0;
   });
 
   // --- Clock speed config ---
-  // Set how many real minutes a FULL 24‑hour virtual day should take.
-  // Use 9 for ~9 minutes (slower), 8.5 for ~8m30s, or 8 for ~8 minutes (faster).
   const FULL_DAY_REAL_MINUTES = 8.5;
 
-  // 🕒 Start the shared/accelerated game clock
-  // Make 24h take FULL_DAY_REAL_MINUTES in real time
   function startGameClock() {
-    const cycleMs = FULL_DAY_REAL_MINUTES * 60 * 1000; // real ms per virtual 24h
-    const virtualDayMs = 24 * 60 * 60 * 1000;          // 24 hours in ms
+    const cycleMs = FULL_DAY_REAL_MINUTES * 60 * 1000;
+    const virtualDayMs = 24 * 60 * 60 * 1000;
     const scale = virtualDayMs / cycleMs;
 
     function renderClock() {
-      // Use server time for perfect sync across users
       const nowServer = Date.now() + serverOffsetMs;
-
-      // Position within the real-time cycle → map to a 24‑hour "virtual" day
       const virtualMs = (nowServer % cycleMs) * scale;
-
-      // Build a Date from the mapped milliseconds (UTC so it’s the same for everyone)
       const d = new Date(virtualMs);
-
-      // 12‑hour format with AM/PM
       const h24 = d.getUTCHours();
       const m = String(d.getUTCMinutes()).padStart(2, "0");
       const s = String(d.getUTCSeconds()).padStart(2, "0");
@@ -176,7 +164,7 @@
 
     if (gameClockInterval) clearInterval(gameClockInterval);
     renderClock();
-    gameClockInterval = setInterval(renderClock, 250); // smooth updates
+    gameClockInterval = setInterval(renderClock, 250);
   }
 
   function login() {
@@ -336,6 +324,7 @@
     });
   }
 
+  // --- Facenet: Realtime DB ONLY (small images/videos as data URLs) ---
   function makePost() {
     const title = document.getElementById("postTitle").value.trim();
     const fileInput = document.getElementById("postImage");
@@ -348,20 +337,20 @@
       const data = snap.val() || {};
       if ((data.internet || 0) < 1) return alert("You need internet to post");
 
-      // Basic size guard (e.g., 25 MB). Adjust if you want.
-      const MAX_BYTES = 25 * 1024 * 1024;
-      if (file.size > MAX_BYTES) {
-        return alert("File too large. Max ~25 MB for this app.");
-      }
-
-      // Determine media type
       const isVideo = file.type.startsWith("video/");
       const isImage = file.type.startsWith("image/");
       if (!isVideo && !isImage) {
         return alert("Only images and videos are allowed.");
       }
 
-      // Find next free numeric post id (1..5000) like your current logic
+      // Keep small for RTDB (base64 adds ~33%).
+      const MAX_MB = isVideo ? 6 : 8;
+      const MAX_BYTES = MAX_MB * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        return alert(`File too large for Facenet DB. Max ~${MAX_MB} MB.`);
+      }
+
+      // Find next free numeric post id (1..5000)
       db.ref("posts").once("value").then(postsSnap => {
         const posts = postsSnap.val() || {};
         let postId = null;
@@ -370,41 +359,26 @@
         }
         if (!postId) return alert("Post limit reached (5000 posts max)");
 
-        // Upload to Firebase Storage
-        const storage = firebase.storage();
-        const ext = (file.name.split(".").pop() || "").toLowerCase();
-        const safeExt = ext ? "." + ext : (isVideo ? ".mp4" : ".png");
-        const storagePath = `posts/${postId}${safeExt}`;
-
-        const uploadTask = storage.ref(storagePath).put(file);
-
-        // Optional: quick progress feedback (console)
-        uploadTask.on("state_changed",
-          snap => {
-            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-            console.log(`Uploading ${pct}%`);
-          },
-          err => {
-            console.error(err);
-            alert("Upload failed: " + err.message);
-          },
-          () => {
-            // Done → get public URL
-            uploadTask.snapshot.ref.getDownloadURL().then(url => {
-              // Save post record in DB
-              db.ref("posts/" + postId).set({
-                user: currentUser,
-                title,
-                mediaType: isVideo ? "video" : "image",
-                url
-              }).then(() => {
-                alert("Post created!");
-                document.getElementById("postTitle").value = "";
-                fileInput.value = "";
-              });
-            });
-          }
-        );
+        // Read as Data URL and store directly in RTDB
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result; // "data:video/...;base64,..." or "data:image/...;base64,..."
+          db.ref("posts/" + postId).set({
+            user: currentUser,
+            title,
+            mediaType: isVideo ? "video" : "image",
+            url: dataUrl
+          }).then(() => {
+            alert("Post created!");
+            document.getElementById("postTitle").value = "";
+            fileInput.value = "";
+          }).catch(err => {
+            console.error("DB write error:", err);
+            alert("Failed to save post in DB.");
+          });
+        };
+        reader.onerror = () => alert("Failed to read file.");
+        reader.readAsDataURL(file);
       });
     });
   }
