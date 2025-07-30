@@ -25,10 +25,13 @@
     #cardView img { margin-top: 10px; }
     #facenetPosts > div { background: #222; margin-top: 10px; padding: 10px; border-radius: 10px; }
     #facenetPosts img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
+    /* Make videos look like images */
+    #facenetPosts video { max-width: 100%; border-radius: 8px; margin-top: 5px; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
@@ -336,34 +339,73 @@
   function makePost() {
     const title = document.getElementById("postTitle").value.trim();
     const fileInput = document.getElementById("postImage");
+    const file = fileInput.files[0];
+
     if (!title) return alert("Enter a title");
-    if (!fileInput.files[0]) return alert("Select an image");
+    if (!file)  return alert("Select an image or video");
 
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val();
+      const data = snap.val() || {};
       if ((data.internet || 0) < 1) return alert("You need internet to post");
 
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        db.ref("posts").once("value").then(postsSnap => {
-          const posts = postsSnap.val() || {};
-          for(let i = 1; i <= 5000; i++) {
-            if (!posts[i]) {
-              db.ref("posts/" + i).set({
+      // Basic size guard (e.g., 25 MB). Adjust if you want.
+      const MAX_BYTES = 25 * 1024 * 1024;
+      if (file.size > MAX_BYTES) {
+        return alert("File too large. Max ~25 MB for this app.");
+      }
+
+      // Determine media type
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      if (!isVideo && !isImage) {
+        return alert("Only images and videos are allowed.");
+      }
+
+      // Find next free numeric post id (1..5000) like your current logic
+      db.ref("posts").once("value").then(postsSnap => {
+        const posts = postsSnap.val() || {};
+        let postId = null;
+        for (let i = 1; i <= 5000; i++) {
+          if (!posts[i]) { postId = i; break; }
+        }
+        if (!postId) return alert("Post limit reached (5000 posts max)");
+
+        // Upload to Firebase Storage
+        const storage = firebase.storage();
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        const safeExt = ext ? "." + ext : (isVideo ? ".mp4" : ".png");
+        const storagePath = `posts/${postId}${safeExt}`;
+
+        const uploadTask = storage.ref(storagePath).put(file);
+
+        // Optional: quick progress feedback (console)
+        uploadTask.on("state_changed",
+          snap => {
+            const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+            console.log(`Uploading ${pct}%`);
+          },
+          err => {
+            console.error(err);
+            alert("Upload failed: " + err.message);
+          },
+          () => {
+            // Done → get public URL
+            uploadTask.snapshot.ref.getDownloadURL().then(url => {
+              // Save post record in DB
+              db.ref("posts/" + postId).set({
                 user: currentUser,
                 title,
-                img: e.target.result
+                mediaType: isVideo ? "video" : "image",
+                url
+              }).then(() => {
+                alert("Post created!");
+                document.getElementById("postTitle").value = "";
+                fileInput.value = "";
               });
-              alert("Post created!");
-              document.getElementById("postTitle").value = "";
-              fileInput.value = "";
-              return;
-            }
+            });
           }
-          alert("Post limit reached (5000 posts max)");
-        });
-      };
-      reader.readAsDataURL(fileInput.files[0]);
+        );
+      });
     });
   }
 
@@ -379,9 +421,22 @@
         const p = posts[i];
         const div = document.createElement("div");
 
+        // Build media HTML that supports:
+        // - NEW posts: p.mediaType + p.url
+        // - OLD posts: p.img (base64 image)
+        let mediaHtml = "";
+        if (p.mediaType === "video" && p.url) {
+          mediaHtml = `<video src="${p.url}" controls preload="metadata"></video>`;
+        } else if (p.mediaType === "image" && p.url) {
+          mediaHtml = `<img src="${p.url}" alt="Post Image" />`;
+        } else if (p.img) {
+          // backward compatibility with old image posts
+          mediaHtml = `<img src="${p.img}" alt="Post Image" />`;
+        }
+
         div.innerHTML = `
           <strong>${p.user}:</strong> ${p.title}<br/>
-          <img src="${p.img}" alt="Post Image" /><br/>
+          ${mediaHtml}<br/>
           <button onclick="likePost(${i})">👍 Like</button>
           <button onclick="dislikePost(${i})">👎 Dislike</button>
           <span id="likes-${i}">0</span> 👍 | <span id="dislikes-${i}">0</span> 👎<br/>
@@ -432,7 +487,7 @@
     if (internetDrainInterval) clearInterval(internetDrainInterval);
     internetDrainInterval = setInterval(() => {
       db.ref("users/" + currentUser).once("value").then(snap => {
-        let internet = snap.val().internet || 0;
+        let internet = (snap.val() && snap.val().internet) || 0;
         if (internet > 0) {
           internet = Math.max(0, internet - 100);
           db.ref("users/" + currentUser + "/internet").set(internet);
@@ -524,7 +579,7 @@
           const senderData = currentSnap.val();
           const currentMoney = senderData.money || 0;
 
-        if (currentMoney < amount) {
+          if (currentMoney < amount) {
             return alert("Not enough money.");
           }
 
@@ -553,7 +608,6 @@
           }
 
           alert(`✅ Sent ${amount} EGP to ${recipient}.`);
-
         });
       });
 
@@ -594,7 +648,7 @@
 <hr />
 <h3>🌐 Facenet</h3>
 <input id="postTitle" placeholder="Post Title" autocomplete="off"/>
-<input id="postImage" type="file" accept="image/*" />
+<input id="postImage" type="file" accept="image/*,video/*" />
 <button onclick="makePost()">Post</button>
 <div id="facenetPosts"></div>
 <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
