@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>7AYA GAME</title>
-
   <!-- Apple Touch Icon -->
   <link rel="apple-touch-icon" href="IMG_0383.jpeg">
 
@@ -28,11 +27,8 @@
     #facenetPosts img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
   </style>
 
-  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-  <!-- QR -->
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
@@ -47,6 +43,10 @@
 
 <div id="main" class="hidden">
   <h2 id="welcome"></h2>
+
+  <!-- 🕒 Game clock (24h in 6 real minutes) -->
+  <p>🕒 Game Time: <span id="gameTime">--:--:--</span></p>
+
   <p>💰 Money: <span id="money"></span> EGP</p>
   <p>📞 Phone: <span id="phone"></span></p>
   <p>📶 Raseed: <span id="raseed"></span> | Internet: <span id="internet"></span> MB</p>
@@ -87,10 +87,9 @@
   <input id="secretRaseed" placeholder="Secret code for raseed" autocomplete="off" />
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
   <button onclick="addRaseed()">Add Raseed</button><br/>
-
-  <!-- ADDED: Country change via secret code 555 -->
-  <input id="secretCountry" placeholder="Secret code for country" autocomplete="off"/>
-  <input id="countryName" placeholder="Enter Country Name" autocomplete="off" />
+  <!-- ✨ New: change card country with secret code 555 -->
+  <input id="secretCountry" placeholder="Secret code for country" autocomplete="off" />
+  <input id="countryName" placeholder="Set Country (e.g., Egypt)" autocomplete="off" />
   <button onclick="changeCountry()">Change Country</button>
 
   <h3>🔍 QR Code Scanner (Send Money)</h3>
@@ -106,7 +105,6 @@
 
   function prepareSound() {
     const audio = document.getElementById("successSound");
-    if (!audio) return;
     audio.play().then(() => {
       audio.pause();
       audio.currentTime = 0;
@@ -129,6 +127,31 @@
   const db = firebase.database();
   let currentUser = null;
   let internetDrainInterval = null;
+  let gameClockInterval = null;
+
+  // 🕒 Start the shared/accelerated game clock
+  // 24h (86,400,000 ms) compressed into 6 minutes (360,000 ms) → speed x240
+  function startGameClock() {
+    const cycleMs = 6 * 60 * 1000;       // 6 minutes real time
+    const virtualDayMs = 24 * 60 * 60 * 1000; // 24 hours in ms
+    const scale = virtualDayMs / cycleMs;     // 240
+
+    function renderClock() {
+      const now = Date.now();
+      const virtualMs = (now % cycleMs) * scale; // position within a virtual day
+      const d = new Date(virtualMs);
+      // Format as HH:MM:SS (24h) in UTC so it's identical for everyone
+      const hh = String(d.getUTCHours()).padStart(2, "0");
+      const mm = String(d.getUTCMinutes()).padStart(2, "0");
+      const ss = String(d.getUTCSeconds()).padStart(2, "0");
+      const el = document.getElementById("gameTime");
+      if (el) el.textContent = `${hh}:${mm}:${ss}`;
+    }
+
+    if (gameClockInterval) clearInterval(gameClockInterval);
+    renderClock();
+    gameClockInterval = setInterval(renderClock, 250); // smooth updates
+  }
 
   function login() {
     const user = document.getElementById("username").value.trim().toLowerCase();
@@ -151,9 +174,10 @@
   function loadUser() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("main").classList.remove("hidden");
+
     db.ref("users/" + currentUser).on("value", snap => {
-      const data = snap.val() || {};
-      document.getElementById("welcome").textContent = Welcome, ${currentUser};
+      const data = snap.val();
+      document.getElementById("welcome").textContent = `Welcome, ${currentUser}`;
       document.getElementById("money").textContent = data.money ?? 0;
       document.getElementById("phone").textContent = data.phone || "None";
       document.getElementById("raseed").textContent = data.raseed ?? 0;
@@ -161,22 +185,28 @@
 
       // Toggle Facenet visibility based on internet
       if (data.internet > 0) {
-        document.getElementById("facenetPosts")?.style && (document.getElementById("facenetPosts").style.display = "block");
-        document.getElementById("postTitle")?.style && (document.getElementById("postTitle").style.display = "inline");
-        document.getElementById("postImage")?.style && (document.getElementById("postImage").style.display = "inline");
-        const postBtn = document.querySelector("button[onclick='makePost()']");
-        if (postBtn) postBtn.style.display = "inline";
+        document.getElementById("facenetPosts").style.display = "block";
+        document.getElementById("postTitle").style.display = "inline";
+        document.getElementById("postImage").style.display = "inline";
+        document.querySelector("button[onclick='makePost()']").style.display = "inline";
       } else {
-        document.getElementById("facenetPosts")?.style && (document.getElementById("facenetPosts").style.display = "none");
-        document.getElementById("postTitle")?.style && (document.getElementById("postTitle").style.display = "none");
-        document.getElementById("postImage")?.style && (document.getElementById("postImage").style.display = "none");
-        const postBtn = document.querySelector("button[onclick='makePost()']");
-        if (postBtn) postBtn.style.display = "none";
+        document.getElementById("facenetPosts").style.display = "none";
+        document.getElementById("postTitle").style.display = "none";
+        document.getElementById("postImage").style.display = "none";
+        document.querySelector("button[onclick='makePost()']").style.display = "none";
       }
 
-      document.getElementById("resetBtn")?.classList?.toggle("hidden", currentUser !== "zezo");
+      if (data.company) {
+        document.getElementById("simApp").classList.remove("hidden");
+        document.getElementById("simCompany").textContent = data.company;
+      } else {
+        document.getElementById("simApp").classList.add("hidden");
+      }
+      document.getElementById("resetBtn").classList.toggle("hidden", currentUser !== "zezo");
     });
+
     startInternetDrain();
+    startGameClock();
     loadPosts();
   }
 
@@ -189,8 +219,9 @@
   function makeCard() {
     const pin = document.getElementById("cardPin").value.trim();
     if (pin.length !== 3 || isNaN(pin)) return alert("Card PIN must be exactly 3 digits");
-    const cardNum = ${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)};
-    db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum }).then(() => alert("Card created!"));
+    const cardNum = `${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)}`;
+    db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum })
+      .then(() => alert("Card created!"));
   }
 
   function openCard() {
@@ -200,12 +231,12 @@
       if (!snap.exists()) return alert("No card found");
       const card = snap.val();
       if (card.pin !== pin) return alert("Wrong PIN");
+      const country = card.country || "N/A";
       const cardView = document.getElementById("cardView");
       cardView.innerHTML = `
         <strong>Card Number:</strong> ${card.number} <br/>
         <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
-        <!-- ADDED: Show country on the card -->
-        <strong>Country:</strong> ${card.country || 'Not set'} <br/>
+        <strong>Country:</strong> ${country} <br/>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
       `;
       cardView.classList.remove("hidden");
@@ -263,49 +294,30 @@
     }
   }
 
-  // ADDED: change country via secret code 555
+  // ✨ New: change card country with secret code 555
   function changeCountry() {
     const code = document.getElementById("secretCountry").value.trim();
     const country = document.getElementById("countryName").value.trim();
-
-    if (code !== "555") {
-      alert("Invalid secret code.");
-      return;
+    if (code !== "555" || !country) {
+      return alert("Invalid code or country");
     }
-    if (!country) {
-      alert("Enter a country name.");
-      return;
-    }
-    // (Optional) tiny validation
-    if (country.length < 2 || country.length > 56) {
-      alert("Country name length looks invalid.");
-      return;
-    }
-
     db.ref("users/" + currentUser + "/card").once("value").then(snap => {
       if (!snap.exists()) {
-        alert("No card found. Create a card first.");
-        return;
+        return alert("No card found. Create a card first.");
       }
-      return db.ref("users/" + currentUser + "/card/country").set(country);
-    }).then(() => {
-      alert("Country updated!");
-      // If the card is visible, refresh it by reopening with the same PIN (optional).
-      // You can also simply rely on the next open to show the new value.
-    }).catch(err => {
-      console.error(err);
-      alert("Failed to update country.");
+      db.ref("users/" + currentUser + "/card/country").set(country)
+        .then(() => alert("Country updated!"));
     });
   }
 
   function makePost() {
-    const title = document.getElementById("postTitle")?.value?.trim();
+    const title = document.getElementById("postTitle").value.trim();
     const fileInput = document.getElementById("postImage");
     if (!title) return alert("Enter a title");
-    if (!fileInput || !fileInput.files[0]) return alert("Select an image");
+    if (!fileInput.files[0]) return alert("Select an image");
 
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val() || {};
+      const data = snap.val();
       if ((data.internet || 0) < 1) return alert("You need internet to post");
 
       const reader = new FileReader();
@@ -325,7 +337,7 @@
               return;
             }
           }
-          alert("Post limit reached (50 posts max)");
+          alert("Post limit reached (5000 posts max)");
         });
       };
       reader.readAsDataURL(fileInput.files[0]);
@@ -358,25 +370,29 @@
 
         container.appendChild(div);
 
-        // Likes
-        db.ref(posts/${i}/likes).on("value", likeSnap => {
+        // ✅ Likes
+        db.ref(`posts/${i}/likes`).on("value", likeSnap => {
           const likes = likeSnap.val() || {};
-          document.getElementById(likes-${i}).textContent = Object.keys(likes).length;
+          const el = document.getElementById(`likes-${i}`);
+          if (el) el.textContent = Object.keys(likes).length;
         });
 
-        // Dislikes
-        db.ref(posts/${i}/dislikes).on("value", dislikeSnap => {
+        // ✅ Dislikes
+        db.ref(`posts/${i}/dislikes`).on("value", dislikeSnap => {
           const dislikes = dislikeSnap.val() || {};
-          document.getElementById(dislikes-${i}).textContent = Object.keys(dislikes).length;
+          const el = document.getElementById(`dislikes-${i}`);
+          if (el) el.textContent = Object.keys(dislikes).length;
         });
 
-        // Comments
-        db.ref(posts/${i}/comments).on("value", commentSnap => {
+        // ✅ Comments
+        db.ref(`posts/${i}/comments`).on("value", commentSnap => {
           const comments = commentSnap.val() || {};
-          const commentDiv = document.getElementById(comments-${i});
-          commentDiv.innerHTML = Object.values(comments)
-            .map(c => <div><strong>${c.user}:</strong> ${c.text}</div>)
-            .join("");
+          const commentDiv = document.getElementById(`comments-${i}`);
+          if (commentDiv) {
+            commentDiv.innerHTML = Object.values(comments)
+              .map(c => `<div><strong>${c.user}:</strong> ${c.text}</div>`)
+              .join("");
+          }
         });
       }
     });
@@ -393,16 +409,19 @@
     if (internetDrainInterval) clearInterval(internetDrainInterval);
     internetDrainInterval = setInterval(() => {
       db.ref("users/" + currentUser).once("value").then(snap => {
-        let internet = (snap.val() && snap.val().internet) || 0;
+        let internet = snap.val().internet || 0;
         if (internet > 0) {
           internet = Math.max(0, internet - 100);
           db.ref("users/" + currentUser + "/internet").set(internet);
         }
       });
-    }, 60000); // Drains 100MB every 60 seconds (1 minute)
+    }, 60000);
   }
 
   window.onload = function() {
+    // Start the clock immediately so it shows even before login (once main is visible)
+    startGameClock();
+
     const savedUser = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
     if (savedUser) {
       currentUser = savedUser;
@@ -471,7 +490,7 @@
           return alert("User not found.");
         }
 
-        const amountStr = prompt(Send how much EGP to ${recipient}?);
+        const amountStr = prompt(`Send how much EGP to ${recipient}?`);
         const amount = parseInt(amountStr);
 
         if (isNaN(amount) || amount <= 0) {
@@ -500,7 +519,7 @@
             amount,
             time: now
           };
-          // Transfer successful
+          // ✅ Transfer successful
           db.ref("transactions").push(tx);
 
           triggerVibration();
@@ -510,7 +529,7 @@
             console.log("Sound not unlocked due to autoplay restrictions.");
           }
 
-          alert(✅ Sent ${amount} EGP to ${recipient}.);
+          alert(`✅ Sent ${amount} EGP to ${recipient}.`);
 
         });
       });
@@ -523,25 +542,25 @@
 
   function triggerVibration() {
     if (navigator.vibrate) {
-      navigator.vibrate(200); // iOS + Android compatible
+      navigator.vibrate(200); // 🔔 iOS + Android compatible
     } else {
       console.log("Vibration not supported.");
     }
   }
 
   function likePost(postId) {
-    db.ref(posts/${postId}/likes/${currentUser}).set(true);
+    db.ref(`posts/${postId}/likes/${currentUser}`).set(true);
   }
 
   function dislikePost(postId) {
-    db.ref(posts/${postId}/dislikes/${currentUser}).set(true);
+    db.ref(`posts/${postId}/dislikes/${currentUser}`).set(true);
   }
 
   function addComment(postId) {
-    const input = document.getElementById(commentInput-${postId});
+    const input = document.getElementById(`commentInput-${postId}`);
     const text = input.value.trim();
     if (!text) return;
-    db.ref(posts/${postId}/comments).push({
+    db.ref(`posts/${postId}/comments`).push({
       user: currentUser,
       text
     });
