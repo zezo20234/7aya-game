@@ -5,26 +5,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>7AYA GAME</title>
   <link rel="apple-touch-icon" href="IMG_0383.jpeg">
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
+
+<link rel="manifest" href="manifest.json">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="7AYA-GAME">
   <style>
     body { font-family: sans-serif; background: #111; color: white; padding: 20px; max-width: 600px; margin: auto;}
     input, select, button { margin: 5px; padding: 8px; border-radius: 5px; border: none; }
     button { background: #0a74da; color: white; cursor: pointer; }
     button:hover { background: #055aab; }
     .hidden { display: none; }
-    .card { background: #222; padding: 20px; border-radius: 15px; margin-top: 15px; position: relative;}
+    .card { background: #222; padding: 20px; border-radius: 15px; margin-top: 15px; position: relative; }
     #cardView img { margin-top: 10px; }
     #facenetPosts > div { background: #222; margin-top: 10px; padding: 10px; border-radius: 10px; }
     #facenetPosts img { max-width: 100%; border-radius: 8px; margin-top: 5px; }
   </style>
+
   <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
-<!-- Login -->
 <div id="login">
   <h2>Login</h2>
   <input id="username" placeholder="Username" autocomplete="off" />
@@ -33,16 +35,11 @@
   <button onclick="login()">Login</button>
 </div>
 
-<!-- Main -->
 <div id="main" class="hidden">
   <h2 id="welcome"></h2>
   <p>💰 Money: <span id="money"></span> EGP</p>
   <p>📞 Phone: <span id="phone"></span></p>
   <p>📶 Raseed: <span id="raseed"></span> | Internet: <span id="internet"></span> MB</p>
-
-  <!-- GTA-style in-game clock (12h), 1 day = 6 real minutes -->
-  <p>🕒 Time: <span id="gameTime">12:00 AM</span></p>
-
   <button onclick="logout()">Logout</button>
 
   <hr />
@@ -79,17 +76,23 @@
   <button onclick="changeMoney()">Change Money</button><br/>
   <input id="secretRaseed" placeholder="Secret code for raseed" autocomplete="off" />
   <input id="raseedAmount" type="number" placeholder="Add Raseed Amount" />
-  <button onclick="addRaseed()">Add Raseed</button><br/>
-  <!-- Country secret code -->
-  <input id="secretCountry" placeholder="Secret code for country" autocomplete="off"/>
-  <input id="countryName" placeholder="Enter Country Name" autocomplete="off" />
-  <button onclick="changeCountry()">Change Country</button>
+  <button onclick="addRaseed()">Add Raseed</button>
 
   <h3>🔍 QR Code Scanner (Send Money)</h3>
-  <button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
-  <div id="scannerContainer" style="margin-top: 10px;">
-    <div id="scanner" style="width: 300px; display: none;"></div>
-    <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
+<button onclick="prepareSound(); startQrMoneyTransfer()" id="transferBtn">Transfer Money (Scan QR)</button>
+<div id="scannerContainer" style="margin-top: 10px;">
+  <div id="scanner" style="width: 300px; display: none;"></div>
+  <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
+</div>
+  <hr />
+  <h3>📞 Phone Call</h3>
+  <input id="phoneInput" type="text" placeholder="Enter number to call">
+  <button onclick="startCall()">Call</button>
+
+  <div id="incomingCall" style="display: none; border: 1px solid black; padding: 10px;">
+    <p id="callerText"></p>
+    <button onclick="acceptCall()">Accept</button>
+    <button onclick="rejectCall()">Reject</button>
   </div>
 
   <hr />
@@ -100,13 +103,23 @@
   <div id="facenetPosts"></div>
   <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
   <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
-</div>
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+</div> <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-
 <script>
+  let soundReady = false;
+
+function prepareSound() {
+  const audio = document.getElementById("successSound");
+  audio.play().then(() => {
+    audio.pause();
+    audio.currentTime = 0;
+    soundReady = true;
+  }).catch(err => {
+    console.log("Audio preload blocked:", err);
+  });
+}
+
   const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -119,68 +132,23 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   let currentUser = null;
-
-  // ===== GTA-style in-game clock (12h) =====
-  // 1 in-game day lasts 6 minutes (360,000 ms)
-  const GAME_DAY_MS = 6 * 60 * 1000;
-  let clockInterval = null;
-
-  function startGameClock() {
-    if (!currentUser) return;
-
-    const key = `clockStart_${currentUser}`;
-    let start = parseInt(localStorage.getItem(key) || '0', 10);
-    if (!start || Number.isNaN(start)) {
-      start = Date.now();
-      localStorage.setItem(key, String(start));
-    }
-
-    function tick() {
-      const now = Date.now();
-      const elapsed = now - start;
-
-      // position inside current in-game day [0..GAME_DAY_MS)
-      const intoDay = elapsed % GAME_DAY_MS;
-      const dayFraction = intoDay / GAME_DAY_MS; // 0..1
-
-      // Convert to in-game clock minutes (0..1439)
-      const totalMinutes = Math.floor(dayFraction * 24 * 60);
-      let hours24 = Math.floor(totalMinutes / 60);
-      const minutes = totalMinutes % 60;
-
-      // 12-hour formatting
-      const ampm = hours24 >= 12 ? "PM" : "AM";
-      let hours12 = hours24 % 12;
-      if (hours12 === 0) hours12 = 12;
-
-      const mm = String(minutes).padStart(2, "0");
-      const t = document.getElementById("gameTime");
-      if (t) t.textContent = `${hours12}:${mm} ${ampm}`;
-    }
-
-    if (clockInterval) clearInterval(clockInterval);
-    tick();
-    clockInterval = setInterval(tick, 500); // smooth updates
-  }
-
-  // Lightweight sound unlock for QR success (no-op if blocked)
-  function prepareSound() {
-    const audio = document.getElementById("successSound");
-    audio.play().then(() => {
-      audio.pause(); audio.currentTime = 0;
-    }).catch(()=>{});
-  }
+  let internetDrainInterval = null;
 
   function login() {
     const user = document.getElementById("username").value.trim().toLowerCase();
     const pin = document.getElementById("pin").value.trim();
+    const keep = document.getElementById("keepSigned").checked;
     if(!user || !pin) return alert("Enter username and PIN");
     db.ref("users/" + user).once("value").then(snap => {
       if (!snap.exists()) return alert("User not found");
-      if (snap.val().pin === pin) {
+      const data = snap.val();
+      if (data.pin === pin) {
         currentUser = user;
+        (keep ? localStorage : sessionStorage).setItem("7ayaUser", user);
         loadUser();
-      } else alert("Incorrect PIN");
+      } else {
+        alert("Incorrect PIN");
+      }
     });
   }
 
@@ -188,42 +156,64 @@
     document.getElementById("login").classList.add("hidden");
     document.getElementById("main").classList.remove("hidden");
     db.ref("users/" + currentUser).on("value", snap => {
-      const data = snap.val() || {};
-      document.getElementById("welcome").innerText = `Welcome, ${currentUser}`;
-      document.getElementById("money").innerText = data.money ?? 0;
-      document.getElementById("phone").innerText = data.phone || "None";
-      document.getElementById("raseed").innerText = data.raseed ?? 0;
-      document.getElementById("internet").innerText = data.internet ?? 0;
-    });
-
-    // start the in-game clock after we know who the user is
-    startGameClock();
+      const data = snap.val();
+      document.getElementById("welcome").textContent = `Welcome, ${currentUser}`;
+      document.getElementById("money").textContent = data.money ?? 0;
+      document.getElementById("phone").textContent = data.phone || "None";
+      document.getElementById("raseed").textContent = data.raseed ?? 0;
+      document.getElementById("internet").textContent = data.internet ?? 0;
+        // Toggle Facenet visibility based on internet
+  if (data.internet > 0) {
+    document.getElementById("facenetPosts").style.display = "block";
+    document.getElementById("postTitle").style.display = "inline";
+    document.getElementById("postImage").style.display = "inline";
+    document.querySelector("button[onclick='makePost()']").style.display = "inline";
+  } else {
+    document.getElementById("facenetPosts").style.display = "none";
+    document.getElementById("postTitle").style.display = "none";
+    document.getElementById("postImage").style.display = "none";
+    document.querySelector("button[onclick='makePost()']").style.display = "none";
   }
 
-  function logout() { location.reload(); }
+      if (data.company) {
+        document.getElementById("simApp").classList.remove("hidden");
+        document.getElementById("simCompany").textContent = data.company;
+      } else {
+        document.getElementById("simApp").classList.add("hidden");
+      }
+      document.getElementById("resetBtn").classList.toggle("hidden", currentUser !== "zezo");
+    });
+    startInternetDrain();
+    loadPosts();
+  }
+
+  function logout() {
+    localStorage.removeItem("7ayaUser");
+    sessionStorage.removeItem("7ayaUser");
+    location.reload();
+  }
 
   function makeCard() {
     const pin = document.getElementById("cardPin").value.trim();
-    if (pin.length !== 3 || isNaN(pin)) return alert("3-digit PIN");
+    if (pin.length !== 3 || isNaN(pin)) return alert("Card PIN must be exactly 3 digits");
     const cardNum = `${Math.floor(1000 + Math.random()*9000)} ${Math.floor(1000 + Math.random()*9000)}`;
-    db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum });
-    alert("Card created!");
+    db.ref("users/" + currentUser + "/card").set({ pin, number: cardNum }).then(() => alert("Card created!"));
   }
 
   function openCard() {
     const pin = document.getElementById("openCardPin").value.trim();
     if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN");
     db.ref("users/" + currentUser + "/card").once("value").then(snap => {
-      if (!snap.exists()) return alert("No card");
+      if (!snap.exists()) return alert("No card found");
       const card = snap.val();
       if (card.pin !== pin) return alert("Wrong PIN");
-      document.getElementById("cardView").innerHTML = `
+      const cardView = document.getElementById("cardView");
+      cardView.innerHTML = `
         <strong>Card Number:</strong> ${card.number} <br/>
         <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
-        <strong>Country:</strong> ${card.country || 'Not set'} <br/>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
       `;
-      document.getElementById("cardView").classList.remove("hidden");
+      cardView.classList.remove("hidden");
     });
   }
 
@@ -231,11 +221,11 @@
     const company = document.getElementById("company").value;
     if (!company) return alert("Select a telecom company");
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val() || {};
-      if ((data.money || 0) < 250) return alert("Not enough money");
-      const phone = "01" + Math.floor(100000000 + Math.random()*900000000);
+      const data = snap.val();
+      if (data.money < 250) return alert("Not enough money");
+      const phone = "01" + Math.floor(100000000 + Math.random()*900000000); // Generates a random 01X phone number
       db.ref("users/" + currentUser).update({
-        money: (data.money || 0) - 250,
+        money: data.money - 250,
         phone,
         company,
         raseed: 0,
@@ -246,51 +236,36 @@
 
   function buyBundle(price, mb) {
     db.ref("users/" + currentUser).once("value").then(snap => {
-      const data = snap.val() || {};
-      if ((data.raseed || 0) < price) return alert("Not enough Raseed");
+      const data = snap.val();
+      if (data.raseed < price) return alert("Not enough Raseed");
       db.ref("users/" + currentUser).update({
-        raseed: (data.raseed || 0) - price,
+        raseed: data.raseed - price,
         internet: (data.internet || 0) + mb
       });
     });
   }
 
-  function changeMoney() {
-    const code = document.getElementById("secretMoney").value.trim();
-    const amt = parseInt(document.getElementById("moneyAmount").value, 10);
-    if (code === "555" && !isNaN(amt)) {
-      db.ref("users/" + currentUser + "/money").set(amt);
-    } else alert("Invalid code");
-  }
-
   function addRaseed() {
     const code = document.getElementById("secretRaseed").value.trim();
-    const amt = parseInt(document.getElementById("raseedAmount").value, 10);
-    if (code === "555" && !isNaN(amt)) {
+    const amt = parseInt(document.getElementById("raseedAmount").value);
+    if (code === "555" && !isNaN(amt) && amt > 0) {
       db.ref("users/" + currentUser + "/raseed").once("value").then(snap => {
-        db.ref("users/" + currentUser + "/raseed").set((snap.val() || 0) + amt);
+        const newRaseed = (snap.val() || 0) + amt;
+        db.ref("users/" + currentUser + "/raseed").set(newRaseed);
       });
-    } else alert("Invalid code");
-  }
-
-  // Change Country via secret code
-  function changeCountry() {
-    const code = document.getElementById("secretCountry").value.trim();
-    const country = document.getElementById("countryName").value.trim();
-    if (code === "555" && country) {
-      db.ref("users/" + currentUser + "/card/country").set(country);
-      alert("Country updated!");
-    } else alert("Invalid code or empty country name");
-  }
-
-  // ---- Minimal QR placeholder (so button doesn't error if clicked before you add scanner code) ----
-  let qrInitialized = false;
-  function startQrMoneyTransfer() {
-    if (!qrInitialized) {
-      document.getElementById("qrStatus").innerText = "Scanner not configured in this build.";
-      qrInitialized = true;
+    } else {
+      alert("Invalid code or amount");
     }
-    alert("QR transfer not enabled in this version.");
+  }
+
+  function changeMoney() {
+    const code = document.getElementById("secretMoney").value.trim();
+    const amt = parseInt(document.getElementById("moneyAmount").value);
+    if (code === "555" && !isNaN(amt) && amt >= 0) {
+      db.ref("users/" + currentUser + "/money").set(amt);
+    } else {
+      alert("Invalid code or amount");
+    }
   }
 
   function makePost() {
@@ -299,28 +274,82 @@
     if (!title) return alert("Enter a title");
     if (!fileInput.files[0]) return alert("Select an image");
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      db.ref("posts").once("value").then(postsSnap => {
-        const posts = postsSnap.val() || {};
-        for(let i = 1; i <= 5000; i++) {
-          if (!posts[i]) {
-            db.ref("posts/" + i).set({
-              user: currentUser,
-              title,
-              img: e.target.result
-            });
-            alert("Post created!");
-            document.getElementById("postTitle").value = "";
-            fileInput.value = "";
-            return;
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const data = snap.val();
+      if ((data.internet || 0) < 1) return alert("You need internet to post");
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        db.ref("posts").once("value").then(postsSnap => {
+          const posts = postsSnap.val() || {};
+          for(let i = 1; i <= 5000; i++) {
+            if (!posts[i]) {
+              db.ref("posts/" + i).set({
+                user: currentUser,
+                title,
+                img: e.target.result
+              });
+              alert("Post created!");
+              document.getElementById("postTitle").value = "";
+              fileInput.value = "";
+              return;
+            }
           }
-        }
-        alert("Post limit reached");
-      });
-    };
-    reader.readAsDataURL(fileInput.files[0]);
+          alert("Post limit reached (50 posts max)");
+        });
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    });
   }
+
+function loadPosts() {
+  db.ref("posts").on("value", snap => {
+    const posts = snap.val() || {};
+    const container = document.getElementById("facenetPosts");
+    container.innerHTML = "";
+
+    // Iterate in reverse to show newest posts first
+    const postIds = Object.keys(posts).sort((a, b) => parseInt(b) - parseInt(a));
+
+    postIds.forEach(id => {
+      const p = posts[id];
+      const div = document.createElement("div");
+
+      div.innerHTML = `
+        <strong>${p.user}:</strong> ${p.title}<br/>
+        <img src="${p.img}" alt="Post Image" /><br/>
+        <button onclick="likePost(${id})">👍 Like</button>
+        <button onclick="dislikePost(${id})">👎 Dislike</button>
+        <span id="likes-${id}">0</span> 👍 | <span id="dislikes-${id}">0</span> 👎<br/>
+        <input id="commentInput-${id}" placeholder="Comment..." />
+        <button onclick="addComment(${id})">💬 Send</button>
+        <div id="comments-${id}" style="margin-top:5px;"></div>
+        <hr/>
+      `;
+
+      container.appendChild(div);
+
+      // Listen for updates on likes, dislikes, and comments for each post
+      db.ref(`posts/${id}/likes`).on("value", likeSnap => {
+        const likes = likeSnap.val() || {};
+        document.getElementById(`likes-${id}`).textContent = Object.keys(likes).length;
+      });
+
+      db.ref(`posts/${id}/dislikes`).on("value", dislikeSnap => {
+        const dislikes = dislikeSnap.val() || {};
+        document.getElementById(`dislikes-${id}`).textContent = Object.keys(dislikes).length;
+      });
+
+      db.ref(`posts/${id}/comments`).on("value", commentSnap => {
+        const comments = commentSnap.val() || {};
+        const commentDiv = document.getElementById(`comments-${id}`);
+        commentDiv.innerHTML = Object.values(comments)
+          .map(c => `<div><strong>${c.user}:</strong> ${c.text}</div>`)
+          .join("");
+      });
+    });
+  });
+}
 
   function resetFacenet() {
     if (currentUser !== "zezo") return alert("Not authorized");
@@ -328,6 +357,273 @@
       db.ref("posts").remove();
     }
   }
+
+  function startInternetDrain() {
+    if (internetDrainInterval) clearInterval(internetDrainInterval);
+    internetDrainInterval = setInterval(() => {
+      db.ref("users/" + currentUser).once("value").then(snap => {
+        let internet = snap.val().internet || 0;
+        if (internet > 0) {
+          internet = Math.max(0, internet - 100);
+          db.ref("users/" + currentUser + "/internet").set(internet);
+        }
+      });
+    }, 60000); // Drains 100MB every 60 seconds (1 minute)
+  }
+
+  window.onload = function() {
+    const savedUser = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
+    if (savedUser) {
+      currentUser = savedUser;
+      loadUser();
+    }
+  };
 </script>
+<script>
+  let qrCodeScanner = null;
+
+  function startQrMoneyTransfer() {
+    document.getElementById("scanner").style.display = "block";
+    document.getElementById("qrStatus").innerText = "Initializing scanner...";
+
+    if (!qrCodeScanner) {
+      qrCodeScanner = new Html5Qrcode("scanner");
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (!devices || devices.length === 0) {
+        alert("No camera devices found.");
+        return;
+      }
+
+      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+
+      qrCodeScanner.start(
+        backCam.id,
+        {
+          fps: 30,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0,
+          disableFlip: true
+        },
+        onQrDetected,
+        error => {
+          document.getElementById("qrStatus").innerText = "Scanning error...";
+          console.error("Scan error", error);
+        }
+      ).then(() => {
+        document.getElementById("qrStatus").innerText = "Scanning... Hold QR code still";
+      }).catch(err => {
+        console.error("Start error", err);
+        alert("Could not start scanner: " + err);
+      });
+
+    }).catch(err => {
+      alert("Camera access error: " + err);
+    });
+  }
+
+  function onQrDetected(qrData) {
+    qrCodeScanner.stop().then(() => {
+      document.getElementById("scanner").style.display = "none";
+      document.getElementById("qrStatus").innerText = "";
+
+      const recipient = qrData.trim().toLowerCase();
+
+      if (recipient === currentUser) {
+        return alert("You can't send money to yourself.");
+      }
+
+      db.ref("users/" + recipient).once("value").then(snap => {
+        if (!snap.exists()) {
+          return alert("User not found.");
+        }
+
+        const amountStr = prompt(`Send how much EGP to ${recipient}?`);
+        const amount = parseInt(amountStr);
+
+        if (isNaN(amount) || amount <= 0) {
+          return alert("Invalid amount.");
+        }
+
+        db.ref("users/" + currentUser).once("value").then(currentSnap => {
+          const senderData = currentSnap.val();
+          const currentMoney = senderData.money || 0;
+
+          if (currentMoney < amount) {
+            return alert("Not enough money.");
+          }
+
+          db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
+
+          db.ref("users/" + recipient + "/money").once("value").then(recipientSnap => {
+            const newAmount = (recipientSnap.val() || 0) + amount;
+            db.ref("users/" + recipient + "/money").set(newAmount);
+          });
+
+          const now = new Date().toISOString();
+          const tx = {
+            from: currentUser,
+            to: recipient,
+            amount,
+            time: now
+          };
+          // Transfer successful
+          db.ref("transactions").push(tx);
+
+          triggerVibration();
+          if (soundReady) {
+            document.getElementById("successSound").play();
+          } else {
+            console.log("Sound not unlocked due to autoplay restrictions.");
+          }
+
+          alert(`✅ Sent ${amount} EGP to ${recipient}.`);
+
+        });
+      });
+
+    }).catch(err => {
+      console.error("Stop error", err);
+      alert("Failed to stop scanner");
+    });
+  }
+
+  function triggerVibration() {
+    if (navigator.vibrate) {
+      navigator.vibrate(200); // iOS + Android compatible
+    } else {
+      console.log("Vibration not supported.");
+    }
+  }
+
+  function likePost(postId) {
+    db.ref(`posts/${postId}/likes/${currentUser}`).set(true);
+  }
+
+  function dislikePost(postId) {
+    db.ref(`posts/${postId}/dislikes/${currentUser}`).set(true);
+  }
+
+  function addComment(postId) {
+    const input = document.getElementById(`commentInput-${postId}`);
+    const text = input.value.trim();
+    if (!text) return;
+    db.ref(`posts/${postId}/comments`).push({
+      user: currentUser,
+      text
+    });
+    input.value = "";
+  }
+
+  // --- Call Functionality ---
+
+  // Function to initiate a call
+  function startCall() {
+    const targetPhoneNumber = document.getElementById("phoneInput").value.trim();
+
+    if (!targetPhoneNumber) {
+      alert("Please enter a phone number to call.");
+      return;
+    }
+
+    db.ref("users").once("value").then(snapshot => {
+      let foundRecipient = null;
+
+      // Find the user associated with the target phone number
+      snapshot.forEach(userSnap => {
+        const user = userSnap.val();
+        const username = userSnap.key;
+        if (user.phone === targetPhoneNumber) {
+          foundRecipient = username;
+        }
+      });
+
+      if (foundRecipient && foundRecipient !== currentUser) {
+        // Check if the current user has a phone number
+        db.ref(`users/${currentUser}/phone`).once("value").then(myPhoneSnap => {
+          const myPhoneNumber = myPhoneSnap.val();
+          if (!myPhoneNumber) {
+            alert("You need a phone number to make calls. Buy one from the SIM App.");
+            return;
+          }
+
+          // Set the incoming call data on the recipient's node
+          db.ref(`users/${foundRecipient}/incomingCall`).set({
+            fromUser: currentUser,
+            fromNumber: myPhoneNumber
+          }).then(() => {
+            // Set the calling state for the current user
+            db.ref(`users/${currentUser}/onCallWith`).set(foundRecipient);
+            alert(`📞 Calling ${targetPhoneNumber}...`);
+          }).catch(error => {
+            console.error("Error setting incoming call:", error);
+            alert("Failed to initiate call.");
+          });
+        });
+      } else if (foundRecipient === currentUser) {
+        alert("You cannot call your own number.");
+      }
+      else {
+        alert("❌ Phone number not found.");
+      }
+    }).catch(error => {
+      console.error("Error finding recipient:", error);
+      alert("An error occurred while trying to call.");
+    });
+  }
+
+  // Listen for incoming calls for the current user
+  db.ref(`users/${currentUser}/incomingCall`).on("value", snap => {
+    const call = snap.val();
+    const incomingCallDiv = document.getElementById("incomingCall");
+    const callerText = document.getElementById("callerText");
+
+    if (call && call.fromUser && call.fromNumber) {
+      incomingCallDiv.style.display = "block";
+      callerText.innerText = `📲 Incoming call from ${call.fromNumber} (${call.fromUser})`;
+      window.callerUser = call.fromUser; // Store the caller's username globally for accept/reject
+    } else {
+      incomingCallDiv.style.display = "none";
+      window.callerUser = null; // Clear caller info
+    }
+  });
+
+  function acceptCall() {
+    if (window.callerUser) {
+      alert("✅ Call accepted");
+      // Clear incoming call for the current user
+      db.ref(`users/${currentUser}/incomingCall`).remove();
+      // Set both users to be on a call with each other
+      db.ref(`users/${currentUser}/onCallWith`).set(window.callerUser);
+      db.ref(`users/${window.callerUser}/onCallWith`).set(currentUser);
+      // Optional: Add a call active indicator or UI here
+    }
+  }
+
+  function rejectCall() {
+    alert("❌ Call rejected");
+    // Clear incoming call for the current user
+    db.ref(`users/${currentUser}/incomingCall`).remove();
+    // Clear calling status for both users
+    db.ref(`users/${currentUser}/onCallWith`).remove();
+    if (window.callerUser) {
+      db.ref(`users/${window.callerUser}/onCallWith`).remove();
+    }
+  }
+
+  // Monitor for current user ending a call (e.g., if the other party hangs up)
+  db.ref(`users/${currentUser}/onCallWith`).on("value", snap => {
+    const onCallWith = snap.val();
+    if (!onCallWith && document.getElementById("incomingCall").style.display !== "none") {
+      // If no longer on call and incoming call UI is visible (meaning it was an active call)
+      alert("Call ended.");
+      document.getElementById("incomingCall").style.display = "none";
+      window.callerUser = null;
+    }
+  });
+
+</script>
+
 </body>
 </html>
