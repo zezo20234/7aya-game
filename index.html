@@ -531,83 +531,101 @@ function openCard() {
     }
   };
 
-  function unlockBills() {
-  const secret = document.getElementById("billSecret").value;
-  // You can customize user secret codes below
-  const secretCodes = {
-    bank: "555",
-    zezo: "555",
-    asser: "555",
-    lilly: "555",
-    supermarket: "555",
-    stero: "555",
-    // Add other users and codes here
-  };
+  <!-- 📄 Your Bills Section -->
+<h3>📄 Your Bills</h3>
 
-  if (secretCodes[currentUser] === secret) {
-    document.getElementById("userBillForm").classList.remove("hidden");
-    loadUserBills();
-  } else {
-    alert("❌ Wrong secret code");
-  }
-}
+<!-- Secret Code Entry -->
+<div>
+  <input type="password" id="billSecret" placeholder="Enter Bill Secret Code to Add Bill" />
+  <button onclick="unlockBillForm()">Unlock Add Bill</button>
+</div>
 
-function addUserBill() {
-  const title = document.getElementById("userBillTitle").value.trim();
-  const amount = parseInt(document.getElementById("userBillAmount").value);
-  if (!title || isNaN(amount) || amount <= 0) {
-    alert("Enter valid title and amount");
-    return;
-  }
+<!-- Add Bill Form: Locked by default -->
+<div id="userBillForm" class="hidden" style="margin-top:10px;">
+  <input id="userBillTitle" placeholder="Bill Title" />
+  <input id="userBillAmount" type="number" placeholder="Amount EGP" />
+  <button onclick="addUserBill()">Add Bill</button>
+</div>
 
-  const newBill = {
-    title,
-    amount,
-    paid: false
-  };
+<!-- Bill List: Always visible -->
+<div id="userBillsList" style="margin-top:15px;"></div>
 
-  db.ref(`users/${currentUser}/bills`).push(newBill).then(() => {
-    alert("✅ Bill added");
-    document.getElementById("userBillTitle").value = "";
-    document.getElementById("userBillAmount").value = "";
-    loadUserBills();
+<!-- 🔧 JS Script Section -->
+<script>
+  // Automatically load bills when page loads
+  window.addEventListener("load", () => {
+    if (typeof currentUser !== "undefined" && currentUser) {
+      loadUserBills();
+    }
   });
-}
 
-function loadUserBills() {
-  const list = document.getElementById("userBillsList");
-  list.innerHTML = "<strong>📄 Your Bills:</strong><br/>";
-  db.ref(`users/${currentUser}/bills`).once("value").then(snap => {
-    const bills = snap.val() || {};
-    Object.entries(bills).forEach(([id, bill]) => {
-      const billHtml = bill.paid
-        ? `<div style="color:green;">✅ ${bill.title} (${bill.amount} EGP) - Paid</div>`
-        : `<div>
-            ${bill.title} (${bill.amount} EGP)
-            <button onclick="payUserBill('${id}', ${bill.amount})">Pay</button>
-           </div>`;
-      list.innerHTML += billHtml;
-    });
-  });
-}
+  function unlockBillForm() {
+    const secret = document.getElementById("billSecret").value;
+    if (secret === "555") {
+      document.getElementById("userBillForm").classList.remove("hidden");
+      alert("✅ You can now add bills");
+    } else {
+      alert("❌ Wrong secret code");
+    }
+  }
 
-function payUserBill(billId, amount) {
-  db.ref("users/" + currentUser).once("value").then(snap => {
-    const money = snap.val().money || 0;
-    if (money < amount) {
-      alert("❌ Not enough money");
+  function addUserBill() {
+    const title = document.getElementById("userBillTitle").value.trim();
+    const amount = parseInt(document.getElementById("userBillAmount").value);
+    if (!title || isNaN(amount) || amount <= 0) {
+      alert("Enter valid title and amount");
       return;
     }
 
-    // Deduct money and mark bill as paid
-    db.ref("users/" + currentUser + "/money").set(money - amount);
-    db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true).then(() => {
-      alert("✅ Bill paid");
+    const newBill = {
+      title,
+      amount,
+      paid: false
+    };
+
+    db.ref(`users/${currentUser}/bills`).push(newBill).then(() => {
+      alert("✅ Bill added");
+      document.getElementById("userBillTitle").value = "";
+      document.getElementById("userBillAmount").value = "";
       loadUserBills();
-      updateBalance();
     });
-  });
-}
+  }
+
+  function loadUserBills() {
+    const list = document.getElementById("userBillsList");
+    list.innerHTML = "<strong>📄 Your Bills:</strong><br/>";
+    db.ref(`users/${currentUser}/bills`).once("value").then(snap => {
+      const bills = snap.val() || {};
+      Object.entries(bills).forEach(([id, bill]) => {
+        const billHtml = bill.paid
+          ? `<div style="color:green; margin-top:5px;">✅ ${bill.title} (${bill.amount} EGP)</div>`
+          : `<div style="margin-top:5px;">
+              ${bill.title} (${bill.amount} EGP)
+              <button onclick="payUserBill('${id}', ${bill.amount})">Pay</button>
+            </div>`;
+        list.innerHTML += billHtml;
+      });
+    });
+  }
+
+  function payUserBill(billId, amount) {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+      const money = snap.val().money || 0;
+      if (money < amount) {
+        alert("❌ Not enough money");
+        return;
+      }
+
+      db.ref("users/" + currentUser + "/money").set(money - amount);
+      db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true).then(() => {
+        alert("✅ Bill paid");
+        loadUserBills();
+        updateBalance();
+      });
+    });
+  }
+</script>
+
 
 
 </script>
