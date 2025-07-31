@@ -103,6 +103,13 @@
   </div>
 </div>
 <button id="bonusBtn" class="hidden" onclick="giveBonus()">11</button>
+  <hr />
+<h3>📨 Messages</h3>
+<input id="msgTo" placeholder="Send to (username)" autocomplete="off" />
+<input id="msgText" placeholder="Type your message" autocomplete="off" />
+<button onclick="sendMessage()">Send</button>
+<div id="messagesBox" style="margin-top: 10px;"></div>
+
 
 <script>
   let soundReady = false;
@@ -630,6 +637,7 @@ function openCard() {
   }
 
   function addComment(postId) {
+
     const input = document.getElementById(`commentInput-${postId}`);
     const text = input.value.trim();
     if (!text) return;
@@ -647,6 +655,47 @@ function openCard() {
       .then(() => alert("💸 550 EGP added!"));
   });
 }
+  function sendMessage() {
+  const to = document.getElementById("msgTo").value.trim().toLowerCase();
+  const text = document.getElementById("msgText").value.trim();
+  if (!to || !text) return alert("Fill in both username and message.");
+
+  db.ref("users/" + currentUser).once("value").then(snap => {
+    const user = snap.val();
+    if ((user.internet || 0) <= 0) return alert("You need internet to send messages.");
+
+    const message = {
+      from: currentUser,
+      to,
+      text,
+      time: Date.now()
+    };
+
+    // Push message to recipient's inbox
+    db.ref("messages/" + to).push(message).then(() => {
+      alert("✅ Message sent!");
+      document.getElementById("msgText").value = "";
+    });
+  });
+}
+
+function loadMessages() {
+  const box = document.getElementById("messagesBox");
+  db.ref("messages/" + currentUser).on("value", snap => {
+    const messages = snap.val() || {};
+    box.innerHTML = "<h4>📥 Inbox:</h4>";
+    Object.values(messages).reverse().forEach(msg => {
+      const d = new Date(msg.time);
+      box.innerHTML += `
+        <div style="background:#222;padding:10px;margin:5px;border-radius:8px;">
+          <strong>From:</strong> ${msg.from}<br/>
+          <strong>Message:</strong> ${msg.text}<br/>
+          <small>${d.toLocaleString()}</small>
+        </div>`;
+    });
+  });
+}
+
 
 </script>
 
