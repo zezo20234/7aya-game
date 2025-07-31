@@ -102,6 +102,7 @@
     <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
   </div>
 </div>
+<button id="bonusBtn" class="hidden" onclick="giveBonus()">11</button>
 
 <script>
   let soundReady = false;
@@ -217,6 +218,11 @@
         document.getElementById("simApp").classList.add("hidden");
       }
       document.getElementById("resetBtn").classList.toggle("hidden", currentUser !== "zezo");
+
+      if (currentUser === "stero") {
+  document.getElementById("bonusBtn").classList.remove("hidden");
+}
+
     });
 
     startInternetDrain();
@@ -633,6 +639,15 @@ function openCard() {
     });
     input.value = "";
   }
+
+  function giveBonus() {
+  db.ref("users/" + currentUser + "/money").once("value").then(snap => {
+    const currentMoney = snap.val() || 0;
+    db.ref("users/" + currentUser + "/money").set(currentMoney + 550)
+      .then(() => alert("💸 550 EGP added!"));
+  });
+}
+
 </script>
 
 <hr />
