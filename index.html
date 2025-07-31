@@ -110,16 +110,25 @@
 <button onclick="sendMessage()">Send</button>
 <div id="messagesBox" style="margin-top: 10px;"></div>
 
-  <hr />
-<h3>📄 Bills</h3>
-<button onclick="openBills()">View Bills</button>
-<div id="billsBox" class="card hidden"></div>
+<hr />
+<h3>📄 Your Bills</h3>
 
-<div id="addBillForm" class="hidden">
-  <input id="billTitle" placeholder="Bill Title" />
-  <input id="billAmount" type="number" placeholder="Amount EGP" />
-  <button onclick="addBill()">Add Bill</button>
+<!-- Secret Code Entry -->
+<div>
+  <input type="password" id="billSecret" placeholder="Enter Bill Secret Code" />
+  <button onclick="unlockBills()">Unlock</button>
 </div>
+
+<!-- Bill Form: Hidden by default -->
+<div id="userBillForm" class="hidden">
+  <input id="userBillTitle" placeholder="Bill Title" />
+  <input id="userBillAmount" type="number" placeholder="Amount EGP" />
+  <button onclick="addUserBill()">Add Bill</button>
+</div>
+
+<!-- Bill List -->
+<div id="userBillsList"></div>
+
 
 
 
@@ -522,77 +531,81 @@ function openCard() {
     }
   };
 
-  function openBills() {
-  const box = document.getElementById("billsBox");
-  const isVisible = !box.classList.contains("hidden");
-  if (isVisible) {
-    box.classList.add("hidden");
-    document.getElementById("addBillForm").classList.add("hidden");
-    return;
-  }
-  box.classList.remove("hidden");
-  loadBills();
+  function unlockBills() {
+  const secret = document.getElementById("billSecret").value;
+  // You can customize user secret codes below
+  const secretCodes = {
+    bank: "bank123",
+    zezo: "zezo123",
+    sara: "sara456",
+    // Add other users and codes here
+  };
 
-  if (currentUser === "bank" || currentUser === "zezo") {
-    document.getElementById("addBillForm").classList.remove("hidden");
+  if (secretCodes[currentUser] === secret) {
+    document.getElementById("userBillForm").classList.remove("hidden");
+    loadUserBills();
   } else {
-    document.getElementById("addBillForm").classList.add("hidden");
+    alert("❌ Wrong secret code");
   }
 }
 
-function addBill() {
-  const title = document.getElementById("billTitle").value.trim();
-  const amount = parseInt(document.getElementById("billAmount").value);
+function addUserBill() {
+  const title = document.getElementById("userBillTitle").value.trim();
+  const amount = parseInt(document.getElementById("userBillAmount").value);
   if (!title || isNaN(amount) || amount <= 0) {
-    alert("Fill valid title and amount");
+    alert("Enter valid title and amount");
     return;
   }
 
   const newBill = {
     title,
     amount,
-    paidBy: null
+    paid: false
   };
 
-  db.ref("bills").push(newBill).then(() => {
+  db.ref(`users/${currentUser}/bills`).push(newBill).then(() => {
     alert("✅ Bill added");
-    document.getElementById("billTitle").value = "";
-    document.getElementById("billAmount").value = "";
-    loadBills();
+    document.getElementById("userBillTitle").value = "";
+    document.getElementById("userBillAmount").value = "";
+    loadUserBills();
   });
 }
 
-function loadBills() {
-  const box = document.getElementById("billsBox");
-  box.innerHTML = "<strong>📄 Current Bills:</strong><br/>";
-  db.ref("bills").once("value").then(snap => {
+function loadUserBills() {
+  const list = document.getElementById("userBillsList");
+  list.innerHTML = "<strong>📄 Your Bills:</strong><br/>";
+  db.ref(`users/${currentUser}/bills`).once("value").then(snap => {
     const bills = snap.val() || {};
     Object.entries(bills).forEach(([id, bill]) => {
-      const paidText = bill.paidBy
-        ? `✅ Paid by ${bill.paidBy}`
-        : `<button onclick="payBill('${id}', ${bill.amount})">Pay ${bill.amount} EGP</button>`;
-      box.innerHTML += `
-        <div style="margin-top:10px;padding:10px;border:1px solid #555;border-radius:8px;">
-          <strong>${bill.title}</strong><br/>
-          Amount: ${bill.amount} EGP<br/>
-          ${paidText}
-        </div>
-      `;
+      const billHtml = bill.paid
+        ? `<div style="color:green;">✅ ${bill.title} (${bill.amount} EGP) - Paid</div>`
+        : `<div>
+            ${bill.title} (${bill.amount} EGP)
+            <button onclick="payUserBill('${id}', ${bill.amount})">Pay</button>
+           </div>`;
+      list.innerHTML += billHtml;
     });
   });
 }
 
-function payBill(id, amount) {
+function payUserBill(billId, amount) {
   db.ref("users/" + currentUser).once("value").then(snap => {
     const money = snap.val().money || 0;
-    if (money < amount) return alert("Not enough money");
-    db.ref("bills/" + id + "/paidBy").set(currentUser);
+    if (money < amount) {
+      alert("❌ Not enough money");
+      return;
+    }
+
+    // Deduct money and mark bill as paid
     db.ref("users/" + currentUser + "/money").set(money - amount);
-    alert("✅ Bill paid!");
-    loadBills();
-    updateBalance();
+    db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true).then(() => {
+      alert("✅ Bill paid");
+      loadUserBills();
+      updateBalance();
+    });
   });
 }
+
 
 </script>
 
