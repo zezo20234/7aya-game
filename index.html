@@ -110,27 +110,6 @@
 <button onclick="sendMessage()">Send</button>
 <div id="messagesBox" style="margin-top: 10px;"></div>
 
-<hr />
-<h3>📄 Your Bills</h3>
-
-<!-- Secret Code Entry -->
-<div>
-  <input type="password" id="billSecret" placeholder="Enter Bill Secret Code" />
-  <button onclick="unlockBills()">Unlock</button>
-</div>
-
-<!-- Bill Form: Hidden by default -->
-<div id="userBillForm" class="hidden">
-  <input id="userBillTitle" placeholder="Bill Title" />
-  <input id="userBillAmount" type="number" placeholder="Amount EGP" />
-  <button onclick="addUserBill()">Add Bill</button>
-</div>
-
-<!-- Bill List -->
-<div id="userBillsList"></div>
-
-
-
 
 <script>
   let soundReady = false;
@@ -530,29 +509,227 @@ function openCard() {
       loadUser();
     }
   };
+</script>
 
-  <!-- 📄 Your Bills Section -->
-<h3>📄 Your Bills</h3>
-
-<!-- Secret Code Entry -->
-<div>
-  <input type="password" id="billSecret" placeholder="Enter Bill Secret Code to Add Bill" />
-  <button onclick="unlockBillForm()">Unlock Add Bill</button>
-</div>
-
-<!-- Add Bill Form: Locked by default -->
-<div id="userBillForm" class="hidden" style="margin-top:10px;">
-  <input id="userBillTitle" placeholder="Bill Title" />
-  <input id="userBillAmount" type="number" placeholder="Amount EGP" />
-  <button onclick="addUserBill()">Add Bill</button>
-</div>
-
-<!-- Bill List: Always visible -->
-<div id="userBillsList" style="margin-top:15px;"></div>
-
-<!-- 🔧 JS Script Section -->
 <script>
-  // Automatically load bills when page loads
+  let qrCodeScanner = null;
+
+  function startQrMoneyTransfer() {
+    document.getElementById("scanner").style.display = "block";
+    document.getElementById("qrStatus").innerText = "Initializing scanner...";
+
+    if (!qrCodeScanner) {
+      qrCodeScanner = new Html5Qrcode("scanner");
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (!devices || devices.length === 0) {
+        alert("No camera devices found.");
+        return;
+      }
+
+      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
+
+      qrCodeScanner.start(
+        backCam.id,
+        {
+          fps: 30,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0,
+          disableFlip: true
+        },
+        onQrDetected,
+        error => {
+          document.getElementById("qrStatus").innerText = "Scanning error...";
+          console.error("Scan error", error);
+        }
+      ).then(() => {
+        document.getElementById("qrStatus").innerText = "Scanning... Hold QR code still";
+      }).catch(err => {
+        console.error("Start error", err);
+        alert("Could not start scanner: " + err);
+      });
+
+    }).catch(err => {
+      alert("Camera access error: " + err);
+    });
+  }
+
+  function onQrDetected(qrData) {
+    qrCodeScanner.stop().then(() => {
+      document.getElementById("scanner").style.display = "none";
+      document.getElementById("qrStatus").innerText = "";
+
+      const recipient = qrData.trim().toLowerCase();
+
+      if (recipient === currentUser) {
+        return alert("You can't send money to yourself.");
+      }
+
+      db.ref("users/" + recipient).once("value").then(snap => {
+        if (!snap.exists()) {
+          return alert("User not found.");
+        }
+
+        const amountStr = prompt(`Send how much EGP to ${recipient}?`);
+        const amount = parseInt(amountStr);
+
+        if (isNaN(amount) || amount <= 0) {
+          return alert("Invalid amount.");
+        }
+
+        db.ref("users/" + currentUser).once("value").then(currentSnap => {
+          const senderData = currentSnap.val();
+          const currentMoney = senderData.money || 0;
+
+          if (currentMoney < amount) {
+            return alert("Not enough money.");
+          }
+
+          db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
+
+          db.ref("users/" + recipient + "/money").once("value").then(recipientSnap => {
+            const newAmount = (recipientSnap.val() || 0) + amount;
+            db.ref("users/" + recipient + "/money").set(newAmount);
+          });
+
+          const now = new Date().toISOString();
+          const tx = {
+            from: currentUser,
+            to: recipient,
+            amount,
+            time: now
+          };
+          // ✅ Transfer successful
+          db.ref("transactions").push(tx);
+
+          triggerVibration();
+          if (soundReady) {
+            document.getElementById("successSound").play();
+          } else {
+            console.log("Sound not unlocked due to autoplay restrictions.");
+          }
+
+          alert(`✅ Sent ${amount} EGP to ${recipient}.`);
+        });
+      });
+
+    }).catch(err => {
+      console.error("Stop error", err);
+      alert("Failed to stop scanner");
+    });
+  }
+
+  function triggerVibration() {
+    if (navigator.vibrate) {
+      navigator.vibrate(200); // 🔔 iOS + Android compatible
+    } else {
+      console.log("Vibration not supported.");
+    }
+  }
+
+  function likePost(postId) {
+    db.ref(`posts/${postId}/likes/${currentUser}`).set(true);
+  }
+
+  function dislikePost(postId) {
+    db.ref(`posts/${postId}/dislikes/${currentUser}`).set(true);
+  }
+
+  function addComment(postId) {
+
+    const input = document.getElementById(`commentInput-${postId}`);
+    const text = input.value.trim();
+    if (!text) return;
+    db.ref(`posts/${postId}/comments`).push({
+      user: currentUser,
+      text
+    });
+    input.value = "";
+  }
+
+  function giveBonus() {
+  db.ref("users/" + currentUser + "/money").once("value").then(snap => {
+    const currentMoney = snap.val() || 0;
+    db.ref("users/" + currentUser + "/money").set(currentMoney + 550)
+      .then(() => alert("💸 550 EGP added!"));
+  });
+}
+  function sendMessage() {
+  const to = document.getElementById("msgTo").value.trim().toLowerCase();
+  const text = document.getElementById("msgText").value.trim();
+  if (!to || !text) return alert("Fill in both username and message.");
+
+  db.ref("users/" + currentUser).once("value").then(snap => {
+    const user = snap.val();
+    if ((user.internet || 0) <= 0) return alert("You need internet to send messages.");
+
+    const message = {
+      from: currentUser,
+      to,
+      text,
+      time: Date.now()
+    };
+
+    // Push message to recipient's inbox
+    db.ref("messages/" + to).push(message).then(() => {
+      alert("✅ Message sent!");
+      document.getElementById("msgText").value = "";
+    });
+  });
+}
+
+function loadMessages() {
+  const box = document.getElementById("messagesBox");
+  db.ref("messages/" + currentUser).on("value", snap => {
+    const messages = snap.val() || {};
+    box.innerHTML = "<h4>📥 Inbox:</h4>";
+    Object.values(messages).reverse().forEach(msg => {
+      const d = new Date(msg.time);
+      box.innerHTML += `
+        <div style="background:#222;padding:10px;margin:5px;border-radius:8px;">
+          <strong>From:</strong> ${msg.from}<br/>
+          <strong>Message:</strong> ${msg.text}<br/>
+          <small>${d.toLocaleString()}</small>
+        </div>`;
+    });
+  });
+}
+
+
+</script>
+
+<hr />
+<h3>🌐 Facenet</h3>
+<input id="postTitle" placeholder="Post Title" autocomplete="off"/>
+<input id="postImage" type="file" accept="image/*,video/*" />
+<button onclick="makePost()">Post</button>
+<div id="facenetPosts"></div>
+<button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
+
+<!-- 📄 Your Bills Section (always visible) -->
+<div class="card" style="margin-top: 20px;">
+  <h3>📄 Your Bills</h3>
+
+  <!-- Secret Code Entry to unlock "Add Bill" -->
+  <div style="margin-bottom:10px;">
+    <input type="password" id="billSecret" placeholder="Enter Secret Code to Add Bill" />
+    <button onclick="unlockBillForm()">Unlock Add Bill</button>
+  </div>
+
+  <!-- Add Bill Form (locked by default) -->
+  <div id="userBillForm" class="hidden" style="margin-bottom:15px;">
+    <input id="userBillTitle" placeholder="Bill Title" />
+    <input id="userBillAmount" type="number" placeholder="Amount EGP" />
+    <button onclick="addUserBill()">Add Bill</button>
+  </div>
+
+  <!-- Bill List (always visible) -->
+  <div id="userBillsList"><em>Loading your bills...</em></div>
+</div>
+
+<script>
+  // Load bills immediately when the page loads
   window.addEventListener("load", () => {
     if (typeof currentUser !== "undefined" && currentUser) {
       loadUserBills();
@@ -563,7 +740,7 @@ function openCard() {
     const secret = document.getElementById("billSecret").value;
     if (secret === "555") {
       document.getElementById("userBillForm").classList.remove("hidden");
-      alert("✅ You can now add bills");
+      alert("✅ Add Bill unlocked");
     } else {
       alert("❌ Wrong secret code");
     }
@@ -573,7 +750,7 @@ function openCard() {
     const title = document.getElementById("userBillTitle").value.trim();
     const amount = parseInt(document.getElementById("userBillAmount").value);
     if (!title || isNaN(amount) || amount <= 0) {
-      alert("Enter valid title and amount");
+      alert("⚠️ Enter valid bill title and amount");
       return;
     }
 
@@ -596,6 +773,11 @@ function openCard() {
     list.innerHTML = "<strong>📄 Your Bills:</strong><br/>";
     db.ref(`users/${currentUser}/bills`).once("value").then(snap => {
       const bills = snap.val() || {};
+      if (Object.keys(bills).length === 0) {
+        list.innerHTML += "<div style='margin-top:5px;'>✅ No bills right now!</div>";
+        return;
+      }
+
       Object.entries(bills).forEach(([id, bill]) => {
         const billHtml = bill.paid
           ? `<div style="color:green; margin-top:5px;">✅ ${bill.title} (${bill.amount} EGP)</div>`
@@ -620,28 +802,12 @@ function openCard() {
       db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true).then(() => {
         alert("✅ Bill paid");
         loadUserBills();
-        updateBalance();
+        if (typeof updateBalance === "function") updateBalance();
       });
     });
   }
 </script>
 
-
-
-</script>
-
-
-
-<hr />
-<h3>🌐 Facenet</h3>
-<input id="postTitle" placeholder="Post Title" autocomplete="off"/>
-<input id="postImage" type="file" accept="image/*,video/*" />
-<button onclick="makePost()">Post</button>
-<div id="facenetPosts"></div>
-<button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
-
-<!-- Apple Pay Send Sound -->
-<audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
 
 </body>
 </html>
