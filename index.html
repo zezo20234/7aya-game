@@ -521,208 +521,18 @@ function openCard() {
       loadUser();
     }
   };
-</script>
 
-<script>
-  let qrCodeScanner = null;
-
-  function startQrMoneyTransfer() {
-    document.getElementById("scanner").style.display = "block";
-    document.getElementById("qrStatus").innerText = "Initializing scanner...";
-
-    if (!qrCodeScanner) {
-      qrCodeScanner = new Html5Qrcode("scanner");
-    }
-
-    Html5Qrcode.getCameras().then(devices => {
-      if (!devices || devices.length === 0) {
-        alert("No camera devices found.");
-        return;
-      }
-
-      const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-
-      qrCodeScanner.start(
-        backCam.id,
-        {
-          fps: 30,
-          qrbox: { width: 220, height: 220 },
-          aspectRatio: 1.0,
-          disableFlip: true
-        },
-        onQrDetected,
-        error => {
-          document.getElementById("qrStatus").innerText = "Scanning error...";
-          console.error("Scan error", error);
-        }
-      ).then(() => {
-        document.getElementById("qrStatus").innerText = "Scanning... Hold QR code still";
-      }).catch(err => {
-        console.error("Start error", err);
-        alert("Could not start scanner: " + err);
-      });
-
-    }).catch(err => {
-      alert("Camera access error: " + err);
-    });
-  }
-
-  function onQrDetected(qrData) {
-    qrCodeScanner.stop().then(() => {
-      document.getElementById("scanner").style.display = "none";
-      document.getElementById("qrStatus").innerText = "";
-
-      const recipient = qrData.trim().toLowerCase();
-
-      if (recipient === currentUser) {
-        return alert("You can't send money to yourself.");
-      }
-
-      db.ref("users/" + recipient).once("value").then(snap => {
-        if (!snap.exists()) {
-          return alert("User not found.");
-        }
-
-        const amountStr = prompt(`Send how much EGP to ${recipient}?`);
-        const amount = parseInt(amountStr);
-
-        if (isNaN(amount) || amount <= 0) {
-          return alert("Invalid amount.");
-        }
-
-        db.ref("users/" + currentUser).once("value").then(currentSnap => {
-          const senderData = currentSnap.val();
-          const currentMoney = senderData.money || 0;
-
-          if (currentMoney < amount) {
-            return alert("Not enough money.");
-          }
-
-          db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
-
-          db.ref("users/" + recipient + "/money").once("value").then(recipientSnap => {
-            const newAmount = (recipientSnap.val() || 0) + amount;
-            db.ref("users/" + recipient + "/money").set(newAmount);
-          });
-
-          const now = new Date().toISOString();
-          const tx = {
-            from: currentUser,
-            to: recipient,
-            amount,
-            time: now
-          };
-          // ✅ Transfer successful
-          db.ref("transactions").push(tx);
-
-          triggerVibration();
-          if (soundReady) {
-            document.getElementById("successSound").play();
-          } else {
-            console.log("Sound not unlocked due to autoplay restrictions.");
-          }
-
-          alert(`✅ Sent ${amount} EGP to ${recipient}.`);
-        });
-      });
-
-    }).catch(err => {
-      console.error("Stop error", err);
-      alert("Failed to stop scanner");
-    });
-  }
-
-  function triggerVibration() {
-    if (navigator.vibrate) {
-      navigator.vibrate(200); // 🔔 iOS + Android compatible
-    } else {
-      console.log("Vibration not supported.");
-    }
-  }
-
-  function likePost(postId) {
-    db.ref(`posts/${postId}/likes/${currentUser}`).set(true);
-  }
-
-  function dislikePost(postId) {
-    db.ref(`posts/${postId}/dislikes/${currentUser}`).set(true);
-  }
-
-  function addComment(postId) {
-
-    const input = document.getElementById(`commentInput-${postId}`);
-    const text = input.value.trim();
-    if (!text) return;
-    db.ref(`posts/${postId}/comments`).push({
-      user: currentUser,
-      text
-    });
-    input.value = "";
-  }
-
-  function giveBonus() {
-  db.ref("users/" + currentUser + "/money").once("value").then(snap => {
-    const currentMoney = snap.val() || 0;
-    db.ref("users/" + currentUser + "/money").set(currentMoney + 550)
-      .then(() => alert("💸 550 EGP added!"));
-  });
-}
-  function sendMessage() {
-  const to = document.getElementById("msgTo").value.trim().toLowerCase();
-  const text = document.getElementById("msgText").value.trim();
-  if (!to || !text) return alert("Fill in both username and message.");
-
-  db.ref("users/" + currentUser).once("value").then(snap => {
-    const user = snap.val();
-    if ((user.internet || 0) <= 0) return alert("You need internet to send messages.");
-
-    const message = {
-      from: currentUser,
-      to,
-      text,
-      time: Date.now()
-    };
-
-    // Push message to recipient's inbox
-    db.ref("messages/" + to).push(message).then(() => {
-      alert("✅ Message sent!");
-      document.getElementById("msgText").value = "";
-    });
-  });
-}
-
-function loadMessages() {
-  const box = document.getElementById("messagesBox");
-  db.ref("messages/" + currentUser).on("value", snap => {
-    const messages = snap.val() || {};
-    box.innerHTML = "<h4>📥 Inbox:</h4>";
-    Object.values(messages).reverse().forEach(msg => {
-      const d = new Date(msg.time);
-      box.innerHTML += `
-        <div style="background:#222;padding:10px;margin:5px;border-radius:8px;">
-          <strong>From:</strong> ${msg.from}<br/>
-          <strong>Message:</strong> ${msg.text}<br/>
-          <small>${d.toLocaleString()}</small>
-        </div>`;
-    });
-  });
-}
-
-
-</script>
-
-  <script>
-function openBills() {
+  function openBills() {
   const box = document.getElementById("billsBox");
   const isVisible = !box.classList.contains("hidden");
   if (isVisible) {
     box.classList.add("hidden");
+    document.getElementById("addBillForm").classList.add("hidden");
     return;
   }
   box.classList.remove("hidden");
   loadBills();
 
-  // Only bank and zezo can add bills
   if (currentUser === "bank" || currentUser === "zezo") {
     document.getElementById("addBillForm").classList.remove("hidden");
   } else {
@@ -733,7 +543,10 @@ function openBills() {
 function addBill() {
   const title = document.getElementById("billTitle").value.trim();
   const amount = parseInt(document.getElementById("billAmount").value);
-  if (!title || isNaN(amount) || amount <= 0) return alert("Fill valid title and amount");
+  if (!title || isNaN(amount) || amount <= 0) {
+    alert("Fill valid title and amount");
+    return;
+  }
 
   const newBill = {
     title,
@@ -755,7 +568,9 @@ function loadBills() {
   db.ref("bills").once("value").then(snap => {
     const bills = snap.val() || {};
     Object.entries(bills).forEach(([id, bill]) => {
-      const paidText = bill.paidBy ? `✅ Paid by ${bill.paidBy}` : `<button onclick="payBill('${id}', ${bill.amount})">Pay ${bill.amount} EGP</button>`;
+      const paidText = bill.paidBy
+        ? `✅ Paid by ${bill.paidBy}`
+        : `<button onclick="payBill('${id}', ${bill.amount})">Pay ${bill.amount} EGP</button>`;
       box.innerHTML += `
         <div style="margin-top:10px;padding:10px;border:1px solid #555;border-radius:8px;">
           <strong>${bill.title}</strong><br/>
@@ -775,9 +590,12 @@ function payBill(id, amount) {
     db.ref("users/" + currentUser + "/money").set(money - amount);
     alert("✅ Bill paid!");
     loadBills();
+    updateBalance();
   });
 }
+
 </script>
+
 
 
 <hr />
