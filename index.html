@@ -110,6 +110,18 @@
 <button onclick="sendMessage()">Send</button>
 <div id="messagesBox" style="margin-top: 10px;"></div>
 
+  <hr />
+<h3>📄 Bills</h3>
+<button onclick="openBills()">View Bills</button>
+<div id="billsBox" class="card hidden"></div>
+
+<div id="addBillForm" class="hidden">
+  <input id="billTitle" placeholder="Bill Title" />
+  <input id="billAmount" type="number" placeholder="Amount EGP" />
+  <button onclick="addBill()">Add Bill</button>
+</div>
+
+
 
 <script>
   let soundReady = false;
@@ -698,6 +710,75 @@ function loadMessages() {
 
 
 </script>
+
+  <script>
+function openBills() {
+  const box = document.getElementById("billsBox");
+  const isVisible = !box.classList.contains("hidden");
+  if (isVisible) {
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+  loadBills();
+
+  // Only bank and zezo can add bills
+  if (currentUser === "bank" || currentUser === "zezo") {
+    document.getElementById("addBillForm").classList.remove("hidden");
+  } else {
+    document.getElementById("addBillForm").classList.add("hidden");
+  }
+}
+
+function addBill() {
+  const title = document.getElementById("billTitle").value.trim();
+  const amount = parseInt(document.getElementById("billAmount").value);
+  if (!title || isNaN(amount) || amount <= 0) return alert("Fill valid title and amount");
+
+  const newBill = {
+    title,
+    amount,
+    paidBy: null
+  };
+
+  db.ref("bills").push(newBill).then(() => {
+    alert("✅ Bill added");
+    document.getElementById("billTitle").value = "";
+    document.getElementById("billAmount").value = "";
+    loadBills();
+  });
+}
+
+function loadBills() {
+  const box = document.getElementById("billsBox");
+  box.innerHTML = "<strong>📄 Current Bills:</strong><br/>";
+  db.ref("bills").once("value").then(snap => {
+    const bills = snap.val() || {};
+    Object.entries(bills).forEach(([id, bill]) => {
+      const paidText = bill.paidBy ? `✅ Paid by ${bill.paidBy}` : `<button onclick="payBill('${id}', ${bill.amount})">Pay ${bill.amount} EGP</button>`;
+      box.innerHTML += `
+        <div style="margin-top:10px;padding:10px;border:1px solid #555;border-radius:8px;">
+          <strong>${bill.title}</strong><br/>
+          Amount: ${bill.amount} EGP<br/>
+          ${paidText}
+        </div>
+      `;
+    });
+  });
+}
+
+function payBill(id, amount) {
+  db.ref("users/" + currentUser).once("value").then(snap => {
+    const money = snap.val().money || 0;
+    if (money < amount) return alert("Not enough money");
+    db.ref("bills/" + id + "/paidBy").set(currentUser);
+    db.ref("users/" + currentUser + "/money").set(money - amount);
+    alert("✅ Bill paid!");
+    loadBills();
+  });
+}
+</script>
+
 
 <hr />
 <h3>🌐 Facenet</h3>
