@@ -222,6 +222,7 @@
     startInternetDrain();
     startGameClock();
     loadPosts();
+    loadBills();
   }
 
   function logout() {
@@ -617,6 +618,74 @@
     });
     input.value = "";
   }
+  function unlockBillAdmin() {
+  const code = document.getElementById("billCode").value.trim();
+  if (code === "555") {
+    document.getElementById("addBillArea").classList.remove("hidden");
+  } else {
+    alert("Wrong code.");
+  }
+}
+
+function addBill() {
+  const title = document.getElementById("billTitle").value.trim();
+  const amount = parseInt(document.getElementById("billAmount").value);
+
+  if (!title || isNaN(amount) || amount <= 0) {
+    return alert("Enter a valid title and amount");
+  }
+
+  const billId = Date.now().toString();
+  db.ref(`users/${currentUser}/bills/${billId}`).set({
+    title,
+    amount,
+    paid: false
+  }).then(() => {
+    alert("Bill added!");
+    document.getElementById("billTitle").value = "";
+    document.getElementById("billAmount").value = "";
+    loadBills();
+  });
+}
+
+function loadBills() {
+  const container = document.getElementById("billList");
+  if (!container) return;
+
+  db.ref(`users/${currentUser}/bills`).once("value").then(snap => {
+    const bills = snap.val() || {};
+    container.innerHTML = "";
+
+    Object.entries(bills).forEach(([id, bill]) => {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <strong>${bill.title}</strong><br/>
+        Amount: ${bill.amount} EGP<br/>
+        ${bill.paid ? "<span style='color:lightgreen;'>✅ Paid</span>" :
+        `<button onclick="payBill('${id}', ${bill.amount})">Pay</button>`}
+      `;
+      container.appendChild(div);
+    });
+  });
+}
+
+function payBill(billId, amount) {
+  db.ref("users/" + currentUser).once("value").then(snap => {
+    const data = snap.val();
+    const currentMoney = data.money || 0;
+
+    if (currentMoney < amount) {
+      return alert("Not enough money.");
+    }
+
+    db.ref("users/" + currentUser + "/money").set(currentMoney - amount);
+    db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true);
+    alert("✅ Bill paid!");
+    loadBills();
+  });
+}
+
 </script>
 
 <hr />
@@ -629,6 +698,19 @@
 
 <!-- Apple Pay Send Sound -->
 <audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
+<hr />
+<h3>🧾 Bills</h3>
+<input id="billCode" placeholder="Enter secret code" />
+<button onclick="unlockBillAdmin()">Unlock Bill Manager</button>
+
+<div id="addBillArea" class="hidden">
+  <h4>Add a Bill</h4>
+  <input id="billTitle" placeholder="Bill Title" />
+  <input id="billAmount" type="number" placeholder="Amount (EGP)" />
+  <button onclick="addBill()">Add Bill</button>
+</div>
+
+<div id="billList"></div>
 
 </body>
 </html>
