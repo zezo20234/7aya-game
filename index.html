@@ -102,14 +102,6 @@
     <div id="qrStatus" style="margin-top: 5px; color: yellow;"></div>
   </div>
 </div>
-<button id="bonusBtn" class="hidden" onclick="giveBonus()">11</button>
-  <hr />
-<h3>📨 Messages</h3>
-<input id="msgTo" placeholder="Send to (username)" autocomplete="off" />
-<input id="msgText" placeholder="Type your message" autocomplete="off" />
-<button onclick="sendMessage()">Send</button>
-<div id="messagesBox" style="margin-top: 10px;"></div>
-
 
 <script>
   let soundReady = false;
@@ -148,7 +140,7 @@
   });
 
   // --- Clock speed config ---
-  const FULL_DAY_REAL_MINUTES = 10;
+  const FULL_DAY_REAL_MINUTES = 8.5;
 
   function startGameClock() {
     const cycleMs = FULL_DAY_REAL_MINUTES * 60 * 1000;
@@ -225,11 +217,6 @@
         document.getElementById("simApp").classList.add("hidden");
       }
       document.getElementById("resetBtn").classList.toggle("hidden", currentUser !== "zezo");
-
-      if (currentUser === "stero") {
-  document.getElementById("bonusBtn").classList.remove("hidden");
-}
-
     });
 
     startInternetDrain();
@@ -251,40 +238,24 @@
       .then(() => alert("Card created!"));
   }
 
-  function getRandomGradient() {
-  const colors = [
-    ["#ff9a9e", "#fad0c4"],
-    ["#a18cd1", "#fbc2eb"],
-    ["#f6d365", "#fda085"],
-    ["#fdcbf1", "#e6dee9"],
-    ["#a1c4fd", "#c2e9fb"],
-    ["#d4fc79", "#96e6a1"],
-    ["#84fab0", "#8fd3f4"],
-    ["#fccb90", "#d57eeb"]
-  ];
-  const pair = colors[Math.floor(Math.random() * colors.length)];
-  return `linear-gradient(135deg, ${pair[0]}, ${pair[1]})`;
-}
-
-function openCard() {
-  const pin = document.getElementById("openCardPin").value.trim();
-  if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN");
-  db.ref("users/" + currentUser + "/card").once("value").then(snap => {
-    if (!snap.exists()) return alert("No card found");
-    const card = snap.val();
-    if (card.pin !== pin) return alert("Wrong PIN");
-    const country = card.country || "N/A";
-    const cardView = document.getElementById("cardView");
-    cardView.innerHTML = `
-      <strong>Card Number:</strong> ${card.number} <br/>
-      <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
-      <strong>Country:</strong> ${country} <br/>
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
-    `;
-    cardView.style.background = getRandomGradient(); // Apply the fade background
-    cardView.classList.remove("hidden");
-  });
-}
+  function openCard() {
+    const pin = document.getElementById("openCardPin").value.trim();
+    if (pin.length !== 3 || isNaN(pin)) return alert("Enter valid 3-digit PIN");
+    db.ref("users/" + currentUser + "/card").once("value").then(snap => {
+      if (!snap.exists()) return alert("No card found");
+      const card = snap.val();
+      if (card.pin !== pin) return alert("Wrong PIN");
+      const country = card.country || "N/A";
+      const cardView = document.getElementById("cardView");
+      cardView.innerHTML = `
+        <strong>Card Number:</strong> ${card.number} <br/>
+        <strong>User:</strong> ${currentUser.toUpperCase()} <br/>
+        <strong>Country:</strong> ${country} <br/>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" alt="QR Code" />
+      `;
+      cardView.classList.remove("hidden");
+    });
+  }
 
   function buyNumber() {
     const company = document.getElementById("company").value;
@@ -637,7 +608,6 @@ function openCard() {
   }
 
   function addComment(postId) {
-
     const input = document.getElementById(`commentInput-${postId}`);
     const text = input.value.trim();
     if (!text) return;
@@ -647,56 +617,6 @@ function openCard() {
     });
     input.value = "";
   }
-
-  function giveBonus() {
-  db.ref("users/" + currentUser + "/money").once("value").then(snap => {
-    const currentMoney = snap.val() || 0;
-    db.ref("users/" + currentUser + "/money").set(currentMoney + 550)
-      .then(() => alert("💸 550 EGP added!"));
-  });
-}
-  function sendMessage() {
-  const to = document.getElementById("msgTo").value.trim().toLowerCase();
-  const text = document.getElementById("msgText").value.trim();
-  if (!to || !text) return alert("Fill in both username and message.");
-
-  db.ref("users/" + currentUser).once("value").then(snap => {
-    const user = snap.val();
-    if ((user.internet || 0) <= 0) return alert("You need internet to send messages.");
-
-    const message = {
-      from: currentUser,
-      to,
-      text,
-      time: Date.now()
-    };
-
-    // Push message to recipient's inbox
-    db.ref("messages/" + to).push(message).then(() => {
-      alert("✅ Message sent!");
-      document.getElementById("msgText").value = "";
-    });
-  });
-}
-
-function loadMessages() {
-  const box = document.getElementById("messagesBox");
-  db.ref("messages/" + currentUser).on("value", snap => {
-    const messages = snap.val() || {};
-    box.innerHTML = "<h4>📥 Inbox:</h4>";
-    Object.values(messages).reverse().forEach(msg => {
-      const d = new Date(msg.time);
-      box.innerHTML += `
-        <div style="background:#222;padding:10px;margin:5px;border-radius:8px;">
-          <strong>From:</strong> ${msg.from}<br/>
-          <strong>Message:</strong> ${msg.text}<br/>
-          <small>${d.toLocaleString()}</small>
-        </div>`;
-    });
-  });
-}
-
-
 </script>
 
 <hr />
@@ -707,107 +627,8 @@ function loadMessages() {
 <div id="facenetPosts"></div>
 <button id="resetBtn" class="hidden" onclick="resetFacenet()">Reset Facenet (Admin)</button>
 
-<!-- 📄 Your Bills Section (always visible) -->
-<div class="card" style="margin-top: 20px;">
-  <h3>📄 Your Bills</h3>
-
-  <!-- Secret Code Entry to unlock "Add Bill" -->
-  <div style="margin-bottom:10px;">
-    <input type="password" id="billSecret" placeholder="Enter Secret Code to Add Bill" />
-    <button onclick="unlockBillForm()">Unlock Add Bill</button>
-  </div>
-
-  <!-- Add Bill Form (locked by default) -->
-  <div id="userBillForm" class="hidden" style="margin-bottom:15px;">
-    <input id="userBillTitle" placeholder="Bill Title" />
-    <input id="userBillAmount" type="number" placeholder="Amount EGP" />
-    <button onclick="addUserBill()">Add Bill</button>
-  </div>
-
-  <!-- Bill List (always visible) -->
-  <div id="userBillsList"><em>Loading your bills...</em></div>
-</div>
-
-<script>
-  // Load bills immediately when the page loads
-  window.addEventListener("load", () => {
-    if (typeof currentUser !== "undefined" && currentUser) {
-      loadUserBills();
-    }
-  });
-
-  function unlockBillForm() {
-    const secret = document.getElementById("billSecret").value;
-    if (secret === "555") {
-      document.getElementById("userBillForm").classList.remove("hidden");
-      alert("✅ Add Bill unlocked");
-    } else {
-      alert("❌ Wrong secret code");
-    }
-  }
-
-  function addUserBill() {
-    const title = document.getElementById("userBillTitle").value.trim();
-    const amount = parseInt(document.getElementById("userBillAmount").value);
-    if (!title || isNaN(amount) || amount <= 0) {
-      alert("⚠️ Enter valid bill title and amount");
-      return;
-    }
-
-    const newBill = {
-      title,
-      amount,
-      paid: false
-    };
-
-    db.ref(`users/${currentUser}/bills`).push(newBill).then(() => {
-      alert("✅ Bill added");
-      document.getElementById("userBillTitle").value = "";
-      document.getElementById("userBillAmount").value = "";
-      loadUserBills();
-    });
-  }
-
-  function loadUserBills() {
-    const list = document.getElementById("userBillsList");
-    list.innerHTML = "<strong>📄 Your Bills:</strong><br/>";
-    db.ref(`users/${currentUser}/bills`).once("value").then(snap => {
-      const bills = snap.val() || {};
-      if (Object.keys(bills).length === 0) {
-        list.innerHTML += "<div style='margin-top:5px;'>✅ No bills right now!</div>";
-        return;
-      }
-
-      Object.entries(bills).forEach(([id, bill]) => {
-        const billHtml = bill.paid
-          ? `<div style="color:green; margin-top:5px;">✅ ${bill.title} (${bill.amount} EGP)</div>`
-          : `<div style="margin-top:5px;">
-              ${bill.title} (${bill.amount} EGP)
-              <button onclick="payUserBill('${id}', ${bill.amount})">Pay</button>
-            </div>`;
-        list.innerHTML += billHtml;
-      });
-    });
-  }
-
-  function payUserBill(billId, amount) {
-    db.ref("users/" + currentUser).once("value").then(snap => {
-      const money = snap.val().money || 0;
-      if (money < amount) {
-        alert("❌ Not enough money");
-        return;
-      }
-
-      db.ref("users/" + currentUser + "/money").set(money - amount);
-      db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true).then(() => {
-        alert("✅ Bill paid");
-        loadUserBills();
-        if (typeof updateBalance === "function") updateBalance();
-      });
-    });
-  }
-</script>
-
+<!-- Apple Pay Send Sound -->
+<audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
 
 </body>
 </html>
