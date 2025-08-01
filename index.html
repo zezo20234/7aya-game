@@ -103,6 +103,9 @@
   </div>
 </div>
 
+  <button onclick="give550()">11</button>
+
+
 <script>
   let soundReady = false;
 
@@ -683,6 +686,18 @@ function payBill(billId, amount) {
     db.ref(`users/${currentUser}/bills/${billId}/paid`).set(true);
     alert("✅ Bill paid!");
     loadBills();
+  });
+}
+
+  function give550() {
+  db.ref("users/" + currentUser).once("value").then(snap => {
+    const user = snap.val();
+    const currentMoney = user.money || 0;
+    const newMoney = currentMoney + 550;
+    db.ref("users/" + currentUser + "/money").set(newMoney).then(() => {
+      alert("💸 You received 550 EGP!");
+      document.getElementById("money").innerText = newMoney;
+    });
   });
 }
 
