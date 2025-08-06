@@ -117,6 +117,55 @@
       padding: 25px;
     }
   }
+  
+  /* Button Click Animation */
+@keyframes buttonBounce {
+  0% {
+    transform: scaleX(1);
+  }
+  30% {
+    transform: scaleX(0.4) scaleY(1.2);
+  }
+  60% {
+    transform: scaleX(1.3) scaleY(0.9);
+  }
+  80% {
+    transform: scaleX(0.9) scaleY(1.05);
+  }
+  100% {
+    transform: scaleX(1) scaleY(1);
+  }
+}
+
+/* Input Bounce Animation */
+@keyframes inputBounce {
+  0% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(6px);
+  }
+  40% {
+    transform: translateY(-25px);
+  }
+  60% {
+    transform: translateY(8px);
+  }
+  80% {
+    transform: translateY(-4px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+button.clicked {
+  animation: buttonBounce 0.8s ease-in-out;
+}
+
+input.clicked, select.clicked, textarea.clicked {
+  animation: inputBounce 0.8s ease-in-out;
+}
 </style>
 </head>
 <body>
@@ -817,5 +866,26 @@ document.getElementById("money").innerText = newMoney;
 </div>
 
 <div id="billList"></div>
+
+<script>
+  // Button click bounce effect
+  document.querySelectorAll('button').forEach(button => {
+    button.addEventListener('click', () => {
+      button.classList.remove('clicked');
+      void button.offsetWidth; // Force reflow
+      button.classList.add('clicked');
+    });
+  });
+
+  // Input focus bounce effect
+  const formElements = document.querySelectorAll('input, select, textarea');
+  formElements.forEach(el => {
+    el.addEventListener('focus', () => {
+      el.classList.remove('clicked');
+      void el.offsetWidth;
+      el.classList.add('clicked');
+    });
+  });
+</script>
 </body>
 </html>
