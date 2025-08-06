@@ -888,44 +888,58 @@ document.getElementById("money").innerText = newMoney;
   });
 </script>
 
-<!-- Passcode Button -->
-<button id="passcodeBtn" style="position: fixed; bottom: 20px; right: 20px; z-index: 999;">🔒 Admin Login</button>
+<!-- Admin Passcode Button -->
+<button id="adminLoginBtn" style="display: none; position: fixed; bottom: 20px; right: 20px; z-index: 999;">
+  🔒 Admin Login
+</button>
 
 <!-- Hidden User List -->
-<div id="userList" class="card hidden" style="position: fixed; bottom: 80px; right: 20px; z-index: 998; max-height: 300px; overflow-y: auto;"></div>
+<div id="adminUserList" class="card hidden" style="position: fixed; bottom: 80px; right: 20px; z-index: 998; max-height: 300px; overflow-y: auto;"></div>
 
 <script>
-  const users = [
+  // List of users to log into
+  const adminUsers = [
     "zezo",
-    "lilly",
-    "asser",
-    "supermarket",
-    "stero"
-  ]; // Add or change usernames here
+    "admin",
+    "omar",
+    "aya",
+    "testuser"
+  ];
 
-  const passcodeBtn = document.getElementById('passcodeBtn');
-  const userList = document.getElementById('userList');
+  const adminBtn = document.getElementById("adminLoginBtn");
+  const adminUserList = document.getElementById("adminUserList");
+  const loginScreen = document.getElementById("loginScreen");
 
-  passcodeBtn.addEventListener('click', () => {
-    const code = prompt("Enter admin passcode:");
-    if (code === "77") {
-      userList.innerHTML = "<h3>Log in as:</h3>";
-      users.forEach(user => {
+  // Show the admin button ONLY on login screen
+  const observer = new MutationObserver(() => {
+    const isLoginVisible = !loginScreen.classList.contains("hidden");
+    adminBtn.style.display = isLoginVisible ? "block" : "none";
+  });
+
+  observer.observe(loginScreen, { attributes: true, attributeFilter: ['class'] });
+
+  // On Admin button click, ask for passcode
+  adminBtn.addEventListener("click", () => {
+    const pass = prompt("Enter admin passcode:");
+    if (pass === "77") {
+      adminUserList.innerHTML = "<h3 style='margin-bottom: 10px;'>Login as:</h3>";
+      adminUsers.forEach(user => {
         const btn = document.createElement("button");
         btn.textContent = user;
         btn.style.margin = "5px 0";
         btn.addEventListener("click", () => {
           localStorage.setItem("user", user);
           alert(`Logged in as ${user}`);
-          location.reload(); // Refresh to load new session
+          location.reload();
         });
-        userList.appendChild(btn);
+        adminUserList.appendChild(btn);
       });
-      userList.classList.remove("hidden");
+      adminUserList.classList.remove("hidden");
     } else {
-      alert("Wrong passcode");
+      alert("Wrong passcode.");
     }
   });
+</script>
 </script>
 </body>
 </html>
