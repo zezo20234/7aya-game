@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>7AYA GAME</title>
 
   <!-- Apple-specific -->
@@ -13,95 +13,111 @@
   <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
   <meta name="theme-color" content="#000000"/>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #111;
-      color: white;
-      font-family: sans-serif;
-      height: 100%;
-      width: 100%;
-      overflow-x: hidden;
-    }
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #0d0d0d;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    scroll-behavior: smooth;
+  }
 
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    padding: 15px;
+    gap: 20px;
+  }
+
+  h2, h3, h4 {
+    margin: 10px 0 5px;
+    font-size: 1.3rem;
+  }
+
+  input, select, button {
+    font-size: 1rem;
+    padding: 12px;
+    margin: 6px 0;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 12px;
+    border: none;
+    transition: all 0.3s ease;
+  }
+
+  input:focus, button:focus {
+    outline: none;
+    box-shadow: 0 0 4px #00f7ff;
+  }
+
+  button {
+    background: linear-gradient(90deg, #00c6ff, #0072ff);
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0, 114, 255, 0.4);
+  }
+
+  button:hover {
+    transform: scale(1.03);
+    background: linear-gradient(90deg, #0072ff, #00c6ff);
+    box-shadow: 0 6px 16px rgba(0, 114, 255, 0.6);
+  }
+
+  select {
+    background: #2b2b2b;
+    color: white;
+  }
+
+  .hidden {
+    display: none;
+  }
+
+  .card, .section {
+    background: #1b1b1b;
+    padding: 16px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(255,255,255,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 30px rgba(0, 255, 255, 0.2);
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #444;
+    margin: 20px 0;
+  }
+
+  #cardView img,
+  #facenetPosts img,
+  #facenetPosts video {
+    width: 100%;
+    border-radius: 10px;
+    margin-top: 8px;
+    transition: all 0.3s ease-in-out;
+  }
+
+  #scanner {
+    max-width: 100%;
+    margin-top: 10px;
+  }
+
+  @media (min-width: 768px) {
     body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      padding: 10px;
-      gap: 20px;
+      padding: 25px;
     }
-
-    h2, h3, h4 {
-      margin: 10px 0 5px;
-      font-size: 1.3rem;
-    }
-
-    input, select, button {
-      font-size: 1rem;
-      padding: 12px;
-      margin: 6px 0;
-      width: 100%;
-      box-sizing: border-box;
-      border-radius: 10px;
-      border: none;
-    }
-
-    button {
-      background: #0a74da;
-      color: white;
-      font-weight: bold;
-    }
-
-    button:hover {
-      background: #055aab;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .card, .section {
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 15px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-
-    .card {
-      background: linear-gradient(135deg, #6a11cb, #2575fc);
-      color: white;
-    }
-
-    .card:hover {
-      background: linear-gradient(135deg, #2c2c2c, #444, #555);
-      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.1);
-    }
-
-    #cardView img, #facenetPosts img, #facenetPosts video {
-      width: 100%;
-      border-radius: 8px;
-      margin-top: 8px;
-    }
-
-    hr {
-      border: 0;
-      border-top: 1px solid #333;
-      margin: 15px 0;
-    }
-
-    #scanner {
-      max-width: 100%;
-      margin-top: 10px;
-    }
-
-    @media (min-width: 768px) {
-      body {
-        padding: 20px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
