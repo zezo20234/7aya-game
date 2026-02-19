@@ -36,14 +36,13 @@
     body {
       display: flex;
       flex-direction: column;
-      padding-bottom: 70px; /* Space for bottom nav */
+      padding-bottom: 80px; 
     }
 
     /* Typography */
     h2, h3 { margin: 10px 0; font-weight: 600; letter-spacing: 0.5px; }
     p { margin: 5px 0; font-size: 0.95rem; color: #ddd; }
 
-    /* Layout Containers */
     .container { padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
     .hidden { display: none !important; }
 
@@ -80,8 +79,6 @@
       border: 1px solid #333;
     }
 
-    input:focus { border-color: var(--primary); }
-
     button {
       background: linear-gradient(90deg, var(--primary), var(--secondary));
       color: white;
@@ -98,13 +95,14 @@
       bottom: 0;
       left: 0;
       right: 0;
-      height: 65px;
+      height: 70px;
       background: #151515;
       display: flex;
       justify-content: space-around;
       align-items: center;
       border-top: 1px solid #333;
       z-index: 1000;
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     .nav-item {
@@ -116,7 +114,7 @@
     }
 
     .nav-item.active { color: var(--primary); font-weight: bold; }
-    .nav-item i { display: block; font-size: 20px; margin-bottom: 2px; }
+    .nav-item i { display: block; font-size: 22px; margin-bottom: 4px; }
 
     /* Facenet Styling */
     #facenetPosts img, #facenetPosts video {
@@ -130,27 +128,25 @@
     /* QR Scanner */
     #scanner { border-radius: 15px; overflow: hidden; background: #000; }
 
-    /* Animations */
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .tab-content { animation: fadeIn 0.4s ease-out; }
-
+    .tab-content { animation: fadeIn 0.3s ease-out; }
   </style>
 </head>
 <body>
 
 <div id="login" class="container">
-  <div style="text-align:center; margin-top: 50px;">
-     <h1 style="color: var(--primary); margin-bottom: 5px;">7AYA</h1>
-     <p style="margin-bottom: 30px;">Digital Life Simulator</p>
+  <div style="text-align:center; margin-top: 60px;">
+     <h1 style="color: var(--primary); margin-bottom: 5px; font-size: 3rem;">7AYA</h1>
+     <p style="margin-bottom: 40px; color: var(--gray);">Premium Digital Simulator</p>
   </div>
   <div class="card">
     <h2>Login</h2>
     <input id="username" placeholder="Username" autocomplete="off" />
     <input id="pin" placeholder="PIN" type="password" maxlength="6" />
-    <label style="display:flex; align-items:center; gap:10px; margin: 10px 0;">
-        <input type="checkbox" id="keepSigned" style="width:20px;"> Keep me signed in
+    <label style="display:flex; align-items:center; gap:10px; margin: 15px 0;">
+        <input type="checkbox" id="keepSigned" style="width:20px; height:20px;"> Keep me signed in
     </label>
-    <button onclick="login()">Enter Game</button>
+    <button onclick="login()">Enter 7AYA</button>
   </div>
 </div>
 
@@ -158,24 +154,24 @@
   
   <div class="container" style="padding-bottom: 0;">
     <div style="display:flex; justify-content: space-between; align-items: center;">
-        <h2 id="welcome" style="font-size: 1.1rem;">Welcome</h2>
-        <button onclick="logout()" style="width: auto; padding: 5px 15px; font-size: 0.8rem; background: #333;">Logout</button>
+        <h2 id="welcome" style="font-size: 1.1rem; color: var(--primary);">Loading...</h2>
+        <button onclick="logout()" style="width: auto; padding: 6px 15px; font-size: 0.7rem; background: #333;">LOGOUT</button>
     </div>
-    <div class="card" style="margin-top: 10px; padding: 10px 15px; text-align: center; border: 1px dashed var(--primary);">
-        <span id="gameTime" style="font-family: monospace; font-size: 1.2rem; color: var(--primary);">--:--:--</span>
+    <div class="card" style="margin-top: 10px; padding: 12px; text-align: center; border: 1px solid #333;">
+        <span id="gameTime" style="font-family: monospace; font-size: 1.3rem; color: #fff; letter-spacing: 2px;">--:--:--</span>
     </div>
   </div>
 
   <div id="tab-dashboard" class="tab-content container">
     <div class="card wallet-card">
-        <p style="color: var(--gray); text-transform: uppercase; font-size: 0.7rem; font-weight: bold;">Available Balance</p>
-        <h1 style="margin: 5px 0;"><span id="money">0</span> <small style="font-size: 1rem;">EGP</small></h1>
+        <p style="color: var(--gray); text-transform: uppercase; font-size: 0.7rem; font-weight: bold; letter-spacing: 1px;">Balance</p>
+        <h1 style="margin: 5px 0; font-size: 2.5rem;"><span id="money">0</span> <small style="font-size: 1rem; color: var(--gray);">EGP</small></h1>
         <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-        <p>📞 <span id="phone" style="color:#fff">--</span></p>
-        <p>📶 Raseed: <span id="raseed" style="color:#fff">0</span> | Internet: <span id="internet" style="color:#fff">0</span> MB</p>
+        <p>📞 <span id="phone" style="color:#fff; font-weight: bold;">--</span></p>
+        <p>🌐 Internet: <span id="internet" style="color:var(--primary); font-weight: bold;">0</span> MB</p>
     </div>
 
-    <button onclick="prepareSound(); startQrMoneyTransfer()">💸 Scan to Send Money</button>
+    <button onclick="prepareSound(); startQrMoneyTransfer()">💸 Transfer Money (Scan)</button>
     <div id="scannerContainer">
         <div id="scanner" style="width: 100%; display: none;"></div>
         <div id="qrStatus" style="text-align:center; color: var(--primary); margin-top: 5px;"></div>
@@ -183,82 +179,64 @@
 
     <div class="card">
         <h3>🎴 Digital Card</h3>
-        <input id="cardPin" placeholder="New 3-digit PIN" maxlength="3" />
-        <button onclick="makeCard()" style="background: #333;">Create Card</button>
-        <div style="margin-top: 15px;">
-            <input id="openCardPin" placeholder="Enter PIN to View" maxlength="3" />
+        <input id="cardPin" placeholder="Setup 3-digit PIN" maxlength="3" />
+        <button onclick="makeCard()" style="background: #222; border: 1px solid #444;">Issue Card</button>
+        <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
+            <input id="openCardPin" placeholder="Enter Card PIN" maxlength="3" />
             <button onclick="openCard()">View Card Info</button>
         </div>
-        <div id="cardView" class="card hidden" style="background: #222; margin-top:10px;"></div>
+        <div id="cardView" class="card hidden" style="background: #111; margin-top:10px; border: 1px solid var(--primary);"></div>
     </div>
   </div>
 
   <div id="tab-telecom" class="tab-content container hidden">
-    <h3>📱 Telecom Center</h3>
+    <h3>📱 Telecom Store</h3>
     <div class="card">
-        <p>Buy a new SIM line for 250 EGP</p>
+        <p>Buy a Phone Number (250 EGP)</p>
         <select id="company">
             <option value="">Select Operator</option>
             <option value="Orange">Orange</option>
             <option value="Vodafone">Vodafone</option>
             <option value="e&">e&</option>
         </select>
-        <button onclick="buyNumber()">Purchase Line</button>
+        <button onclick="buyNumber()">Get New Number</button>
     </div>
 
     <div id="simApp" class="hidden">
         <div class="card" style="border-top: 4px solid #4caf50;">
-            <h4>SIM Control: <span id="simCompany" style="color:var(--primary)"></span></h4>
-            <p>Select a data bundle:</p>
-            <button onclick="buyBundle(40, 1500)" style="font-size:0.9rem;">1.5GB / 40 EGP</button>
-            <button onclick="buyBundle(60, 2250)" style="font-size:0.9rem;">2.2GB / 60 EGP</button>
-            <button onclick="buyBundle(80, 4250)" style="font-size:0.9rem;">4.2GB / 80 EGP</button>
+            <h4>SIM: <span id="simCompany" style="color:var(--primary)"></span></h4>
+            <p style="font-size: 0.8rem; color: var(--gray);">Bundles will be deducted from your Money balance.</p>
+            <button onclick="buyBundle(40, 1500)">1.5GB - 40 EGP</button>
+            <button onclick="buyBundle(60, 2250)">2.2GB - 60 EGP</button>
+            <button onclick="buyBundle(80, 4250)">4.2GB - 80 EGP</button>
         </div>
     </div>
   </div>
 
   <div id="tab-social" class="tab-content container hidden">
-    <h3>🌐 Facenet</h3>
+    <h3>🌍 Facenet</h3>
     <div class="card">
-        <input id="postTitle" placeholder="What's on your mind?" />
-        <div style="display:flex; gap: 10px; align-items:center;">
-            <input id="postImage" type="file" accept="image/*,video/*" style="font-size: 0.8rem;"/>
-            <button onclick="makePost()" style="width:100px;">Post</button>
+        <input id="postTitle" placeholder="What's happening?" />
+        <div style="display:flex; gap: 10px;">
+            <input id="postImage" type="file" accept="image/*,video/*" style="font-size: 0.7rem; padding: 10px;"/>
+            <button onclick="makePost()" style="width:120px;">POST</button>
         </div>
     </div>
     <div id="facenetPosts"></div>
-    <button id="resetBtn" class="hidden" onclick="resetFacenet()" style="background: #600;">Reset All Posts</button>
   </div>
 
   <div id="tab-extras" class="tab-content container hidden">
-    <h3>🧾 Bills & Services</h3>
-    <div id="billList"></div>
-
-    <div class="card">
-        <h4>Manager Access</h4>
-        <input id="billCode" placeholder="Secret Access Code" />
-        <button onclick="unlockBillAdmin()" style="background:#333">Unlock Tools</button>
-        
-        <div id="addBillArea" class="hidden" style="margin-top:15px; border-top: 1px solid #444; padding-top:15px;">
-            <input id="billTitle" placeholder="Bill Name" />
-            <input id="billAmount" type="number" placeholder="Amount" />
-            <button onclick="addBill()">Issue Bill</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h4>Redeem Codes</h4>
-        <input id="secretMoney" placeholder="Feature Code" />
-        <input id="moneyAmount" type="number" placeholder="Value" />
-        <button onclick="changeMoney()" style="background:#333">Execute</button>
+    <h3>More Services</h3>
+    <div class="card" style="text-align: center; padding: 40px 20px;">
+        <p style="color: var(--gray);">More features coming soon...</p>
     </div>
   </div>
 
   <div class="bottom-nav">
-    <div class="nav-item active" onclick="showTab('dashboard', this)"><i>🏠</i>Home</div>
-    <div class="nav-item" onclick="showTab('telecom', this)"><i>📱</i>SIM</div>
-    <div class="nav-item" onclick="showTab('social', this)"><i>🌍</i>Feed</div>
-    <div class="nav-item" onclick="showTab('extras', this)"><i>💳</i>More</div>
+    <div class="nav-item active" onclick="showTab('dashboard', this)"><i>🏠</i>Wallet</div>
+    <div class="nav-item" onclick="showTab('telecom', this)"><i>📶</i>SIM</div>
+    <div class="nav-item" onclick="showTab('social', this)"><i>🌐</i>Social</div>
+    <div class="nav-item" onclick="showTab('extras', this)"><i>⚙️</i>More</div>
   </div>
 </div>
 
@@ -267,7 +245,7 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
-// --- CORE CONFIG & STATE ---
+// --- INITIALIZATION ---
 const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -284,23 +262,20 @@ let currentUser = null;
 let serverOffsetMs = 0;
 let soundReady = false;
 
-// --- TAB NAVIGATION SYSTEM ---
+// --- NAVIGATION ---
 function showTab(tabId, el) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
     document.getElementById('tab-' + tabId).classList.remove('hidden');
-    
     document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
     el.classList.add('active');
     window.scrollTo(0,0);
 }
 
-// --- CLOCK SYSTEM ---
+// --- CLOCK ---
 db.ref(".info/serverTimeOffset").on("value", snap => { serverOffsetMs = snap.val() || 0; });
-
 function startGameClock() {
-    const cycleMs = 12 * 60 * 1000; // 12 real mins = 1 virtual day
+    const cycleMs = 12 * 60 * 1000; 
     const scale = (24 * 60 * 60 * 1000) / cycleMs;
-
     setInterval(() => {
         const virtualMs = ((Date.now() + serverOffsetMs) % cycleMs) * scale;
         const d = new Date(virtualMs);
@@ -308,64 +283,78 @@ function startGameClock() {
         const m = String(d.getUTCMinutes()).padStart(2, "0");
         const ampm = h >= 12 ? "PM" : "AM";
         h = h % 12 || 12;
-        const el = document.getElementById("gameTime");
-        if (el) el.textContent = `${h}:${m} ${ampm}`;
+        document.getElementById("gameTime").textContent = `${h}:${m} ${ampm}`;
     }, 1000);
 }
 
-// --- AUTH LOGIC ---
+// --- AUTH ---
 function login() {
     const user = document.getElementById("username").value.trim().toLowerCase();
     const pin = document.getElementById("pin").value.trim();
     const keep = document.getElementById("keepSigned").checked;
-    
-    if(!user || !pin) return alert("Please enter credentials");
-    
+    if(!user || !pin) return alert("Enter credentials");
     db.ref("users/" + user).once("value").then(snap => {
-        if (!snap.exists()) return alert("User not found");
-        if (snap.val().pin === pin) {
+        if (snap.exists() && snap.val().pin === pin) {
             currentUser = user;
             (keep ? localStorage : sessionStorage).setItem("7ayaUser", user);
             loadUser();
-        } else {
-            alert("Incorrect PIN");
-        }
+        } else { alert("Invalid User/PIN"); }
     });
 }
 
 function loadUser() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("main").classList.remove("hidden");
-    
     db.ref("users/" + currentUser).on("value", snap => {
         const data = snap.val();
         document.getElementById("money").textContent = data.money ?? 0;
         document.getElementById("phone").textContent = data.phone || "No Number";
-        document.getElementById("raseed").textContent = data.raseed ?? 0;
         document.getElementById("internet").textContent = data.internet ?? 0;
-        document.getElementById("welcome").textContent = `Hi, ${currentUser}`;
-
+        document.getElementById("welcome").textContent = `Hello, ${currentUser}`;
         if (data.company) {
             document.getElementById("simApp").classList.remove("hidden");
             document.getElementById("simCompany").textContent = data.company;
         }
-        
-        document.getElementById("resetBtn").classList.toggle("hidden", currentUser !== "zezo");
     });
-
     startGameClock();
     loadPosts();
-    loadBills();
-    startInternetDrain();
+    setInterval(() => {
+        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 40));
+    }, 60000);
 }
 
 function logout() {
-    localStorage.removeItem("7ayaUser");
-    sessionStorage.removeItem("7ayaUser");
-    location.reload();
+    localStorage.clear(); sessionStorage.clear(); location.reload();
 }
 
-// --- MONEY & QR ---
+// --- SIM LOGIC (MONEY BASED) ---
+function buyNumber() {
+    const company = document.getElementById("company").value;
+    if(!company) return alert("Choose operator");
+    db.ref("users/" + currentUser).once("value").then(snap => {
+        if(snap.val().money < 250) return alert("Not enough Money (250 EGP required)");
+        db.ref("users/"+currentUser).update({
+            money: snap.val().money - 250,
+            phone: "01" + Math.floor(100000000 + Math.random()*900000000),
+            company: company,
+            internet: 0
+        });
+    });
+}
+
+function buyBundle(cost, mb) {
+    db.ref("users/" + currentUser).once("value").then(snap => {
+        const d = snap.val();
+        if(d.money < cost) return alert("Insufficient Money Balance");
+        db.ref("users/"+currentUser).update({
+            money: d.money - cost,
+            internet: (d.internet || 0) + mb
+        });
+        alert(`Successfully purchased ${mb}MB`);
+    });
+}
+
+// --- QR & TRANSFERS ---
 let qrCodeScanner = null;
 function prepareSound() {
     const audio = document.getElementById("successSound");
@@ -373,10 +362,8 @@ function prepareSound() {
 }
 
 function startQrMoneyTransfer() {
-    const scanDiv = document.getElementById("scanner");
-    scanDiv.style.display = "block";
+    document.getElementById("scanner").style.display = "block";
     if (!qrCodeScanner) qrCodeScanner = new Html5Qrcode("scanner");
-
     Html5Qrcode.getCameras().then(devices => {
         const backCam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
         qrCodeScanner.start(backCam.id, { fps: 20, qrbox: 250 }, onQrDetected);
@@ -387,31 +374,61 @@ function onQrDetected(qrData) {
     qrCodeScanner.stop().then(() => {
         document.getElementById("scanner").style.display = "none";
         const recipient = qrData.trim().toLowerCase();
-        if (recipient === currentUser) return alert("Cannot send to yourself");
-
-        const amount = parseInt(prompt(`Transfer amount to ${recipient}:`));
+        if (recipient === currentUser) return alert("Error: Self-transfer");
+        const amount = parseInt(prompt(`Send EGP to ${recipient}:`));
         if (isNaN(amount) || amount <= 0) return;
 
-        db.ref("users/" + currentUser + "/money").transaction(current => {
-            if ((current || 0) >= amount) {
-                db.ref("users/" + recipient + "/money").transaction(rec => (rec || 0) + amount);
+        db.ref("users/" + currentUser + "/money").transaction(curr => {
+            if ((curr || 0) >= amount) {
+                db.ref("users/" + recipient + "/money").transaction(r => (r || 0) + amount);
                 if(soundReady) document.getElementById("successSound").play();
-                alert(`Successfully sent ${amount} EGP`);
-                return current - amount;
-            } else {
-                alert("Insufficient funds");
-                return current;
-            }
+                alert(`Sent ${amount} EGP`);
+                return curr - amount;
+            } else { alert("Insufficient funds"); return curr; }
         });
     });
 }
 
-// --- UTILITY FUNCTIONS (Condensed) ---
+// --- SOCIAL ---
+function makePost() {
+    const title = document.getElementById("postTitle").value.trim();
+    const file = document.getElementById("postImage").files[0];
+    if(!title || !file) return alert("Title and file required");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        db.ref("posts").push({
+            user: currentUser, title: title, url: e.target.result,
+            mediaType: file.type.startsWith("video") ? "video" : "image",
+            time: Date.now()
+        }).then(() => { 
+            document.getElementById("postTitle").value = ""; 
+            alert("Posted to Facenet");
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+function loadPosts() {
+    db.ref("posts").limitToLast(15).on("value", snap => {
+        const container = document.getElementById("facenetPosts");
+        container.innerHTML = "";
+        snap.forEach(child => {
+            const p = child.val();
+            const div = document.createElement("div");
+            div.className = "post-card";
+            const media = p.mediaType === "video" ? `<video src="${p.url}" controls></video>` : `<img src="${p.url}">`;
+            div.innerHTML = `<strong>@${p.user}</strong><p>${p.title}</p>${media}`;
+            container.prepend(div);
+        });
+    });
+}
+
+// --- CARD ---
 function makeCard() {
     const pin = document.getElementById("cardPin").value.trim();
     if (pin.length !== 3) return alert("PIN must be 3 digits");
     const num = `${Math.floor(1000+Math.random()*9000)} ${Math.floor(1000+Math.random()*9000)}`;
-    db.ref(`users/${currentUser}/card`).set({ pin, number: num }).then(() => alert("Card Generated!"));
+    db.ref(`users/${currentUser}/card`).set({ pin, number: num }).then(() => alert("Card Active"));
 }
 
 function openCard() {
@@ -420,127 +437,14 @@ function openCard() {
         const c = snap.val();
         if (c && c.pin === pin) {
             document.getElementById("cardView").innerHTML = `
-                <p><b>Number:</b> ${c.number}</p>
-                <p><b>Country:</b> ${c.country || 'Egypt'}</p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:120px;display:block;margin:10px auto;">
+                <p><b>Card No:</b> ${c.number}</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:130px; margin:10px auto; display:block;">
             `;
             document.getElementById("cardView").classList.remove("hidden");
-        } else { alert("Wrong PIN"); }
+        } else { alert("Incorrect Card PIN"); }
     });
 }
 
-function buyNumber() {
-    const company = document.getElementById("company").value;
-    if(!company) return alert("Choose operator");
-    db.ref("users/" + currentUser).once("value").then(snap => {
-        const d = snap.val();
-        if(d.money < 250) return alert("Need 250 EGP");
-        db.ref("users/"+currentUser).update({
-            money: d.money - 250,
-            phone: "01" + Math.floor(100000000 + Math.random()*900000000),
-            company: company,
-            raseed: 0, internet: 0
-        });
-    });
-}
-
-function buyBundle(cost, mb) {
-    db.ref("users/" + currentUser).once("value").then(snap => {
-        const d = snap.val();
-        if(d.raseed < cost) return alert("Insufficient Raseed");
-        db.ref("users/"+currentUser).update({
-            raseed: d.raseed - cost,
-            internet: (d.internet || 0) + mb
-        });
-    });
-}
-
-function makePost() {
-    const title = document.getElementById("postTitle").value.trim();
-    const file = document.getElementById("postImage").files[0];
-    if(!title || !file) return alert("Title and media required");
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        db.ref("posts").push({
-            user: currentUser,
-            title: title,
-            url: e.target.result,
-            mediaType: file.type.startsWith("video") ? "video" : "image",
-            timestamp: Date.now()
-        }).then(() => {
-            alert("Posted!");
-            document.getElementById("postTitle").value = "";
-        });
-    };
-    reader.readAsDataURL(file);
-}
-
-function loadPosts() {
-    db.ref("posts").limitToLast(20).on("value", snap => {
-        const container = document.getElementById("facenetPosts");
-        container.innerHTML = "";
-        snap.forEach(child => {
-            const p = child.val();
-            const div = document.createElement("div");
-            div.className = "post-card";
-            const media = p.mediaType === "video" ? `<video src="${p.url}" controls></video>` : `<img src="${p.url}">`;
-            div.innerHTML = `<b>@${p.user}</b><p>${p.title}</p>${media}`;
-            container.prepend(div);
-        });
-    });
-}
-
-function startInternetDrain() {
-    setInterval(() => {
-        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 50));
-    }, 60000);
-}
-
-function changeMoney() {
-    const code = document.getElementById("secretMoney").value;
-    const amt = parseInt(document.getElementById("moneyAmount").value);
-    if(code === "555") db.ref(`users/${currentUser}/money`).set(amt);
-}
-
-function unlockBillAdmin() {
-    if(document.getElementById("billCode").value === "555") 
-        document.getElementById("addBillArea").classList.remove("hidden");
-}
-
-function addBill() {
-    const title = document.getElementById("billTitle").value;
-    const amount = parseInt(document.getElementById("billAmount").value);
-    db.ref(`users/${currentUser}/bills`).push({ title, amount, paid: false }).then(() => loadBills());
-}
-
-function loadBills() {
-    db.ref(`users/${currentUser}/bills`).on("value", snap => {
-        const container = document.getElementById("billList");
-        container.innerHTML = "";
-        snap.forEach(child => {
-            const b = child.val();
-            const id = child.key;
-            const div = document.createElement("div");
-            div.className = "card";
-            div.style.borderLeft = b.paid ? "4px solid green" : "4px solid red";
-            div.innerHTML = `<b>${b.title}</b><br>${b.amount} EGP <br>
-                ${b.paid ? '✅ Paid' : `<button onclick="payBill('${id}', ${b.amount})" style="padding:5px; margin-top:5px;">Pay Now</button>`}`;
-            container.appendChild(div);
-        });
-    });
-}
-
-function payBill(id, amt) {
-    db.ref(`users/${currentUser}`).once("value").then(snap => {
-        if(snap.val().money >= amt) {
-            db.ref(`users/${currentUser}/money`).set(snap.val().money - amt);
-            db.ref(`users/${currentUser}/bills/${id}/paid`).set(true);
-        } else alert("Not enough money");
-    });
-}
-
-// Check session
 window.onload = () => {
     const saved = localStorage.getItem("7ayaUser") || sessionStorage.getItem("7ayaUser");
     if (saved) { currentUser = saved; loadUser(); }
