@@ -84,13 +84,14 @@
     .nav-item.active { color: var(--primary); font-weight: bold; }
     .nav-item i { display: block; font-size: 22px; margin-bottom: 4px; }
 
-    /* Bill Styling */
-    .bill-item {
-        display: flex; justify-content: space-between; align-items: center;
-        padding: 12px; border-bottom: 1px solid #333;
+    /* Facenet Styling */
+    .post-card { border-bottom: 1px solid #333; padding: 15px 0; }
+    .post-card img, .post-card video { width: 100%; border-radius: 12px; margin-top: 10px; }
+    
+    .no-internet-msg {
+        text-align: center; padding: 50px 20px; color: var(--gray);
     }
-    .bill-unpaid { border-left: 4px solid var(--danger); }
-    .bill-paid { border-left: 4px solid var(--success); opacity: 0.7; }
+    .no-internet-msg i { font-size: 3rem; display: block; margin-bottom: 10px; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .tab-content { animation: fadeIn 0.3s ease-out; }
@@ -129,7 +130,7 @@
   
   <div class="container" style="padding-bottom: 0;">
     <div style="display:flex; justify-content: space-between; align-items: center;">
-        <h2 id="welcome" style="font-size: 1.1rem; color: var(--primary);">Loading...</h2>
+        <h2 id="welcome" style="font-size: 1.1rem; color: var(--primary);">Hello</h2>
         <button onclick="logout()" style="width: auto; padding: 6px 15px; font-size: 0.7rem; background: #333;">LOGOUT</button>
     </div>
     <div class="card" style="margin-top: 10px; padding: 12px; text-align: center;">
@@ -139,7 +140,7 @@
 
   <div id="tab-dashboard" class="tab-content container">
     <div class="card wallet-card">
-        <p style="color: var(--gray); text-transform: uppercase; font-size: 0.7rem; font-weight: bold;">Balance</p>
+        <p style="color: var(--gray); text-transform: uppercase; font-size: 0.7rem; font-weight: bold;">Available Money</p>
         <h1 style="margin: 5px 0; font-size: 2.5rem;"><span id="money">0</span> <small style="font-size: 1rem; color: var(--gray);">EGP</small></h1>
         <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
         <p>📞 <span id="phone" style="font-weight: bold;">--</span></p>
@@ -154,10 +155,10 @@
 
     <div class="card">
         <h3>🎴 ID Card</h3>
-        <input id="cardPin" placeholder="New Card PIN (3 digits)" maxlength="3" />
-        <button onclick="makeCard()" class="secondary">Issue Digital Card</button>
-        <div style="margin-top: 15px; border-top: 1px solid #333; padding-top: 15px;">
-            <input id="openCardPin" placeholder="Enter Card PIN" maxlength="3" />
+        <input id="cardPin" placeholder="Card PIN (3 digits)" maxlength="3" />
+        <button onclick="makeCard()" class="secondary">Issue Card</button>
+        <div style="margin-top: 15px;">
+            <input id="openCardPin" placeholder="Enter PIN to View" maxlength="3" />
             <button onclick="openCard()">View Card</button>
         </div>
         <div id="cardView" class="card hidden" style="background: #111; border: 1px solid var(--primary);"></div>
@@ -174,7 +175,7 @@
             <option value="Vodafone">Vodafone</option>
             <option value="e&">e&</option>
         </select>
-        <button onclick="buyNumber()">Get SIM</button>
+        <button onclick="buyNumber()">Purchase SIM</button>
     </div>
 
     <div id="simApp" class="hidden">
@@ -189,33 +190,37 @@
 
   <div id="tab-social" class="tab-content container hidden">
     <h3>🌍 Facenet</h3>
-    <div class="card">
-        <input id="postTitle" placeholder="Write something..." />
+    
+    <div id="facenet-input-area" class="card hidden">
+        <input id="postTitle" placeholder="What's happening?" />
         <div style="display:flex; gap: 10px;">
             <input id="postImage" type="file" accept="image/*,video/*" style="font-size: 0.7rem;"/>
             <button onclick="makePost()" style="width:100px;">POST</button>
         </div>
     </div>
+
+    <div id="facenet-offline" class="no-internet-msg">
+        <i>📡</i>
+        <h3>Connection Lost</h3>
+        <p>You need an active internet bundle to access Facenet.</p>
+        <button onclick="showTab('telecom', document.querySelectorAll('.nav-item')[1])" style="width: auto; padding: 10px 20px; margin-top: 10px;">Buy Data</button>
+    </div>
+
     <div id="facenetPosts"></div>
   </div>
 
   <div id="tab-extras" class="tab-content container hidden">
     <h3>🧾 My Bills</h3>
-    <div id="billList" class="card">
-        <p style="text-align:center; color:var(--gray);">No active bills</p>
-    </div>
+    <div id="billList" class="card"></div>
 
     <div class="card" style="margin-top:30px; border: 1px dashed #444;">
-        <h4>Admin Panel</h4>
-        <input id="adminCode" placeholder="Enter Access Code" type="password" />
-        <button onclick="unlockAdmin()" class="secondary">Unlock Tools</button>
+        <h4>Admin Tools</h4>
+        <input id="adminCode" placeholder="Admin Code" type="password" />
+        <button onclick="unlockAdmin()" class="secondary">Unlock</button>
 
         <div id="adminPanel" class="hidden" style="margin-top:20px; border-top: 1px solid #444; padding-top:15px;">
-            <p style="color:var(--primary); font-weight:bold;">Issue New Bill</p>
-            <select id="adminUserList">
-                <option value="">Select User</option>
-            </select>
-            <input id="adminBillTitle" placeholder="Bill Title (e.g. Electric)" />
+            <select id="adminUserList"><option value="">Select User</option></select>
+            <input id="adminBillTitle" placeholder="Bill Title" />
             <input id="adminBillAmount" type="number" placeholder="Amount (EGP)" />
             <button onclick="adminIssueBill()">Send Bill</button>
         </div>
@@ -235,7 +240,7 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
-// --- FIREBASE INIT ---
+// --- CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -249,10 +254,11 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 let currentUser = null;
+let currentInternet = 0;
 let serverOffsetMs = 0;
 let soundReady = false;
 
-// --- AUTH LOGIC ---
+// --- AUTH ---
 function toggleAuth(isSignup) {
     document.getElementById('login-box').classList.toggle('hidden', isSignup);
     document.getElementById('signup-box').classList.toggle('hidden', !isSignup);
@@ -261,19 +267,11 @@ function toggleAuth(isSignup) {
 function signup() {
     const user = document.getElementById('new-username').value.trim().toLowerCase();
     const pin = document.getElementById('new-pin').value.trim();
-    if(user.length < 3 || pin.length < 3) return alert("Username/PIN too short");
-
+    if(user.length < 3) return alert("Username too short");
     db.ref("users/" + user).once("value").then(snap => {
-        if(snap.exists()) return alert("Username already taken");
-        db.ref("users/" + user).set({
-            pin: pin,
-            money: 500, // Starting bonus
-            internet: 0,
-            raseed: 0
-        }).then(() => {
-            alert("Account created! Logging in...");
-            currentUser = user;
-            loadUser();
+        if(snap.exists()) return alert("Taken");
+        db.ref("users/" + user).set({ pin, money: 500, internet: 0 }).then(() => {
+            currentUser = user; loadUser();
         });
     });
 }
@@ -283,10 +281,8 @@ function login() {
     const pin = document.getElementById("pin").value.trim();
     db.ref("users/" + user).once("value").then(snap => {
         if (snap.exists() && snap.val().pin === pin) {
-            currentUser = user;
-            localStorage.setItem("7ayaUser", user);
-            loadUser();
-        } else { alert("Invalid User/PIN"); }
+            currentUser = user; localStorage.setItem("7ayaUser", user); loadUser();
+        } else { alert("Wrong PIN"); }
     });
 }
 
@@ -296,10 +292,27 @@ function loadUser() {
     
     db.ref("users/" + currentUser).on("value", snap => {
         const data = snap.val();
+        currentInternet = data.internet || 0;
         document.getElementById("money").textContent = data.money ?? 0;
         document.getElementById("phone").textContent = data.phone || "No Number";
-        document.getElementById("internet").textContent = data.internet ?? 0;
+        document.getElementById("internet").textContent = currentInternet;
         document.getElementById("welcome").textContent = `Hello, ${currentUser}`;
+        
+        // Handle Social Tab visibility based on internet
+        const inputArea = document.getElementById("facenet-input-area");
+        const offlineMsg = document.getElementById("facenet-offline");
+        const postContainer = document.getElementById("facenetPosts");
+
+        if (currentInternet > 0) {
+            inputArea.classList.remove("hidden");
+            offlineMsg.classList.add("hidden");
+            postContainer.classList.remove("hidden");
+        } else {
+            inputArea.classList.add("hidden");
+            offlineMsg.classList.remove("hidden");
+            postContainer.classList.add("hidden");
+        }
+
         if (data.company) {
             document.getElementById("simApp").classList.remove("hidden");
             document.getElementById("simCompany").textContent = data.company;
@@ -309,15 +322,15 @@ function loadUser() {
     startGameClock();
     loadPosts();
     loadMyBills();
-    loadAllUsers(); // For admin
+    loadAllUsers();
     setInterval(() => {
-        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 20));
+        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 25));
     }, 60000);
 }
 
 function logout() { localStorage.clear(); location.reload(); }
 
-// --- TABS ---
+// --- UI TABS ---
 function showTab(tabId, el) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
     document.getElementById('tab-' + tabId).classList.remove('hidden');
@@ -325,184 +338,143 @@ function showTab(tabId, el) {
     el.classList.add('active');
 }
 
-// --- BILLING SYSTEM ---
-function loadMyBills() {
-    db.ref(`users/${currentUser}/bills`).on("value", snap => {
-        const list = document.getElementById("billList");
-        list.innerHTML = "";
-        if(!snap.exists()) {
-            list.innerHTML = `<p style="text-align:center; color:var(--gray);">No active bills</p>`;
-            return;
-        }
-        snap.forEach(child => {
-            const b = child.val();
-            const id = child.key;
-            const div = document.createElement("div");
-            div.className = `bill-item ${b.paid ? 'bill-paid' : 'bill-unpaid'}`;
-            div.innerHTML = `
-                <div>
-                    <div style="font-weight:bold;">${b.title}</div>
-                    <div style="font-size:0.8rem; color:var(--gray);">${b.amount} EGP</div>
-                </div>
-                ${!b.paid ? `<button onclick="payBill('${id}', ${b.amount})" style="width:70px; padding:8px; font-size:0.7rem;">Pay</button>` : '<span>Paid</span>'}
-            `;
-            list.prepend(div);
-        });
-    });
-}
-
-function payBill(id, amt) {
-    db.ref(`users/${currentUser}`).once("value").then(snap => {
-        const m = snap.val().money || 0;
-        if(m < amt) return alert("Not enough balance");
-        db.ref(`users/${currentUser}/money`).set(m - amt);
-        db.ref(`users/${currentUser}/bills/${id}/paid`).set(true);
-    });
-}
-
-// --- ADMIN BILLING ---
-function unlockAdmin() {
-    if(document.getElementById("adminCode").value === "555") {
-        document.getElementById("adminPanel").classList.remove("hidden");
-    } else { alert("Access Denied"); }
-}
-
-function loadAllUsers() {
-    db.ref("users").once("value").then(snap => {
-        const select = document.getElementById("adminUserList");
-        select.innerHTML = '<option value="">Select User</option>';
-        snap.forEach(child => {
-            const opt = document.createElement("option");
-            opt.value = child.key;
-            opt.textContent = child.key;
-            select.appendChild(opt);
-        });
-    });
-}
-
-function adminIssueBill() {
-    const target = document.getElementById("adminUserList").value;
-    const title = document.getElementById("adminBillTitle").value;
-    const amt = parseInt(document.getElementById("adminBillAmount").value);
-    
-    if(!target || !title || isNaN(amt)) return alert("Fill all fields");
-    
-    db.ref(`users/${target}/bills`).push({
-        title: title,
-        amount: amt,
-        paid: false,
-        issuedBy: currentUser
-    }).then(() => {
-        alert(`Bill sent to ${target}`);
-        document.getElementById("adminBillTitle").value = "";
-        document.getElementById("adminBillAmount").value = "";
-    });
-}
-
-// --- SIM / INTERNET ---
-function buyNumber() {
-    const co = document.getElementById("company").value;
-    if(!co) return alert("Select company");
-    db.ref("users/"+currentUser).once("value").then(s => {
-        if(s.val().money < 250) return alert("Need 250 EGP");
-        db.ref("users/"+currentUser).update({
-            money: s.val().money - 250,
-            phone: "01" + Math.floor(100000000 + Math.random()*900000000),
-            company: co
-        });
-    });
-}
-
-function buyBundle(cost, mb) {
-    db.ref("users/"+currentUser).once("value").then(s => {
-        if(s.val().money < cost) return alert("Low balance");
-        db.ref("users/"+currentUser).update({
-            money: s.val().money - cost,
-            internet: (s.val().internet || 0) + mb
-        });
-        alert("Bundle Active");
-    });
-}
-
-// --- UTILITIES (REUSED) ---
-db.ref(".info/serverTimeOffset").on("value", snap => { serverOffsetMs = snap.val() || 0; });
-function startGameClock() {
-    const cycleMs = 12 * 60 * 1000; 
-    const scale = (24 * 60 * 60 * 1000) / cycleMs;
-    setInterval(() => {
-        const v = ((Date.now() + serverOffsetMs) % cycleMs) * scale;
-        const d = new Date(v);
-        let h = d.getUTCHours();
-        const m = String(d.getUTCMinutes()).padStart(2, "0");
-        const ap = h >= 12 ? "PM" : "AM";
-        h = h % 12 || 12;
-        document.getElementById("gameTime").textContent = `${h}:${m} ${ap}`;
-    }, 1000);
-}
-
-let qrScanner = null;
-function prepareSound() {
-    const audio = document.getElementById("successSound");
-    audio.play().then(() => { audio.pause(); audio.currentTime = 0; soundReady = true; }).catch(() => {});
-}
-
-function startQrMoneyTransfer() {
-    document.getElementById("scanner").style.display = "block";
-    if (!qrScanner) qrScanner = new Html5Qrcode("scanner");
-    Html5Qrcode.getCameras().then(devices => {
-        const cam = devices.find(d => d.label.toLowerCase().includes("back")) || devices[0];
-        qrScanner.start(cam.id, { fps: 20, qrbox: 250 }, (data) => {
-            qrScanner.stop().then(() => {
-                document.getElementById("scanner").style.display = "none";
-                const target = data.trim().toLowerCase();
-                const amt = parseInt(prompt(`Send EGP to ${target}:`));
-                if (isNaN(amt) || amt <= 0) return;
-                db.ref("users/"+currentUser+"/money").transaction(c => {
-                    if((c||0) >= amt) {
-                        db.ref("users/"+target+"/money").transaction(r => (r||0) + amt);
-                        if(soundReady) document.getElementById("successSound").play();
-                        return c - amt;
-                    } else { alert("Low funds"); return c; }
-                });
-            });
-        });
-    });
-}
-
+// --- FACENET (INTERNET REQUIRED) ---
 function makePost() {
+    if (currentInternet <= 0) return alert("No Internet Connection");
+    
     const t = document.getElementById("postTitle").value;
     const f = document.getElementById("postImage").files[0];
-    if(!t || !f) return alert("Select title and file");
+    if(!t || !f) return alert("Missing content");
+
     const r = new FileReader();
     r.onload = (e) => {
         db.ref("posts").push({
             user: currentUser, title: t, url: e.target.result,
-            mediaType: f.type.startsWith("video") ? "video" : "image"
-        }).then(() => { document.getElementById("postTitle").value = ""; alert("Posted!"); });
+            mediaType: f.type.startsWith("video") ? "video" : "image",
+            time: Date.now()
+        }).then(() => { 
+            document.getElementById("postTitle").value = ""; 
+            alert("Posted!"); 
+        });
     };
     r.readAsDataURL(f);
 }
 
 function loadPosts() {
-    db.ref("posts").limitToLast(10).on("value", s => {
+    db.ref("posts").limitToLast(15).on("value", s => {
         const con = document.getElementById("facenetPosts");
         con.innerHTML = "";
         s.forEach(c => {
             const p = c.val();
             const div = document.createElement("div");
-            div.style.borderBottom = "1px solid #333"; div.style.padding = "10px 0";
-            const med = p.mediaType === "video" ? `<video src="${p.url}" controls style="width:100%"></video>` : `<img src="${p.url}" style="width:100%">`;
+            div.className = "post-card";
+            const med = p.mediaType === "video" ? `<video src="${p.url}" controls></video>` : `<img src="${p.url}">`;
             div.innerHTML = `<strong>@${p.user}</strong><p>${p.title}</p>${med}`;
             con.prepend(div);
         });
     });
 }
 
+// --- BILLING ---
+function loadMyBills() {
+    db.ref(`users/${currentUser}/bills`).on("value", snap => {
+        const list = document.getElementById("billList");
+        list.innerHTML = snap.exists() ? "" : '<p style="text-align:center; color:var(--gray);">Clear!</p>';
+        snap.forEach(child => {
+            const b = child.val();
+            const div = document.createElement("div");
+            div.style.display = "flex"; div.style.justifyContent = "space-between";
+            div.style.padding = "10px 0"; div.style.borderBottom = "1px solid #333";
+            div.innerHTML = `<span>${b.title} (${b.amount} EGP)</span>
+                ${!b.paid ? `<button onclick="payBill('${child.key}', ${b.amount})" style="width:60px; padding:5px; font-size:0.7rem;">Pay</button>` : '<span style="color:var(--success)">Paid</span>'}`;
+            list.prepend(div);
+        });
+    });
+}
+
+function payBill(id, amt) {
+    db.ref(`users/${currentUser}/money`).transaction(m => {
+        if((m||0) >= amt) {
+            db.ref(`users/${currentUser}/bills/${id}/paid`).set(true);
+            return m - amt;
+        } else { alert("No money"); return m; }
+    });
+}
+
+// --- ADMIN ---
+function unlockAdmin() {
+    if(document.getElementById("adminCode").value === "555") document.getElementById("adminPanel").classList.remove("hidden");
+}
+
+function loadAllUsers() {
+    db.ref("users").once("value").then(snap => {
+        const sel = document.getElementById("adminUserList");
+        snap.forEach(c => { const o = document.createElement("option"); o.value = c.key; o.textContent = c.key; sel.appendChild(o); });
+    });
+}
+
+function adminIssueBill() {
+    const u = document.getElementById("adminUserList").value;
+    const t = document.getElementById("adminBillTitle").value;
+    const a = parseInt(document.getElementById("adminBillAmount").value);
+    if(u && t && a) db.ref(`users/${u}/bills`).push({ title: t, amount: a, paid: false }).then(() => alert("Sent"));
+}
+
+// --- TELECOM ---
+function buyNumber() {
+    const co = document.getElementById("company").value;
+    db.ref("users/"+currentUser).once("value").then(s => {
+        if(s.val().money < 250) return alert("Need 250 EGP");
+        db.ref("users/"+currentUser).update({ money: s.val().money-250, phone: "01"+Math.floor(100000000+Math.random()*900000000), company: co });
+    });
+}
+
+function buyBundle(cost, mb) {
+    db.ref("users/"+currentUser).once("value").then(s => {
+        if(s.val().money < cost) return alert("Low balance");
+        db.ref("users/"+currentUser).update({ money: s.val().money-cost, internet: (s.val().internet||0)+mb });
+    });
+}
+
+// --- CLOCK & SYSTEM ---
+db.ref(".info/serverTimeOffset").on("value", s => { serverOffsetMs = s.val() || 0; });
+function startGameClock() {
+    const cycle = 12 * 60 * 1000; const scale = (24*60*60*1000)/cycle;
+    setInterval(() => {
+        const d = new Date(((Date.now()+serverOffsetMs)%cycle)*scale);
+        let h = d.getUTCHours(); const m = String(d.getUTCMinutes()).padStart(2, "0");
+        const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+        document.getElementById("gameTime").textContent = `${h}:${m} ${ap}`;
+    }, 1000);
+}
+
+let qrScanner = null;
+function prepareSound() {
+    const a = document.getElementById("successSound");
+    a.play().then(() => { a.pause(); a.currentTime = 0; soundReady = true; }).catch(()=>{});
+}
+
+function startQrMoneyTransfer() {
+    document.getElementById("scanner").style.display = "block";
+    if(!qrScanner) qrScanner = new Html5Qrcode("scanner");
+    Html5Qrcode.getCameras().then(devs => {
+        qrScanner.start(devs[0].id, { fps: 20, qrbox: 250 }, (data) => {
+            qrScanner.stop().then(() => {
+                document.getElementById("scanner").style.display = "none";
+                const amt = parseInt(prompt(`Send to ${data}:`));
+                if(amt > 0) db.ref("users/"+currentUser+"/money").transaction(c => {
+                    if((c||0) >= amt) { db.ref("users/"+data+"/money").transaction(r => (r||0)+amt); if(soundReady) document.getElementById("successSound").play(); return c-amt; }
+                    else { alert("Low funds"); return c; }
+                });
+            });
+        });
+    });
+}
+
 function makeCard() {
     const pin = document.getElementById("cardPin").value;
-    if(pin.length !== 3) return alert("Need 3 digits");
     const n = `${Math.floor(1000+Math.random()*9000)} ${Math.floor(1000+Math.random()*9000)}`;
-    db.ref(`users/${currentUser}/card`).set({ pin, number: n }).then(() => alert("Card Ready"));
+    if(pin.length === 3) db.ref(`users/${currentUser}/card`).set({ pin, number: n }).then(() => alert("Ready"));
 }
 
 function openCard() {
