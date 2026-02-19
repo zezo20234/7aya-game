@@ -93,6 +93,9 @@
     }
     .no-internet-msg i { font-size: 3rem; display: block; margin-bottom: 10px; }
 
+    /* Camera View Styling */
+    #scanner { border-radius: 15px; overflow: hidden; background: #000; }
+
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     .tab-content { animation: fadeIn 0.3s ease-out; }
   </style>
@@ -147,7 +150,7 @@
         <p>🌐 Internet: <span id="internet" style="color:var(--primary); font-weight: bold;">0</span> MB</p>
     </div>
 
-    <button onclick="prepareSound(); startQrMoneyTransfer()">💸 Transfer Money</button>
+    <button onclick="prepareSound(); startQrMoneyTransfer()">💸 Transfer (Back Camera)</button>
     <div id="scannerContainer">
         <div id="scanner" style="width: 100%; display: none;"></div>
         <div id="qrStatus" style="text-align:center; color: var(--primary); margin-top: 5px;"></div>
@@ -190,7 +193,6 @@
 
   <div id="tab-social" class="tab-content container hidden">
     <h3>🌍 Facenet</h3>
-    
     <div id="facenet-input-area" class="card hidden">
         <input id="postTitle" placeholder="What's happening?" />
         <div style="display:flex; gap: 10px;">
@@ -203,7 +205,6 @@
         <i>📡</i>
         <h3>Connection Lost</h3>
         <p>You need an active internet bundle to access Facenet.</p>
-        <button onclick="showTab('telecom', document.querySelectorAll('.nav-item')[1])" style="width: auto; padding: 10px 20px; margin-top: 10px;">Buy Data</button>
     </div>
 
     <div id="facenetPosts"></div>
@@ -240,7 +241,7 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
-// --- CONFIG ---
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
     apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
     authDomain: "aya-game-e579b.firebaseapp.com",
@@ -258,7 +259,66 @@ let currentInternet = 0;
 let serverOffsetMs = 0;
 let soundReady = false;
 
-// --- AUTH ---
+// --- CAMERA LOGIC (BACK CAMERA) ---
+let qrScanner = null;
+
+function prepareSound() {
+    const a = document.getElementById("successSound");
+    a.play().then(() => { a.pause(); a.currentTime = 0; soundReady = true; }).catch(()=>{});
+}
+
+function startQrMoneyTransfer() {
+    const scannerDiv = document.getElementById("scanner");
+    scannerDiv.style.display = "block";
+
+    // Initialize the scanner if it doesn't exist
+    if(!qrScanner) {
+        qrScanner = new Html5Qrcode("scanner");
+    }
+
+    // Force back camera by using facingMode: "environment"
+    const config = { fps: 15, qrbox: { width: 250, height: 250 } };
+
+    qrScanner.start(
+        { facingMode: "environment" }, 
+        config, 
+        (data) => {
+            // Success Callback
+            qrScanner.stop().then(() => {
+                scannerDiv.style.display = "none";
+                handleTransaction(data.trim().toLowerCase());
+            });
+        },
+        (error) => {
+            // Silence noise from constant scanning attempts
+        }
+    ).catch(err => {
+        alert("Camera Error: Please allow camera access and use a mobile device.");
+        console.error(err);
+    });
+}
+
+function handleTransaction(targetUser) {
+    if(targetUser === currentUser) return alert("You can't send money to yourself!");
+    
+    const amt = parseInt(prompt(`Sending EGP to ${targetUser}. Enter amount:`));
+    if(!amt || amt <= 0) return;
+
+    db.ref("users/" + currentUser + "/money").transaction(currentBal => {
+        if((currentBal || 0) >= amt) {
+            db.ref("users/" + targetUser + "/money").transaction(rBal => (rBal || 0) + amt);
+            if(soundReady) document.getElementById("successSound").play();
+            alert(`Sent ${amt} EGP successfully!`);
+            return currentBal - amt;
+        } else {
+            alert("Insufficient funds.");
+            return currentBal;
+        }
+    });
+}
+
+// --- REMAINING LOGIC (AUTH, SOCIAL, BILLS) ---
+
 function toggleAuth(isSignup) {
     document.getElementById('login-box').classList.toggle('hidden', isSignup);
     document.getElementById('signup-box').classList.toggle('hidden', !isSignup);
@@ -267,9 +327,9 @@ function toggleAuth(isSignup) {
 function signup() {
     const user = document.getElementById('new-username').value.trim().toLowerCase();
     const pin = document.getElementById('new-pin').value.trim();
-    if(user.length < 3) return alert("Username too short");
+    if(user.length < 3) return alert("User too short");
     db.ref("users/" + user).once("value").then(snap => {
-        if(snap.exists()) return alert("Taken");
+        if(snap.exists()) return alert("Username taken");
         db.ref("users/" + user).set({ pin, money: 500, internet: 0 }).then(() => {
             currentUser = user; loadUser();
         });
@@ -298,7 +358,7 @@ function loadUser() {
         document.getElementById("internet").textContent = currentInternet;
         document.getElementById("welcome").textContent = `Hello, ${currentUser}`;
         
-        // Handle Social Tab visibility based on internet
+        // Social Tab Gates
         const inputArea = document.getElementById("facenet-input-area");
         const offlineMsg = document.getElementById("facenet-offline");
         const postContainer = document.getElementById("facenetPosts");
@@ -324,13 +384,12 @@ function loadUser() {
     loadMyBills();
     loadAllUsers();
     setInterval(() => {
-        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 25));
+        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 20));
     }, 60000);
 }
 
 function logout() { localStorage.clear(); location.reload(); }
 
-// --- UI TABS ---
 function showTab(tabId, el) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
     document.getElementById('tab-' + tabId).classList.remove('hidden');
@@ -338,20 +397,16 @@ function showTab(tabId, el) {
     el.classList.add('active');
 }
 
-// --- FACENET (INTERNET REQUIRED) ---
 function makePost() {
-    if (currentInternet <= 0) return alert("No Internet Connection");
-    
+    if (currentInternet <= 0) return alert("No Internet");
     const t = document.getElementById("postTitle").value;
     const f = document.getElementById("postImage").files[0];
     if(!t || !f) return alert("Missing content");
-
     const r = new FileReader();
     r.onload = (e) => {
         db.ref("posts").push({
             user: currentUser, title: t, url: e.target.result,
-            mediaType: f.type.startsWith("video") ? "video" : "image",
-            time: Date.now()
+            mediaType: f.type.startsWith("video") ? "video" : "image"
         }).then(() => { 
             document.getElementById("postTitle").value = ""; 
             alert("Posted!"); 
@@ -361,7 +416,7 @@ function makePost() {
 }
 
 function loadPosts() {
-    db.ref("posts").limitToLast(15).on("value", s => {
+    db.ref("posts").limitToLast(10).on("value", s => {
         const con = document.getElementById("facenetPosts");
         con.innerHTML = "";
         s.forEach(c => {
@@ -375,11 +430,10 @@ function loadPosts() {
     });
 }
 
-// --- BILLING ---
 function loadMyBills() {
     db.ref(`users/${currentUser}/bills`).on("value", snap => {
         const list = document.getElementById("billList");
-        list.innerHTML = snap.exists() ? "" : '<p style="text-align:center; color:var(--gray);">Clear!</p>';
+        list.innerHTML = snap.exists() ? "" : '<p style="text-align:center; color:var(--gray);">No active bills</p>';
         snap.forEach(child => {
             const b = child.val();
             const div = document.createElement("div");
@@ -397,11 +451,10 @@ function payBill(id, amt) {
         if((m||0) >= amt) {
             db.ref(`users/${currentUser}/bills/${id}/paid`).set(true);
             return m - amt;
-        } else { alert("No money"); return m; }
+        } else { alert("No balance"); return m; }
     });
 }
 
-// --- ADMIN ---
 function unlockAdmin() {
     if(document.getElementById("adminCode").value === "555") document.getElementById("adminPanel").classList.remove("hidden");
 }
@@ -420,7 +473,6 @@ function adminIssueBill() {
     if(u && t && a) db.ref(`users/${u}/bills`).push({ title: t, amount: a, paid: false }).then(() => alert("Sent"));
 }
 
-// --- TELECOM ---
 function buyNumber() {
     const co = document.getElementById("company").value;
     db.ref("users/"+currentUser).once("value").then(s => {
@@ -436,7 +488,6 @@ function buyBundle(cost, mb) {
     });
 }
 
-// --- CLOCK & SYSTEM ---
 db.ref(".info/serverTimeOffset").on("value", s => { serverOffsetMs = s.val() || 0; });
 function startGameClock() {
     const cycle = 12 * 60 * 1000; const scale = (24*60*60*1000)/cycle;
@@ -446,29 +497,6 @@ function startGameClock() {
         const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
         document.getElementById("gameTime").textContent = `${h}:${m} ${ap}`;
     }, 1000);
-}
-
-let qrScanner = null;
-function prepareSound() {
-    const a = document.getElementById("successSound");
-    a.play().then(() => { a.pause(); a.currentTime = 0; soundReady = true; }).catch(()=>{});
-}
-
-function startQrMoneyTransfer() {
-    document.getElementById("scanner").style.display = "block";
-    if(!qrScanner) qrScanner = new Html5Qrcode("scanner");
-    Html5Qrcode.getCameras().then(devs => {
-        qrScanner.start(devs[0].id, { fps: 20, qrbox: 250 }, (data) => {
-            qrScanner.stop().then(() => {
-                document.getElementById("scanner").style.display = "none";
-                const amt = parseInt(prompt(`Send to ${data}:`));
-                if(amt > 0) db.ref("users/"+currentUser+"/money").transaction(c => {
-                    if((c||0) >= amt) { db.ref("users/"+data+"/money").transaction(r => (r||0)+amt); if(soundReady) document.getElementById("successSound").play(); return c-amt; }
-                    else { alert("Low funds"); return c; }
-                });
-            });
-        });
-    });
 }
 
 function makeCard() {
