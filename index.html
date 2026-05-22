@@ -1620,7 +1620,23 @@
         let userDeckRecord = {};
         let sharedGlobalPacks = {};
         let activeStealSequenceId = null;
+        let activeStealSessionUnsub = null;
+        let activeClashRole = null;
+        let clashUiSessionId = null;
+        let clashUiLocked = false;
+        const processedStealSessionIds = new Set();
         let reactionSequenceTimer = null;
+
+        let presenceServerTimeOffsetMs = 0;
+        let userProfileHydrated = false;
+        let presenceHeartbeatTimer = null;
+        let presenceOffsetUnsub = null;
+        let presenceConnectedUnsub = null;
+        let userProfileUnsub = null;
+        let userInventoryUnsub = null;
+        let clashSessionsGlobalUnsub = null;
+        const PRESENCE_STALE_MS = 3 * 60 * 1000;
+        const PRESENCE_HEARTBEAT_MS = 45 * 1000;
         let currentAuthScreenIsLogin = true;
         let packOpeningInProgress = false;
 
@@ -2197,17 +2213,95 @@
         });
 
         let backgroundGlobalClockTimer = null;
+
+        function getEstimatedServerTimeMs() {
+            return Date.now() + presenceServerTimeOffsetMs;
+        }
+
+        function isPresenceEntryActive(presenceEntry) {
+            if (!presenceEntry) return false;
+            const lastSeen = presenceEntry.lastSeenTime;
+            if (typeof lastSeen !== 'number') return true;
+            return getEstimatedServerTimeMs() - lastSeen <= PRESENCE_STALE_MS;
+        }
+
+        async function publishLocalPresence() {
+            const uid = activeUserSession?.uid;
+            if (!uid || !userProfileHydrated) return;
+
+            const username = (userDataRecord.username || '').trim();
+            if (!username) return;
+
+            const presenceNodeRef = ref(db, `presence/${uid}`);
+            try {
+                await set(presenceNodeRef, {
+                    uid,
+                    username,
+                    lastSeenTime: serverTimestamp()
+                });
+            } catch (error) {
+                console.error('[Presence] publishLocalPresence failed:', error?.code || error?.message, error);
+            }
+        }
+
+        function tryPublishPresenceWhenReady() {
+            if (!activeUserSession?.uid || !userProfileHydrated) return;
+            publishLocalPresence();
+        }
+
+        function startPresenceHeartbeat() {
+            if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+            presenceHeartbeatTimer = setInterval(() => {
+                const uid = activeUserSession?.uid;
+                if (!uid || !userProfileHydrated) return;
+                const username = (userDataRecord.username || '').trim();
+                if (!username) return;
+
+                update(ref(db, `presence/${uid}`), {
+                    username,
+                    lastSeenTime: serverTimestamp()
+                }).catch(error => {
+                    console.error('[Presence] heartbeat failed:', error?.code || error?.message, error);
+                });
+            }, PRESENCE_HEARTBEAT_MS);
+        }
+
+        function setupPresenceSystem() {
+            const uid = activeUserSession.uid;
+            const presenceNodeRef = ref(db, `presence/${uid}`);
+
+            if (presenceOffsetUnsub) presenceOffsetUnsub();
+            presenceOffsetUnsub = onValue(ref(db, '.info/serverTimeOffset'), snapshot => {
+                presenceServerTimeOffsetMs = snapshot.val() || 0;
+                renderOnlineStealTargetsGrid();
+            });
+
+            if (presenceConnectedUnsub) presenceConnectedUnsub();
+            presenceConnectedUnsub = onValue(ref(db, '.info/connected'), snapshot => {
+                if (snapshot.val() !== true) return;
+                onDisconnect(presenceNodeRef).remove();
+                tryPublishPresenceWhenReady();
+                startPresenceHeartbeat();
+            });
+        }
+
         function initializeUserEnvironmentCore() {
-            onValue(ref(db, `users/${activeUserSession.uid}`), snapshot => {
+            userProfileHydrated = false;
+
+            if (userProfileUnsub) userProfileUnsub();
+            userProfileUnsub = onValue(ref(db, `users/${activeUserSession.uid}`), snapshot => {
                 userDataRecord = snapshot.val() || {};
-                if(!userDataRecord.discovered) userDataRecord.discovered = {};
-                if(!userDataRecord.locks) userDataRecord.locks = {};
+                if (!userDataRecord.discovered) userDataRecord.discovered = {};
+                if (!userDataRecord.locks) userDataRecord.locks = {};
+                userProfileHydrated = true;
                 renderHUDDisplayElements();
                 renderProfileDisplayData();
                 renderShopLockCounts();
+                tryPublishPresenceWhenReady();
             });
 
-            onValue(ref(db, `inventory/${activeUserSession.uid}`), snapshot => {
+            if (userInventoryUnsub) userInventoryUnsub();
+            userInventoryUnsub = onValue(ref(db, `inventory/${activeUserSession.uid}`), snapshot => {
                 userDeckRecord = snapshot.val() || {};
                 renderUserInventoryDeckGrid();
             });
@@ -2217,24 +2311,40 @@
                 renderPacksStoreDisplay();
             });
 
-            const systemPresenceRef = ref(db, `presence/${activeUserSession.uid}`);
-            onValue(ref(db, '.info/connected'), snapshot => {
-                if(snapshot.val() === true) {
-                    onDisconnect(systemPresenceRef).remove();
-                    set(systemPresenceRef, {
-                        uid: activeUserSession.uid,
-                        username: userDataRecord.username || 'Searching Operative',
-                        lastSeenTime: serverTimestamp()
-                    });
-                }
-            });
+            setupPresenceSystem();
 
-            onValue(ref(db, `clash_sessions`), snapshot => {
+            if (clashSessionsGlobalUnsub) clashSessionsGlobalUnsub();
+            clashSessionsGlobalUnsub = onValue(ref(db, 'clash_sessions'), snapshot => {
                 const globalSessions = snapshot.val() || {};
-                for(let sesId in globalSessions) {
+                for (const sesId in globalSessions) {
                     const session = globalSessions[sesId];
-                    if((session.attackerUid === activeUserSession.uid || session.defenderUid === activeUserSession.uid) && session.sessionState === 'initialized') {
+                    if (!session) continue;
+                    session.sessionId = session.sessionId || sesId;
+
+                    const myUid = activeUserSession.uid;
+                    const isParticipant = session.attackerUid === myUid || session.defenderUid === myUid;
+                    if (!isParticipant) continue;
+
+                    if (session.sessionState === 'initialized') {
                         initializeLiveChallengeInterface(sesId, session);
+                    } else if (session.sessionState === 'terminated_resolved' && session.winnerSignaledUid) {
+                        resolveStealOutcomeForSession(session)
+                            .then(async () => {
+                                let freshSession = session;
+                                try {
+                                    const freshSnap = await get(ref(db, `clash_sessions/${sesId}`));
+                                    freshSession = freshSnap.val() || session;
+                                } catch (error) {
+                                    logFirebaseStealError('globalClashSession.refreshSession', error);
+                                }
+
+                                const attackerWon = freshSession.winnerSignaledUid === freshSession.attackerUid;
+                                const transferDone = freshSession.attackerLootApplied && freshSession.defenderCardPurged;
+                                if (!attackerWon || transferDone) {
+                                    await cleanupResolvedClashSession(sesId);
+                                }
+                            })
+                            .catch(error => logFirebaseStealError('globalClashSession.resolveSteal', error));
                     }
                 }
             });
@@ -2249,7 +2359,26 @@
         }
 
         function deconstructUserEnvironmentCore() {
-            if(backgroundGlobalClockTimer) clearInterval(backgroundGlobalClockTimer);
+            if (backgroundGlobalClockTimer) clearInterval(backgroundGlobalClockTimer);
+            if (presenceHeartbeatTimer) clearInterval(presenceHeartbeatTimer);
+            presenceHeartbeatTimer = null;
+
+            if (userProfileUnsub) { userProfileUnsub(); userProfileUnsub = null; }
+            if (userInventoryUnsub) { userInventoryUnsub(); userInventoryUnsub = null; }
+            if (presenceOffsetUnsub) { presenceOffsetUnsub(); presenceOffsetUnsub = null; }
+            if (presenceConnectedUnsub) { presenceConnectedUnsub(); presenceConnectedUnsub = null; }
+            if (clashSessionsGlobalUnsub) { clashSessionsGlobalUnsub(); clashSessionsGlobalUnsub = null; }
+            if (activeStealSessionUnsub) { activeStealSessionUnsub(); activeStealSessionUnsub = null; }
+
+            userProfileHydrated = false;
+            clashUiSessionId = null;
+            activeClashRole = null;
+            clashUiLocked = false;
+            activeStealSequenceId = null;
+
+            if (activeUserSession?.uid) {
+                remove(ref(db, `presence/${activeUserSession.uid}`)).catch(() => {});
+            }
         }
 
         function renderHUDDisplayElements() {
@@ -2789,24 +2918,28 @@
 
         function renderOnlineStealTargetsGrid() {
             const targetContainerNode = document.getElementById('container-online-players');
+            if (!targetContainerNode || !activeUserSession?.uid) return;
             targetContainerNode.innerHTML = '';
 
             const globalPresenceKeys = Object.keys(globalContinuousPresenceListSnapshot);
             let activeRenderedCount = 0;
 
             globalPresenceKeys.forEach((pUidKey) => {
-                if(pUidKey === activeUserSession.uid) return;
-                
+                if (pUidKey === activeUserSession.uid) return;
+
                 const targetPresenceMetadata = globalContinuousPresenceListSnapshot[pUidKey];
-                if(Date.now() - targetPresenceMetadata.lastSeenTime > 3 * 60 * 1000) return;
+                if (!isPresenceEntryActive(targetPresenceMetadata)) return;
+
+                const displayName = (targetPresenceMetadata.username || '').trim() || 'Unknown Operative';
+                const nameInitial = displayName.charAt(0).toUpperCase();
 
                 activeRenderedCount++;
                 const htmlRowItem = `
                     <div class="player-row">
                         <div style="display:flex; align-items:center; gap:12px;">
-                            <div class="profile-badge" style="background:#4b5563;">${targetPresenceMetadata.username.charAt(0).toUpperCase()}</div>
+                            <div class="profile-badge" style="background:#4b5563;">${nameInitial}</div>
                             <div>
-                                <div style="font-weight:bold;">${targetPresenceMetadata.username}</div>
+                                <div style="font-weight:bold;">${displayName}</div>
                                 <div style="font-size:0.7rem; color:#10b981;">● ONLINE DATA NODE</div>
                             </div>
                         </div>
@@ -2816,7 +2949,7 @@
                 targetContainerNode.innerHTML += htmlRowItem;
             });
 
-            if(activeRenderedCount === 0) {
+            if (activeRenderedCount === 0) {
                 targetContainerNode.innerHTML = `<div style="text-align:center; padding:32px; color:#6b7280; font-weight:bold;">No active alternative network operations entities discovered online.</div>`;
             }
         }
@@ -2870,144 +3003,598 @@
             openModal('modal-target-inventory');
         };
 
+        function logFirebaseStealError(operationLabel, error) {
+            const code = error?.code || error?.message || 'UNKNOWN';
+            console.error(`[Steal] ${operationLabel} failed:`, code, error);
+            if (code === 'PERMISSION_DENIED' || String(code).includes('PERMISSION_DENIED')) {
+                console.error('[Steal] PERMISSION_DENIED — verify Realtime Database rules allow atomic writes on inventory/{uid}, users/{uid}/discovered, and clash_sessions.');
+            }
+        }
+
+        function isFirebasePermissionDenied(error) {
+            const code = error?.code || error?.message || '';
+            return code === 'PERMISSION_DENIED' || String(code).includes('PERMISSION_DENIED');
+        }
+
+        async function resolveStealCardSnapshot(session) {
+            if (session?.targetCardSnapshot) return session.targetCardSnapshot;
+
+            if (session?.sessionId) {
+                try {
+                    const payloadSnap = await get(ref(db, `steal_payloads/${session.sessionId}`));
+                    const payload = payloadSnap.val();
+                    if (payload?.card) return payload.card;
+                } catch (error) {
+                    logFirebaseStealError('resolveStealCardSnapshot.payload', error);
+                }
+            }
+
+            if (session?.defenderUid && session?.targetCardInstanceKey) {
+                try {
+                    const cardSnap = await get(ref(db, `inventory/${session.defenderUid}/${session.targetCardInstanceKey}`));
+                    return cardSnap.val();
+                } catch (error) {
+                    logFirebaseStealError('resolveStealCardSnapshot.inventory', error);
+                }
+            }
+
+            return null;
+        }
+
+        /**
+         * Full atomic transfer (works only if rules allow cross-user inventory writes).
+         */
+        async function executeAtomicCardStealTransfer(attackerUid, defenderUid, sourceInstanceKey, cardSnapshot, sessionId) {
+            if (!attackerUid || !defenderUid || !sourceInstanceKey || !cardSnapshot || !sessionId) {
+                throw new Error('executeAtomicCardStealTransfer: attackerUid, defenderUid, sourceInstanceKey, cardSnapshot, and sessionId are required');
+            }
+            if (attackerUid === defenderUid) {
+                throw new Error('executeAtomicCardStealTransfer: attacker and defender must be different users');
+            }
+
+            const newInstanceKey = push(ref(db, `inventory/${attackerUid}`)).key;
+            const transferredCard = {
+                ...cardSnapshot,
+                instanceId: newInstanceKey,
+                acquiredTimestamp: Date.now()
+            };
+
+            const atomicTransferPayload = {};
+            atomicTransferPayload[`inventory/${defenderUid}/${sourceInstanceKey}`] = null;
+            atomicTransferPayload[`inventory/${attackerUid}/${newInstanceKey}`] = transferredCard;
+
+            if (!userDataRecord.discovered?.[transferredCard.cardId]) {
+                atomicTransferPayload[`users/${attackerUid}/discovered/${transferredCard.cardId}`] = Date.now();
+            }
+            atomicTransferPayload[`users/${attackerUid}/xp`] = (userDataRecord.xp || 0) + 20;
+            atomicTransferPayload[`clash_sessions/${sessionId}/attackerLootApplied`] = true;
+            atomicTransferPayload[`clash_sessions/${sessionId}/defenderCardPurged`] = true;
+            atomicTransferPayload[`clash_sessions/${sessionId}/attackerInstanceKey`] = newInstanceKey;
+
+            await update(ref(db, '/'), atomicTransferPayload);
+            return { newInstanceKey, transferredCard, mode: 'atomic' };
+        }
+
+        /**
+         * Attacker writes only to their own paths (allowed by typical auth.uid === uid rules).
+         */
+        async function applyAttackerStealLoot(session) {
+            const attackerUid = session.attackerUid;
+            const sessionId = session.sessionId;
+            if (!attackerUid || !sessionId || activeUserSession?.uid !== attackerUid) return null;
+            if (session.winnerSignaledUid !== attackerUid) return null;
+
+            const sessionRef = ref(db, `clash_sessions/${sessionId}`);
+            const claimResult = await runTransaction(sessionRef, (currentSession) => {
+                if (!currentSession) return;
+                if (currentSession.winnerSignaledUid !== attackerUid) return;
+                if (currentSession.attackerLootApplied) return;
+                currentSession.attackerLootApplied = true;
+                return currentSession;
+            });
+
+            if (!claimResult.committed) return null;
+            const claimedSession = claimResult.snapshot.val();
+            if (!claimedSession?.attackerLootApplied) return null;
+
+            const cardSnapshot = await resolveStealCardSnapshot(claimedSession);
+            if (!cardSnapshot) {
+                throw new Error('applyAttackerStealLoot: card snapshot missing');
+            }
+
+            const newInstanceKey = push(ref(db, `inventory/${attackerUid}`)).key;
+            const transferredCard = {
+                ...cardSnapshot,
+                instanceId: newInstanceKey,
+                acquiredTimestamp: Date.now()
+            };
+
+            const attackerOnlyPayload = {};
+            attackerOnlyPayload[`inventory/${attackerUid}/${newInstanceKey}`] = transferredCard;
+            if (!userDataRecord.discovered?.[transferredCard.cardId]) {
+                attackerOnlyPayload[`users/${attackerUid}/discovered/${transferredCard.cardId}`] = Date.now();
+            }
+            attackerOnlyPayload[`users/${attackerUid}/xp`] = (userDataRecord.xp || 0) + 20;
+            attackerOnlyPayload[`clash_sessions/${sessionId}/attackerInstanceKey`] = newInstanceKey;
+
+            await update(ref(db, '/'), attackerOnlyPayload);
+            return { newInstanceKey, transferredCard, mode: 'attacker-loot' };
+        }
+
+        /**
+         * Defender removes the stolen card from their own inventory (allowed by typical rules).
+         */
+        async function applyDefenderCardLoss(session) {
+            const defenderUid = session.defenderUid;
+            const sessionId = session.sessionId;
+            const sourceInstanceKey = session.targetCardInstanceKey;
+            if (!defenderUid || !sessionId || !sourceInstanceKey || activeUserSession?.uid !== defenderUid) return false;
+            if (session.winnerSignaledUid !== session.attackerUid) return false;
+
+            const sessionRef = ref(db, `clash_sessions/${sessionId}`);
+            const claimResult = await runTransaction(sessionRef, (currentSession) => {
+                if (!currentSession) return;
+                if (currentSession.winnerSignaledUid !== currentSession.attackerUid) return;
+                if (currentSession.defenderCardPurged) return;
+                currentSession.defenderCardPurged = true;
+                return currentSession;
+            });
+
+            if (!claimResult.committed) return false;
+            const claimedSession = claimResult.snapshot.val();
+            if (!claimedSession?.defenderCardPurged) return false;
+
+            await update(ref(db, '/'), {
+                [`inventory/${defenderUid}/${sourceInstanceKey}`]: null
+            });
+            return true;
+        }
+
+        async function resolveStealOutcomeForSession(session) {
+            const sessionId = session?.sessionId;
+            if (!sessionId || session.sessionState !== 'terminated_resolved') return { status: 'skipped' };
+            if (!session.winnerSignaledUid) return { status: 'skipped' };
+
+            const myUid = activeUserSession?.uid;
+            if (!myUid) return { status: 'skipped' };
+
+            if (session.winnerSignaledUid !== session.attackerUid) {
+                return { status: 'defender-won' };
+            }
+
+            if (session.attackerLootApplied && session.defenderCardPurged) {
+                return { status: 'already-done' };
+            }
+
+            if (myUid === session.attackerUid && !session.attackerLootApplied) {
+                const cardSnapshot = await resolveStealCardSnapshot(session);
+                if (!cardSnapshot) {
+                    return { status: 'missing-card-data' };
+                }
+
+                try {
+                    const atomicResult = await executeAtomicCardStealTransfer(
+                        session.attackerUid,
+                        session.defenderUid,
+                        session.targetCardInstanceKey,
+                        cardSnapshot,
+                        sessionId
+                    );
+                    syncLocalDeckAfterSuccessfulSteal(session.attackerUid, atomicResult.newInstanceKey, atomicResult.transferredCard);
+                    return { status: 'atomic-success', ...atomicResult };
+                } catch (error) {
+                    if (!isFirebasePermissionDenied(error)) {
+                        logFirebaseStealError('resolveStealOutcome.atomic', error);
+                        throw error;
+                    }
+                    console.warn('[Steal] Atomic transfer blocked by rules — using split-path steal (attacker loot + defender purge).');
+                }
+
+                try {
+                    const lootResult = await applyAttackerStealLoot(session);
+                    if (lootResult) {
+                        syncLocalDeckAfterSuccessfulSteal(session.attackerUid, lootResult.newInstanceKey, lootResult.transferredCard);
+                        return { status: 'loot-success', ...lootResult };
+                    }
+                } catch (error) {
+                    logFirebaseStealError('resolveStealOutcome.attackerLoot', error);
+                    return { status: 'loot-failed', error };
+                }
+            }
+
+            if (myUid === session.defenderUid && !session.defenderCardPurged) {
+                try {
+                    const purged = await applyDefenderCardLoss(session);
+                    return { status: purged ? 'defender-purged' : 'defender-purge-skipped' };
+                } catch (error) {
+                    logFirebaseStealError('resolveStealOutcome.defenderPurge', error);
+                    return { status: 'defender-purge-failed', error };
+                }
+            }
+
+            return { status: 'waiting-on-peer' };
+        }
+
+        function syncLocalDeckAfterSuccessfulSteal(attackerUid, newInstanceKey, transferredCard) {
+            if (!activeUserSession || attackerUid !== activeUserSession.uid) return;
+
+            userDeckRecord = { ...userDeckRecord, [newInstanceKey]: transferredCard };
+
+            if (transferredCard.cardId) {
+                if (!userDataRecord.discovered) userDataRecord.discovered = {};
+                if (!userDataRecord.discovered[transferredCard.cardId]) {
+                    userDataRecord.discovered = {
+                        ...userDataRecord.discovered,
+                        [transferredCard.cardId]: Date.now()
+                    };
+                }
+            }
+            userDataRecord.xp = (userDataRecord.xp || 0) + 20;
+
+            renderUserInventoryDeckGrid();
+            renderHUDDisplayElements();
+        }
+
         window.deployInfiltrationAttackChallenge = async function(defenderUid, targetInstanceCardId) {
             closeModal('modal-target-inventory');
-            
+
+            const attackerUid = activeUserSession?.uid;
+            if (!attackerUid) {
+                return showToast('Not signed in.', 'error');
+            }
+            if (!defenderUid || defenderUid === attackerUid) {
+                return showToast('Invalid steal target.', 'error');
+            }
+            if (!targetInstanceCardId) {
+                return showToast('Invalid card target.', 'error');
+            }
+
+            let targetCardSnapshot;
+            try {
+                const defenderCardSnap = await get(ref(db, `inventory/${defenderUid}/${targetInstanceCardId}`));
+                targetCardSnapshot = defenderCardSnap.val();
+            } catch (error) {
+                logFirebaseStealError('fetchTargetCardBeforeAttack', error);
+                return showToast('Could not read target card. Check console.', 'error');
+            }
+
+            if (!targetCardSnapshot) {
+                return showToast('Target card is no longer in that inventory.', 'error');
+            }
+            if (targetCardSnapshot.cryptographicLockExpiry && targetCardSnapshot.cryptographicLockExpiry > Date.now()) {
+                return showToast('Target card is locked.', 'error');
+            }
+
             const generatedAttackSessionUid = push(ref(db, 'clash_sessions')).key;
             const chosenRandomPuzzleMechanicType = Math.random() > 0.5 ? 'clash_math' : 'clash_reaction';
-
             const mathematicalValueArgA = Math.floor(Math.random() * 80) + 15;
             const mathematicalValueArgB = Math.floor(Math.random() * 70) + 10;
-            const structuralRandomDelaySecondsTimer = Math.floor(Math.random() * 3000) + 2000; 
+            const structuralRandomDelaySecondsTimer = Math.floor(Math.random() * 3000) + 2000;
 
             const sessionPackagePayload = {
                 sessionId: generatedAttackSessionUid,
-                attackerUid: activeUserSession.uid,
+                attackerUid,
                 attackerName: userDataRecord.username || 'Attacker',
-                defenderUid: defenderUid,
+                defenderUid,
                 targetCardInstanceKey: targetInstanceCardId,
+                targetCardSnapshot,
                 puzzleType: chosenRandomPuzzleMechanicType,
                 mathArgA: mathematicalValueArgA,
                 mathArgB: mathematicalValueArgB,
                 reactionDelaySeed: structuralRandomDelaySecondsTimer,
                 sessionState: 'initialized',
                 winnerSignaledUid: '',
+                transferCompleted: false,
                 timestampMarker: serverTimestamp()
             };
 
             const globalOperationsBatchedPayload = {};
             globalOperationsBatchedPayload[`clash_sessions/${generatedAttackSessionUid}`] = sessionPackagePayload;
-            globalOperationsBatchedPayload[`users/${activeUserSession.uid}/stealCooldownExpiry`] = Date.now() + 45 * 1000;
+            globalOperationsBatchedPayload[`steal_payloads/${generatedAttackSessionUid}`] = {
+                defenderUid,
+                targetCardInstanceKey: targetInstanceCardId,
+                card: targetCardSnapshot
+            };
+            globalOperationsBatchedPayload[`users/${attackerUid}/stealCooldownExpiry`] = Date.now() + 45 * 1000;
 
-            await update(ref(db, '/'), globalOperationsBatchedPayload);
+            try {
+                await update(ref(db, '/'), globalOperationsBatchedPayload);
+                userDataRecord.stealCooldownExpiry = Date.now() + 45 * 1000;
+            } catch (error) {
+                logFirebaseStealError('deployInfiltrationAttackChallenge', error);
+                showToast('Failed to start infiltration. Check console.', 'error');
+            }
         };
 
+        function applyClashModalRoleCopy(role, sessionObj) {
+            const attackerLabel = sessionObj.attackerName || 'An intruder';
+            const mathModal = document.getElementById('modal-game-math');
+            const reactionModal = document.getElementById('modal-game-reaction');
+            if (!mathModal || !reactionModal) return;
+
+            const mathTitle = mathModal.querySelector('h2');
+            const mathDesc = mathModal.querySelector('p');
+            const reactionTitle = reactionModal.querySelector('h2');
+            const reactionDesc = reactionModal.querySelector('p');
+
+            if (role === 'attacker') {
+                mathTitle.innerText = 'INTRUSION ENCRYPTION INTERCEPT';
+                mathDesc.innerText = 'Solve first to steal the target card!';
+                reactionTitle.innerText = 'SIGNAL VELOCITY TEST';
+                reactionDesc.innerText = 'Hit GREEN first to complete the steal!';
+            } else {
+                mathTitle.innerText = 'DEFENSE ENCRYPTION INTERCEPT';
+                mathDesc.innerText = `${attackerLabel} is attacking your vault! Solve first to block the steal.`;
+                reactionTitle.innerText = 'DEFENSE VELOCITY TEST';
+                reactionDesc.innerText = `${attackerLabel} is attacking! Hit GREEN first to defend your card.`;
+            }
+        }
+
+        function unlockClashUiInputs() {
+            clashUiLocked = false;
+            const mathSubmit = document.getElementById('math-submit-response');
+            const mathInput = document.getElementById('math-player-input');
+            if (mathSubmit) mathSubmit.disabled = false;
+            if (mathInput) mathInput.disabled = false;
+        }
+
+        function lockClashUiInputs() {
+            clashUiLocked = true;
+            const mathSubmit = document.getElementById('math-submit-response');
+            const mathInput = document.getElementById('math-player-input');
+            const reactionBtn = document.getElementById('reaction-trigger-btn');
+            if (mathSubmit) mathSubmit.disabled = true;
+            if (mathInput) mathInput.disabled = true;
+            if (reactionBtn) reactionBtn.disabled = true;
+        }
+
         function initializeLiveChallengeInterface(sessionId, sessionObj) {
+            if (!activeUserSession?.uid || sessionObj.sessionState !== 'initialized') return;
+
+            const myUid = activeUserSession.uid;
+            const isAttacker = sessionObj.attackerUid === myUid;
+            const isDefender = sessionObj.defenderUid === myUid;
+            if (!isAttacker && !isDefender) return;
+
+            const role = isAttacker ? 'attacker' : 'defender';
+            const isNewClashSession = clashUiSessionId !== sessionId;
+
             activeStealSequenceId = sessionId;
+            clashUiSessionId = sessionId;
+            activeClashRole = role;
+            applyClashModalRoleCopy(role, sessionObj);
 
-            if(sessionObj.puzzleType === 'clash_math') {
-                openModal('modal-game-math');
-                document.getElementById('math-equation-prompt').innerText = `${sessionObj.mathArgA} + ${sessionObj.mathArgB}`;
-                const targetInputField = document.getElementById('math-player-input');
-                targetInputField.value = '';
-                targetInputField.focus();
-                targetInputField.dataset.expectedResult = sessionObj.mathArgA + sessionObj.mathArgB;
-            } 
-            else if(sessionObj.puzzleType === 'clash_reaction') {
-                openModal('modal-game-reaction');
-                const lightLensesNodes = document.querySelectorAll('.traffic-lens');
-                lightLensesNodes.forEach(lens => { lens.classList.remove('green'); lens.classList.add('red'); });
-                
-                const actionTriggerBtn = document.getElementById('reaction-trigger-btn');
-                actionTriggerBtn.disabled = true;
-                actionTriggerBtn.style.background = '#374151';
-                actionTriggerBtn.innerText = 'DIAGNOSTIC SYSTEM INITIATED... HOLD';
-
-                reactionSequenceTimer = setTimeout(() => {
-                    lightLensesNodes.forEach(lens => { lens.classList.remove('red'); lens.classList.add('green'); });
-                    actionTriggerBtn.disabled = false;
-                    actionTriggerBtn.style.background = 'var(--accent-green)';
-                    actionTriggerBtn.innerText = 'TRIGGER EXECUTION IMPULSE NOW!';
-                }, sessionObj.reactionDelaySeed);
+            if (activeStealSessionUnsub) {
+                activeStealSessionUnsub();
+                activeStealSessionUnsub = null;
             }
 
-            const specializedSessionMonitoringRef = ref(db, `clash_sessions/${sessionId}`);
-            onValue(specializedSessionMonitoringRef, snapshot => {
+            if (isNewClashSession) {
+                unlockClashUiInputs();
+
+                if (reactionSequenceTimer) {
+                    clearTimeout(reactionSequenceTimer);
+                    reactionSequenceTimer = null;
+                }
+
+                if (sessionObj.puzzleType === 'clash_math') {
+                    closeModal('modal-game-reaction');
+                    openModal('modal-game-math');
+                    document.getElementById('math-equation-prompt').innerText = `${sessionObj.mathArgA} + ${sessionObj.mathArgB}`;
+                    const targetInputField = document.getElementById('math-player-input');
+                    targetInputField.value = '';
+                    targetInputField.focus();
+                    targetInputField.dataset.expectedResult = String(sessionObj.mathArgA + sessionObj.mathArgB);
+                } else if (sessionObj.puzzleType === 'clash_reaction') {
+                    closeModal('modal-game-math');
+                    openModal('modal-game-reaction');
+                    const lightLensesNodes = document.querySelectorAll('.traffic-lens');
+                    lightLensesNodes.forEach(lens => { lens.classList.remove('green'); lens.classList.add('red'); });
+
+                    const actionTriggerBtn = document.getElementById('reaction-trigger-btn');
+                    actionTriggerBtn.disabled = true;
+                    actionTriggerBtn.style.background = '#374151';
+                    actionTriggerBtn.innerText = role === 'defender'
+                        ? 'DEFENSE GRID INITIALIZING... HOLD'
+                        : 'DIAGNOSTIC SYSTEM INITIATED... HOLD';
+
+                    reactionSequenceTimer = setTimeout(() => {
+                        if (clashUiLocked || clashUiSessionId !== sessionId) return;
+                        lightLensesNodes.forEach(lens => { lens.classList.remove('red'); lens.classList.add('green'); });
+                        actionTriggerBtn.disabled = false;
+                        actionTriggerBtn.style.background = 'var(--accent-green)';
+                        actionTriggerBtn.innerText = role === 'defender'
+                            ? 'EXECUTE DEFENSE NOW!'
+                            : 'TRIGGER EXECUTION IMPULSE NOW!';
+                    }, sessionObj.reactionDelaySeed);
+                }
+            }
+
+            activeStealSessionUnsub = onValue(ref(db, `clash_sessions/${sessionId}`), snapshot => {
                 const updatedSessionData = snapshot.val();
-                if(updatedSessionData && updatedSessionData.sessionState === 'terminated_resolved') {
+                if (!updatedSessionData) return;
+
+                if (updatedSessionData.sessionState === 'terminated_resolved') {
+                    lockClashUiInputs();
                     concludeLiveChallengeTransactionClean(updatedSessionData);
+                    return;
+                }
+
+                if (updatedSessionData.winnerSignaledUid && updatedSessionData.winnerSignaledUid !== myUid) {
+                    lockClashUiInputs();
                 }
             });
         }
 
         document.getElementById('math-submit-response').addEventListener('click', () => {
-            const parsedPlayerInputVal = parseInt(document.getElementById('math-player-input').value.trim());
-            const calculatedExpectedTargetResult = parseInt(document.getElementById('math-player-input').dataset.expectedResult);
+            if (clashUiLocked || !activeStealSequenceId) return;
 
-            if(parsedPlayerInputVal === calculatedExpectedTargetResult) {
-                signalClashVictoryCaptureLock(activeUserSession.uid);
+            const parsedPlayerInputVal = parseInt(document.getElementById('math-player-input').value.trim(), 10);
+            const calculatedExpectedTargetResult = parseInt(document.getElementById('math-player-input').dataset.expectedResult, 10);
+
+            if (parsedPlayerInputVal === calculatedExpectedTargetResult) {
+                signalClashVictoryCaptureLock();
             } else {
-                showToast("Wrong answer — try again.", "error");
+                showToast('Wrong answer — try again.', 'error');
             }
         });
 
         document.getElementById('reaction-trigger-btn').addEventListener('click', () => {
-            signalClashVictoryCaptureLock(activeUserSession.uid);
+            if (clashUiLocked || !activeStealSequenceId) return;
+
+            const lenses = document.querySelectorAll('.traffic-lens');
+            const isGreenPhase = Array.from(lenses).some(lens => lens.classList.contains('green'));
+            if (!isGreenPhase) {
+                showToast('Too early — wait for GREEN.', 'error');
+                return;
+            }
+
+            signalClashVictoryCaptureLock();
         });
 
-        function signalClashVictoryCaptureLock(winnerUid) {
-            if(!activeStealSequenceId) return;
-            
+        function signalClashVictoryCaptureLock() {
+            if (!activeStealSequenceId || clashUiLocked || !activeUserSession?.uid) return;
+
+            const myUid = activeUserSession.uid;
             const victoryVerificationSessionRef = ref(db, `clash_sessions/${activeStealSequenceId}`);
+
             runTransaction(victoryVerificationSessionRef, (currentSessionData) => {
-                if(currentSessionData && currentSessionData.sessionState === 'initialized') {
-                    currentSessionData.sessionState = 'terminated_resolved';
-                    currentSessionData.winnerSignaledUid = winnerUid;
-                    return currentSessionData;
-                }
+                if (!currentSessionData) return;
+                if (currentSessionData.sessionState !== 'initialized') return;
+                if (currentSessionData.winnerSignaledUid) return;
+
+                currentSessionData.sessionState = 'terminated_resolved';
+                currentSessionData.winnerSignaledUid = myUid;
                 return currentSessionData;
+            }).then(async result => {
+                if (!result.committed) {
+                    lockClashUiInputs();
+                    showToast('Too late — opponent already won.', 'error');
+                    return;
+                }
+
+                const resolved = result.snapshot.val();
+                if (!resolved) return;
+
+                lockClashUiInputs();
+
+                if (resolved.winnerSignaledUid !== myUid) {
+                    showToast('Too late — opponent already won.', 'error');
+                    return;
+                }
+
+                const winMsg = activeClashRole === 'defender'
+                    ? 'Defense registered first!'
+                    : 'Intrusion registered first!';
+                showToast(winMsg, 'success');
+
+                if (resolved.winnerSignaledUid === resolved.attackerUid && myUid === resolved.attackerUid) {
+                    try {
+                        const stealResult = await resolveStealOutcomeForSession(resolved);
+                        if (stealResult.status === 'atomic-success' || stealResult.status === 'loot-success') {
+                            showToast('Card secured — added to your inventory.', 'success');
+                        } else if (stealResult.status === 'missing-card-data') {
+                            showToast('Steal failed — card data missing.', 'error');
+                        } else if (stealResult.status === 'loot-failed') {
+                            showToast('Could not add stolen card. Check console.', 'error');
+                        }
+                    } catch (error) {
+                        logFirebaseStealError('signalClashVictoryCaptureLock.resolveSteal', error);
+                        showToast('Steal transfer failed. Check browser console.', 'error');
+                    }
+                }
+            }).catch(error => {
+                logFirebaseStealError('signalClashVictoryCaptureLock', error);
+                showToast('Could not register victory. Check console.', 'error');
             });
         }
 
+        async function cleanupResolvedClashSession(sessionId) {
+            try {
+                await remove(ref(db, `clash_sessions/${sessionId}`));
+                await remove(ref(db, `steal_payloads/${sessionId}`));
+            } catch (error) {
+                logFirebaseStealError('cleanupResolvedClashSession', error);
+            }
+        }
+
         async function concludeLiveChallengeTransactionClean(resolvedSessionObj) {
+            const sessionId = resolvedSessionObj?.sessionId;
+            if (!sessionId || !resolvedSessionObj?.winnerSignaledUid) return;
+
+            const uiKey = `${sessionId}:ui`;
+            const alreadyHandledUi = processedStealSessionIds.has(uiKey);
+
             closeModal('modal-game-math');
             closeModal('modal-game-reaction');
-            if(reactionSequenceTimer) clearTimeout(reactionSequenceTimer);
-
-            if(!activeStealSequenceId) return; 
-            activeStealSequenceId = null;
-
-            const trackingAmITheWinnerFlag = resolvedSessionObj.winnerSignaledUid === activeUserSession.uid;
-            
-            if(trackingAmITheWinnerFlag) {
-                showToast("Intrusion successful!", "success");
-                
-                update(ref(db, `users/${activeUserSession.uid}/xp`), userDataRecord.xp + 20);
-
-                if(resolvedSessionObj.attackerUid === activeUserSession.uid) {
-                    const sourceDefenderAssetPathRef = ref(db, `inventory/${resolvedSessionObj.defenderUid}/${resolvedSessionObj.targetCardInstanceKey}`);
-                    const fetchedDefenderAssetSnapshot = await get(sourceDefenderAssetPathRef);
-                    const targetedAssetObjectData = fetchedDefenderAssetSnapshot.val();
-
-                    if(targetedAssetObjectData) {
-                        const globalAssetRoutingPayloadMap = {};
-                        globalAssetRoutingPayloadMap[`inventory/${resolvedSessionObj.defenderUid}/${resolvedSessionObj.targetCardInstanceKey}`] = null;
-                        
-                        targetedAssetObjectData.acquiredTimestamp = Date.now();
-                        globalAssetRoutingPayloadMap[`inventory/${activeUserSession.uid}/${resolvedSessionObj.targetCardInstanceKey}`] = targetedAssetObjectData;
-                        
-                        if(!userDataRecord.discovered || !userDataRecord.discovered[targetedAssetObjectData.cardId]) {
-                            globalAssetRoutingPayloadMap[`users/${activeUserSession.uid}/discovered/${targetedAssetObjectData.cardId}`] = Date.now();
-                        }
-
-                        await update(ref(db, '/'), globalAssetRoutingPayloadMap);
-                    }
-                }
-            } else {
-                showToast("Defense held — you lost the clash.", "error");
+            if (reactionSequenceTimer) {
+                clearTimeout(reactionSequenceTimer);
+                reactionSequenceTimer = null;
             }
 
-            remove(ref(db, `clash_sessions/${resolvedSessionObj.sessionId}`));
+            if (activeStealSessionUnsub) {
+                activeStealSessionUnsub();
+                activeStealSessionUnsub = null;
+            }
+            activeStealSequenceId = null;
+
+            const myUid = activeUserSession?.uid;
+            const amWinner = resolvedSessionObj.winnerSignaledUid === myUid;
+            const amAttacker = resolvedSessionObj.attackerUid === myUid;
+            const amDefender = resolvedSessionObj.defenderUid === myUid;
+
+            let stealResult = { status: 'skipped' };
+            try {
+                stealResult = await resolveStealOutcomeForSession(resolvedSessionObj);
+            } catch (error) {
+                logFirebaseStealError('concludeLiveChallenge.resolveSteal', error);
+            }
+
+            if (!alreadyHandledUi) {
+                processedStealSessionIds.add(uiKey);
+
+                if (amWinner && amAttacker) {
+                    if (stealResult.status === 'atomic-success' || stealResult.status === 'loot-success' || stealResult.status === 'already-done') {
+                        showToast('Intrusion successful! Card secured.', 'success');
+                    } else if (stealResult.status === 'missing-card-data') {
+                        showToast('Steal failed — target card data missing.', 'error');
+                    } else if (stealResult.status === 'waiting-on-peer') {
+                        showToast('Loot secured — waiting for defender sync.', 'info');
+                    } else if (stealResult.status === 'loot-failed') {
+                        showToast('Steal transfer failed. Check browser console.', 'error');
+                    }
+                } else if (amWinner && amDefender) {
+                    showToast('Defense successful! Your card is safe.', 'success');
+                } else if (!amWinner && amAttacker) {
+                    showToast('Defense held — you lost the clash.', 'error');
+                } else if (!amWinner && amDefender) {
+                    if (stealResult.status === 'defender-purged' || stealResult.status === 'already-done') {
+                        showToast('Your card was stolen.', 'error');
+                    } else {
+                        showToast('Intrusion succeeded — removing stolen card...', 'error');
+                    }
+                }
+            }
+
+            clashUiSessionId = null;
+            activeClashRole = null;
+            clashUiLocked = false;
+
+            let freshSession = resolvedSessionObj;
+            try {
+                const freshSnap = await get(ref(db, `clash_sessions/${sessionId}`));
+                freshSession = freshSnap.val() || resolvedSessionObj;
+            } catch (error) {
+                logFirebaseStealError('concludeLiveChallenge.refreshSession', error);
+            }
+
+            const attackerWon = freshSession.winnerSignaledUid === freshSession.attackerUid;
+            const transferDone = freshSession.attackerLootApplied && freshSession.defenderCardPurged;
+            const canCleanup = !attackerWon || transferDone;
+
+            if (canCleanup) {
+                await cleanupResolvedClashSession(sessionId);
+            }
         }
 
         // --- REGISTRY ARCHIVE BOOK IMPLEMENTATION ---
