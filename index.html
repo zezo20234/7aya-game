@@ -977,6 +977,119 @@
             font-size: 0.85rem;
         }
         .admin-reply-item strong { color: var(--gold); }
+
+        /* --- MOBILE POLISH & MOTION --- */
+        @media (max-width: 640px) {
+            #top-bar { padding: 10px 12px 8px; }
+            .username-txt { font-size: 0.9rem; }
+            .currency-display { font-size: 1.05rem; }
+            #main-content { padding: 12px 12px calc(92px + env(safe-area-inset-bottom)); }
+            .section-title { font-size: 1.1rem; }
+            .section-desc { font-size: 0.75rem; margin-bottom: 12px; }
+            .grid-container {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+            .card-item {
+                min-height: 168px;
+                padding: 8px;
+                border-radius: 14px;
+            }
+            .card-title { font-size: 0.82rem; }
+            .card-btn {
+                min-height: 40px;
+                font-size: 0.68rem;
+                padding: 10px 6px;
+            }
+            .pack-box { padding: 14px 12px; }
+            .player-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .player-row .btn-lvlup { width: 100%; min-height: 44px; }
+            .modal-body {
+                max-height: 92vh;
+                border-radius: 20px 20px 0 0;
+                margin-top: auto;
+                padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
+            }
+            .modal-mask.is-open { align-items: flex-end; padding: 0; }
+            .traffic-lens { width: 52px; height: 52px; }
+            .nav-tab { font-size: 0.62rem; min-height: 52px; }
+            .nav-icon { font-size: 1.25rem; }
+            .btn-action { min-height: 48px; }
+            .auth-container { padding: 28px 18px; }
+        }
+
+        @media (max-width: 380px) {
+            .grid-container { grid-template-columns: 1fr; }
+        }
+
+        .card-item {
+            animation: cardPopIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+        }
+        .card-item:nth-child(1) { animation-delay: 0.02s; }
+        .card-item:nth-child(2) { animation-delay: 0.05s; }
+        .card-item:nth-child(3) { animation-delay: 0.08s; }
+        .card-item:nth-child(4) { animation-delay: 0.11s; }
+        .card-item:nth-child(5) { animation-delay: 0.14s; }
+        .card-item:nth-child(6) { animation-delay: 0.17s; }
+
+        @keyframes cardPopIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .card-item::after {
+            content: '';
+            position: absolute;
+            inset: -40% -40% auto auto;
+            width: 80%;
+            height: 80%;
+            background: radial-gradient(circle, color-mix(in srgb, var(--rarity-color) 25%, transparent), transparent 70%);
+            opacity: 0.6;
+            pointer-events: none;
+            animation: cardShine 4s ease-in-out infinite;
+        }
+        @keyframes cardShine {
+            0%, 100% { transform: translate(0, 0); opacity: 0.35; }
+            50% { transform: translate(-8%, 8%); opacity: 0.7; }
+        }
+
+        .pack-box {
+            transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+        }
+        .pack-box:active { transform: scale(0.97); }
+
+        .player-row {
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .player-row:active { transform: scale(0.99); }
+
+        .btn-lvlup, .btn-action, .card-btn {
+            transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
+        }
+        .btn-lvlup:active, .btn-action:active, .card-btn:active {
+            transform: scale(0.96);
+        }
+
+        .card-instance-id {
+            font-size: 0.55rem;
+            color: #6b7280;
+            font-family: ui-monospace, monospace;
+            letter-spacing: 0.02em;
+            word-break: break-all;
+            margin-top: 2px;
+        }
+
+        .panel-glass {
+            background: rgba(17, 24, 39, 0.55);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(148, 163, 184, 0.14);
+            border-radius: 14px;
+            padding: 14px;
+        }
     </style>
 </head>
 <body>
@@ -1082,7 +1195,9 @@
                 <div id="container-steal-cooldown" style="display:none; background:rgba(239,68,68,0.2); border:1px solid var(--accent-red); padding:12px; border-radius:8px; margin-bottom:12px; font-weight:bold; text-align:center; color:var(--accent-red);">
                     Steal systems recharging! Cooldown active.
                 </div>
-                <div id="container-online-players"></div>
+                <div class="panel-glass">
+                    <div id="container-online-players"></div>
+                </div>
             </section>
 
             <section id="view-book" class="view-panel">
@@ -1625,6 +1740,8 @@
         let clashUiSessionId = null;
         let clashUiLocked = false;
         const processedStealSessionIds = new Set();
+        const stealResolveInFlight = new Set();
+        const stealTransferDoneLocally = new Set();
         let reactionSequenceTimer = null;
 
         let presenceServerTimeOffsetMs = 0;
@@ -2328,23 +2445,19 @@
                     if (session.sessionState === 'initialized') {
                         initializeLiveChallengeInterface(sesId, session);
                     } else if (session.sessionState === 'terminated_resolved' && session.winnerSignaledUid) {
-                        resolveStealOutcomeForSession(session)
-                            .then(async () => {
-                                let freshSession = session;
-                                try {
-                                    const freshSnap = await get(ref(db, `clash_sessions/${sesId}`));
-                                    freshSession = freshSnap.val() || session;
-                                } catch (error) {
-                                    logFirebaseStealError('globalClashSession.refreshSession', error);
-                                }
-
+                        if (myUid === session.defenderUid && session.winnerSignaledUid === session.attackerUid) {
+                            applyDefenderCardLoss(session).catch(error => logFirebaseStealError('globalClashSession.defenderPurge', error));
+                        }
+                        get(ref(db, `clash_sessions/${sesId}`))
+                            .then(snap => snap.val() || session)
+                            .then(freshSession => {
                                 const attackerWon = freshSession.winnerSignaledUid === freshSession.attackerUid;
                                 const transferDone = freshSession.attackerLootApplied && freshSession.defenderCardPurged;
                                 if (!attackerWon || transferDone) {
-                                    await cleanupResolvedClashSession(sesId);
+                                    return cleanupResolvedClashSession(sesId);
                                 }
                             })
-                            .catch(error => logFirebaseStealError('globalClashSession.resolveSteal', error));
+                            .catch(error => logFirebaseStealError('globalClashSession.cleanup', error));
                     }
                 }
             });
@@ -2657,7 +2770,7 @@
 
             const activeDeckKeys = Object.keys(userDeckRecord);
             if(activeDeckKeys.length === 0) {
-                targetGridDisplayNode.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:32px; color:#6b7280; font-weight:bold;">No operational card instances initialized in localized memory profiles. Purchase packs to build inventory.</div>`;
+                targetGridDisplayNode.innerHTML = `<div class="empty-state">No cards yet — open packs to build your deck.</div>`;
                 return;
             }
 
@@ -2698,6 +2811,7 @@
                         <div class="card-body">
                             <div class="card-title" style="color:${PACK_METADATA[currentInstanceItem.packSource].color};">${staticRegistryItemMeta.name}</div>
                             <div class="card-rarity-lbl" style="color:#6b7280;">${currentInstanceItem.packSource}</div>
+                            <div class="card-instance-id">#${instanceIdKey.slice(0, 10)}</div>
                         </div>
                         <div class="card-badge-bottom">
                             <span class="mutations-indicator">🧬 M:${mutationsCount}</span>
@@ -3011,9 +3125,8 @@
             }
         }
 
-        function isFirebasePermissionDenied(error) {
-            const code = error?.code || error?.message || '';
-            return code === 'PERMISSION_DENIED' || String(code).includes('PERMISSION_DENIED');
+        function getStealLootInstanceId(sessionId) {
+            return `steal_${sessionId}`;
         }
 
         async function resolveStealCardSnapshot(session) {
@@ -3041,93 +3154,96 @@
             return null;
         }
 
-        /**
-         * Full atomic transfer (works only if rules allow cross-user inventory writes).
-         */
-        async function executeAtomicCardStealTransfer(attackerUid, defenderUid, sourceInstanceKey, cardSnapshot, sessionId) {
-            if (!attackerUid || !defenderUid || !sourceInstanceKey || !cardSnapshot || !sessionId) {
-                throw new Error('executeAtomicCardStealTransfer: attackerUid, defenderUid, sourceInstanceKey, cardSnapshot, and sessionId are required');
+        async function isTargetCardAlreadyBeingStolen(defenderUid, targetInstanceId) {
+            try {
+                const sessionsSnap = await get(ref(db, 'clash_sessions'));
+                const sessions = sessionsSnap.val() || {};
+                for (const id in sessions) {
+                    const s = sessions[id];
+                    if (
+                        s?.sessionState === 'initialized' &&
+                        s?.defenderUid === defenderUid &&
+                        s?.targetCardInstanceKey === targetInstanceId
+                    ) {
+                        return true;
+                    }
+                }
+            } catch (error) {
+                logFirebaseStealError('isTargetCardAlreadyBeingStolen', error);
             }
-            if (attackerUid === defenderUid) {
-                throw new Error('executeAtomicCardStealTransfer: attacker and defender must be different users');
-            }
-
-            const newInstanceKey = push(ref(db, `inventory/${attackerUid}`)).key;
-            const transferredCard = {
-                ...cardSnapshot,
-                instanceId: newInstanceKey,
-                acquiredTimestamp: Date.now()
-            };
-
-            const atomicTransferPayload = {};
-            atomicTransferPayload[`inventory/${defenderUid}/${sourceInstanceKey}`] = null;
-            atomicTransferPayload[`inventory/${attackerUid}/${newInstanceKey}`] = transferredCard;
-
-            if (!userDataRecord.discovered?.[transferredCard.cardId]) {
-                atomicTransferPayload[`users/${attackerUid}/discovered/${transferredCard.cardId}`] = Date.now();
-            }
-            atomicTransferPayload[`users/${attackerUid}/xp`] = (userDataRecord.xp || 0) + 20;
-            atomicTransferPayload[`clash_sessions/${sessionId}/attackerLootApplied`] = true;
-            atomicTransferPayload[`clash_sessions/${sessionId}/defenderCardPurged`] = true;
-            atomicTransferPayload[`clash_sessions/${sessionId}/attackerInstanceKey`] = newInstanceKey;
-
-            await update(ref(db, '/'), atomicTransferPayload);
-            return { newInstanceKey, transferredCard, mode: 'atomic' };
+            return false;
         }
 
         /**
-         * Attacker writes only to their own paths (allowed by typical auth.uid === uid rules).
+         * One steal session = one loot card id (steal_{sessionId}). Transaction claim prevents duplicates.
          */
-        async function applyAttackerStealLoot(session) {
-            const attackerUid = session.attackerUid;
-            const sessionId = session.sessionId;
-            if (!attackerUid || !sessionId || activeUserSession?.uid !== attackerUid) return null;
-            if (session.winnerSignaledUid !== attackerUid) return null;
+        async function claimAndExecuteAttackerStealLoot(session) {
+            const sessionId = session?.sessionId;
+            const attackerUid = session?.attackerUid;
+            if (!sessionId || !attackerUid || activeUserSession?.uid !== attackerUid) {
+                return { status: 'skipped' };
+            }
+            if (session.winnerSignaledUid !== attackerUid) {
+                return { status: 'defender-won' };
+            }
+
+            const lootInstanceId = getStealLootInstanceId(sessionId);
+            if (stealTransferDoneLocally.has(sessionId) || userDeckRecord[lootInstanceId]) {
+                return { status: 'already-done', newInstanceKey: lootInstanceId };
+            }
 
             const sessionRef = ref(db, `clash_sessions/${sessionId}`);
             const claimResult = await runTransaction(sessionRef, (currentSession) => {
                 if (!currentSession) return;
+                if (currentSession.sessionState !== 'terminated_resolved') return;
                 if (currentSession.winnerSignaledUid !== attackerUid) return;
                 if (currentSession.attackerLootApplied) return;
                 currentSession.attackerLootApplied = true;
+                currentSession.attackerInstanceKey = lootInstanceId;
+                currentSession.lockedTargetInstanceId = currentSession.targetCardInstanceKey;
                 return currentSession;
             });
 
-            if (!claimResult.committed) return null;
             const claimedSession = claimResult.snapshot.val();
-            if (!claimedSession?.attackerLootApplied) return null;
+            if (!claimedSession?.attackerLootApplied) {
+                if (claimedSession?.attackerInstanceKey) {
+                    return { status: 'already-done', newInstanceKey: claimedSession.attackerInstanceKey };
+                }
+                return { status: 'claim-failed' };
+            }
 
             const cardSnapshot = await resolveStealCardSnapshot(claimedSession);
             if (!cardSnapshot) {
-                throw new Error('applyAttackerStealLoot: card snapshot missing');
+                return { status: 'missing-card-data' };
             }
 
-            const newInstanceKey = push(ref(db, `inventory/${attackerUid}`)).key;
             const transferredCard = {
                 ...cardSnapshot,
-                instanceId: newInstanceKey,
+                instanceId: lootInstanceId,
+                cardId: cardSnapshot.cardId,
+                stolenFromInstanceId: claimedSession.targetCardInstanceKey,
+                stealSessionId: sessionId,
                 acquiredTimestamp: Date.now()
             };
 
             const attackerOnlyPayload = {};
-            attackerOnlyPayload[`inventory/${attackerUid}/${newInstanceKey}`] = transferredCard;
+            attackerOnlyPayload[`inventory/${attackerUid}/${lootInstanceId}`] = transferredCard;
             if (!userDataRecord.discovered?.[transferredCard.cardId]) {
                 attackerOnlyPayload[`users/${attackerUid}/discovered/${transferredCard.cardId}`] = Date.now();
             }
             attackerOnlyPayload[`users/${attackerUid}/xp`] = (userDataRecord.xp || 0) + 20;
-            attackerOnlyPayload[`clash_sessions/${sessionId}/attackerInstanceKey`] = newInstanceKey;
 
             await update(ref(db, '/'), attackerOnlyPayload);
-            return { newInstanceKey, transferredCard, mode: 'attacker-loot' };
+
+            stealTransferDoneLocally.add(sessionId);
+            syncLocalDeckAfterSuccessfulSteal(attackerUid, lootInstanceId, transferredCard);
+            return { status: 'loot-success', newInstanceKey: lootInstanceId, transferredCard };
         }
 
-        /**
-         * Defender removes the stolen card from their own inventory (allowed by typical rules).
-         */
         async function applyDefenderCardLoss(session) {
             const defenderUid = session.defenderUid;
             const sessionId = session.sessionId;
-            const sourceInstanceKey = session.targetCardInstanceKey;
+            const sourceInstanceKey = session.lockedTargetInstanceId || session.targetCardInstanceKey;
             if (!defenderUid || !sessionId || !sourceInstanceKey || activeUserSession?.uid !== defenderUid) return false;
             if (session.winnerSignaledUid !== session.attackerUid) return false;
 
@@ -3147,78 +3263,60 @@
             await update(ref(db, '/'), {
                 [`inventory/${defenderUid}/${sourceInstanceKey}`]: null
             });
+
+            if (userDeckRecord[sourceInstanceKey]) {
+                const nextDeck = { ...userDeckRecord };
+                delete nextDeck[sourceInstanceKey];
+                userDeckRecord = nextDeck;
+                renderUserInventoryDeckGrid();
+            }
             return true;
         }
 
         async function resolveStealOutcomeForSession(session) {
             const sessionId = session?.sessionId;
-            if (!sessionId || session.sessionState !== 'terminated_resolved') return { status: 'skipped' };
-            if (!session.winnerSignaledUid) return { status: 'skipped' };
-
-            const myUid = activeUserSession?.uid;
-            if (!myUid) return { status: 'skipped' };
-
-            if (session.winnerSignaledUid !== session.attackerUid) {
-                return { status: 'defender-won' };
+            if (!sessionId || session.sessionState !== 'terminated_resolved' || !session.winnerSignaledUid) {
+                return { status: 'skipped' };
             }
 
-            if (session.attackerLootApplied && session.defenderCardPurged) {
-                return { status: 'already-done' };
+            if (stealResolveInFlight.has(sessionId)) {
+                return { status: 'in-flight' };
             }
+            stealResolveInFlight.add(sessionId);
 
-            if (myUid === session.attackerUid && !session.attackerLootApplied) {
-                const cardSnapshot = await resolveStealCardSnapshot(session);
-                if (!cardSnapshot) {
-                    return { status: 'missing-card-data' };
+            try {
+                const myUid = activeUserSession?.uid;
+                if (!myUid) return { status: 'skipped' };
+
+                if (session.winnerSignaledUid !== session.attackerUid) {
+                    return { status: 'defender-won' };
                 }
 
-                try {
-                    const atomicResult = await executeAtomicCardStealTransfer(
-                        session.attackerUid,
-                        session.defenderUid,
-                        session.targetCardInstanceKey,
-                        cardSnapshot,
-                        sessionId
-                    );
-                    syncLocalDeckAfterSuccessfulSteal(session.attackerUid, atomicResult.newInstanceKey, atomicResult.transferredCard);
-                    return { status: 'atomic-success', ...atomicResult };
-                } catch (error) {
-                    if (!isFirebasePermissionDenied(error)) {
-                        logFirebaseStealError('resolveStealOutcome.atomic', error);
-                        throw error;
+                if (myUid === session.attackerUid) {
+                    return await claimAndExecuteAttackerStealLoot(session);
+                }
+
+                if (myUid === session.defenderUid && !session.defenderCardPurged) {
+                    try {
+                        const purged = await applyDefenderCardLoss(session);
+                        return { status: purged ? 'defender-purged' : 'defender-purge-skipped' };
+                    } catch (error) {
+                        logFirebaseStealError('resolveStealOutcome.defenderPurge', error);
+                        return { status: 'defender-purge-failed', error };
                     }
-                    console.warn('[Steal] Atomic transfer blocked by rules — using split-path steal (attacker loot + defender purge).');
                 }
 
-                try {
-                    const lootResult = await applyAttackerStealLoot(session);
-                    if (lootResult) {
-                        syncLocalDeckAfterSuccessfulSteal(session.attackerUid, lootResult.newInstanceKey, lootResult.transferredCard);
-                        return { status: 'loot-success', ...lootResult };
-                    }
-                } catch (error) {
-                    logFirebaseStealError('resolveStealOutcome.attackerLoot', error);
-                    return { status: 'loot-failed', error };
-                }
+                return { status: 'waiting-on-peer' };
+            } finally {
+                stealResolveInFlight.delete(sessionId);
             }
-
-            if (myUid === session.defenderUid && !session.defenderCardPurged) {
-                try {
-                    const purged = await applyDefenderCardLoss(session);
-                    return { status: purged ? 'defender-purged' : 'defender-purge-skipped' };
-                } catch (error) {
-                    logFirebaseStealError('resolveStealOutcome.defenderPurge', error);
-                    return { status: 'defender-purge-failed', error };
-                }
-            }
-
-            return { status: 'waiting-on-peer' };
         }
 
-        function syncLocalDeckAfterSuccessfulSteal(attackerUid, newInstanceKey, transferredCard) {
+        function syncLocalDeckAfterSuccessfulSteal(attackerUid, instanceKey, transferredCard) {
             if (!activeUserSession || attackerUid !== activeUserSession.uid) return;
+            if (userDeckRecord[instanceKey]) return;
 
-            userDeckRecord = { ...userDeckRecord, [newInstanceKey]: transferredCard };
+            userDeckRecord = { ...userDeckRecord, [instanceKey]: transferredCard };
 
             if (transferredCard.cardId) {
                 if (!userDataRecord.discovered) userDataRecord.discovered = {};
@@ -3265,6 +3363,10 @@
                 return showToast('Target card is locked.', 'error');
             }
 
+            if (await isTargetCardAlreadyBeingStolen(defenderUid, targetInstanceCardId)) {
+                return showToast('This card is already under attack.', 'error');
+            }
+
             const generatedAttackSessionUid = push(ref(db, 'clash_sessions')).key;
             const chosenRandomPuzzleMechanicType = Math.random() > 0.5 ? 'clash_math' : 'clash_reaction';
             const mathematicalValueArgA = Math.floor(Math.random() * 80) + 15;
@@ -3277,6 +3379,7 @@
                 attackerName: userDataRecord.username || 'Attacker',
                 defenderUid,
                 targetCardInstanceKey: targetInstanceCardId,
+                lockedTargetInstanceId: targetInstanceCardId,
                 targetCardSnapshot,
                 puzzleType: chosenRandomPuzzleMechanicType,
                 mathArgA: mathematicalValueArgA,
@@ -3487,22 +3590,6 @@
                     ? 'Defense registered first!'
                     : 'Intrusion registered first!';
                 showToast(winMsg, 'success');
-
-                if (resolved.winnerSignaledUid === resolved.attackerUid && myUid === resolved.attackerUid) {
-                    try {
-                        const stealResult = await resolveStealOutcomeForSession(resolved);
-                        if (stealResult.status === 'atomic-success' || stealResult.status === 'loot-success') {
-                            showToast('Card secured — added to your inventory.', 'success');
-                        } else if (stealResult.status === 'missing-card-data') {
-                            showToast('Steal failed — card data missing.', 'error');
-                        } else if (stealResult.status === 'loot-failed') {
-                            showToast('Could not add stolen card. Check console.', 'error');
-                        }
-                    } catch (error) {
-                        logFirebaseStealError('signalClashVictoryCaptureLock.resolveSteal', error);
-                        showToast('Steal transfer failed. Check browser console.', 'error');
-                    }
-                }
             }).catch(error => {
                 logFirebaseStealError('signalClashVictoryCaptureLock', error);
                 showToast('Could not register victory. Check console.', 'error');
@@ -3554,14 +3641,14 @@
                 processedStealSessionIds.add(uiKey);
 
                 if (amWinner && amAttacker) {
-                    if (stealResult.status === 'atomic-success' || stealResult.status === 'loot-success' || stealResult.status === 'already-done') {
+                    if (stealResult.status === 'loot-success' || stealResult.status === 'already-done') {
                         showToast('Intrusion successful! Card secured.', 'success');
+                    } else if (stealResult.status === 'in-flight' || stealResult.status === 'claim-failed') {
+                        showToast('Resolving steal…', 'info');
                     } else if (stealResult.status === 'missing-card-data') {
                         showToast('Steal failed — target card data missing.', 'error');
                     } else if (stealResult.status === 'waiting-on-peer') {
                         showToast('Loot secured — waiting for defender sync.', 'info');
-                    } else if (stealResult.status === 'loot-failed') {
-                        showToast('Steal transfer failed. Check browser console.', 'error');
                     }
                 } else if (amWinner && amDefender) {
                     showToast('Defense successful! Your card is safe.', 'success');
