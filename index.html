@@ -1,528 +1,3150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>7AYA GAME</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Realm - Card Economy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-panel: #111827;
+            --bg-surface: #1f2937;
+            --border-glow: #374151;
+            
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.4);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --gold: #f59e0b;
 
-  <link rel="apple-touch-icon" href="IMG_0383.jpeg">
-  <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="7AYA-GAME">
-  <meta name="theme-color" content="#0d0d0d"/>
+            /* Rarity Themes */
+            --common: #9ca3af;
+            --uncommon: #10b981;
+            --rare: #3b82f6;
+            --epic: #8b5cf6;
+            --legendary: #ec4899;
+            --secret: #f43f5e;
+        }
 
-  <style>
-    :root {
-      --primary: #00c6ff;
-      --secondary: #0072ff;
-      --bg: #0d0d0d;
-      --card-bg: #1a1a1a;
-      --text: #ffffff;
-      --gray: #888;
-      --danger: #ff4d4d;
-      --success: #00e676;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            background-color: #050810;
+            color: #f3f4f6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    html, body {
-      margin: 0; padding: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      height: 100%; width: 100%;
-      overflow-x: hidden;
-    }
+        /* --- GLOBAL LAYOUT --- */
+        #top-bar {
+            background: rgba(9, 13, 22, 0.88);
+            backdrop-filter: blur(20px);
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 10;
+        }
 
-    body { display: flex; flex-direction: column; padding-bottom: 90px; }
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    h2, h3 { margin: 10px 0; font-weight: 600; }
-    p { margin: 5px 0; font-size: 0.95rem; color: #ddd; }
+        .user-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .container { padding: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
-    .hidden { display: none !important; }
+        .profile-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
 
-    .card {
-      background: var(--card-bg);
-      padding: 18px;
-      border-radius: 20px;
-      margin-bottom: 15px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.3);
-      border: 1px solid #2a2a2a;
-    }
+        .user-name-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
 
-    .wallet-card {
-      background: linear-gradient(135deg, #1e1e1e 0%, #111 100%);
-      border-left: 4px solid var(--primary);
-    }
+        .username-txt {
+            font-weight: 700;
+            font-size: 1rem;
+        }
 
-    input, select, button {
-      font-size: 1rem; padding: 14px; margin: 8px 0;
-      width: 100%; border-radius: 12px; border: none; outline: none; transition: 0.3s;
-    }
+        .streak-badge {
+            font-size: 0.75rem;
+            color: var(--gold);
+            font-weight: 600;
+        }
 
-    input, select { background: #252525; color: white; border: 1px solid #333; }
-    
-    button {
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-      color: white; font-weight: bold; text-transform: uppercase; cursor: pointer;
-    }
+        .currency-display {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--accent-green);
+        }
 
-    button.secondary { background: #333; border: 1px solid #444; }
-    button:active { transform: scale(0.96); opacity: 0.9; }
+        .xp-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    /* Bottom Nav */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 75px;
-      background: #151515; display: flex; justify-content: space-around;
-      align-items: center; border-top: 1px solid #333; z-index: 1000;
-      padding-bottom: env(safe-area-inset-bottom);
-    }
+        .level-tag {
+            font-weight: 800;
+            font-size: 0.85rem;
+            background: var(--bg-surface);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-glow);
+            min-width: 60px;
+            text-align: center;
+        }
 
-    .nav-item { color: var(--gray); font-size: 12px; text-align: center; flex: 1; }
-    .nav-item.active { color: var(--primary); font-weight: bold; }
-    .nav-item i { display: block; font-size: 22px; margin-bottom: 4px; }
+        .xp-track {
+            flex-grow: 1;
+            height: 14px;
+            background: var(--bg-surface);
+            border-radius: 7px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--border-glow);
+        }
 
-    /* Facenet Styling */
-    .post-card { border-bottom: 1px solid #333; padding: 15px 0; }
-    .post-card img, .post-card video { width: 100%; border-radius: 12px; margin-top: 10px; }
-    
-    .no-internet-msg {
-        text-align: center; padding: 50px 20px; color: var(--gray);
-    }
-    .no-internet-msg i { font-size: 3rem; display: block; margin-bottom: 10px; }
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #60a5fa);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
 
-    /* Camera View Styling */
-    #scanner { border-radius: 15px; overflow: hidden; background: #000; }
+        .xp-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            line-height: 12px;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-    .tab-content { animation: fadeIn 0.3s ease-out; }
-  </style>
+        .btn-lvlup {
+            background: linear-gradient(135deg, var(--accent-green), #059669);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+        }
+
+        /* --- NAVIGATION --- */
+        #main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px;
+            padding-bottom: 90px;
+        }
+
+        .view-panel {
+            display: none;
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        #nav-tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(9, 13, 22, 0.92);
+            backdrop-filter: blur(22px);
+            border-top: 1px solid rgba(148, 163, 184, 0.18);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+            z-index: 10;
+        }
+
+        .nav-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #9ca3af;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            width: 14%;
+            transition: color 0.2s;
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 1.4rem;
+            margin-bottom: 2px;
+        }
+
+        /* --- AUTH SCREEN --- */
+        #auth-screen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg-dark);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .auth-container {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 420px;
+            padding: 32px 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+        }
+
+        .auth-logo {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-glow);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .auth-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .btn-action {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn-action:active { opacity: 0.8; }
+        .btn-blue { background: var(--primary); color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--border-glow); color: white; }
+
+        /* --- GAME CARDS SYSTEMS --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); /* Mobile friendly scale */
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .card-item {
+            background: linear-gradient(145deg, var(--bg-surface), var(--bg-panel));
+            border: 2px solid var(--rarity-color);
+            border-radius: 12px;
+            padding: 10px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 200px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            transition: transform 0.1s ease;
+        }
+
+        .card-clickable-area {
+            cursor: pointer;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-clickable-area:active {
+            transform: scale(0.97);
+        }
+
+        .card-badge-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: #9ca3af;
+            z-index: 2;
+        }
+
+        .card-body {
+            text-align: center;
+            margin: 16px 0;
+            z-index: 2;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .card-rarity-lbl {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+
+        .card-badge-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 800;
+            z-index: 2;
+        }
+
+        .mutations-indicator {
+            color: #a855f7;
+            font-size: 0.7rem;
+        }
+
+        .card-overlay-lock {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            z-index: 5;
+            color: var(--gold);
+        }
+
+        .card-action-overlay {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 10px;
+            z-index: 6;
+        }
+
+        .card-btn {
+            padding: 8px 4px; /* Better tap target for mobile */
+            font-size: 0.7rem;
+            font-weight: bold;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* --- PACKS SYSTEM --- */
+        .pack-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .pack-visual {
+            width: 70px;
+            height: 90px;
+            background: linear-gradient(135deg, var(--rarity-color), var(--bg-dark));
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            border: 1px solid var(--rarity-color);
+        }
+
+        .pack-stock-tag {
+            position: absolute;
+            top: 8px; right: 8px;
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.8);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        /* --- MODALS --- */
+        .modal-mask {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 14, 0.88);
+            backdrop-filter: blur(12px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .modal-mask.is-open { display: flex; opacity: 1; }
+
+        .modal-body {
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            border-radius: 18px;
+            width: 100%;
+            max-width: 460px;
+            padding: 20px;
+            max-height: 85vh;
+            overflow-y: auto;
+            transform: scale(0.94) translateY(8px);
+            transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+        }
+        .modal-mask.is-open .modal-body { transform: scale(1) translateY(0); }
+
+        .glass {
+            background: rgba(17, 24, 39, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.12);
+        }
+
+        .ambient-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+        .ambient-bg .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: orbFloat 14s ease-in-out infinite; }
+        .ambient-bg .orb-1 { width: 320px; height: 320px; background: #1d4ed8; top: -8%; left: -5%; }
+        .ambient-bg .orb-2 { width: 280px; height: 280px; background: #7c3aed; bottom: 10%; right: -8%; animation-delay: -5s; }
+        .ambient-bg .orb-3 { width: 200px; height: 200px; background: #059669; top: 40%; left: 35%; animation-delay: -9s; opacity: 0.2; }
+        @keyframes orbFloat { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(24px,-18px) scale(1.08); } }
+        .grid-overlay {
+            position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 75%);
+        }
+
+        #toast-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 380px); pointer-events: none; }
+        .toast { padding: 12px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; background: rgba(17,24,39,0.95); border: 1px solid rgba(148,163,184,0.18); opacity: 0; transform: translateY(-12px); transition: opacity 0.3s, transform 0.3s; }
+        .toast.is-visible { opacity: 1; transform: translateY(0); }
+        .toast-success { border-color: rgba(16,185,129,0.5); color: #6ee7b7; }
+        .toast-error { border-color: rgba(239,68,68,0.5); color: #fca5a5; }
+        .toast-info { border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+
+        #nav-indicator {
+            position: absolute; top: 6px; left: 0; height: calc(100% - 12px);
+            background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.35);
+            border-radius: 12px; transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1), width 0.3s ease;
+            pointer-events: none; z-index: 0;
+        }
+        .nav-tab { position: relative; z-index: 1; }
+
+        .view-panel.view-enter { animation: viewIn 0.35s cubic-bezier(0.22,1,0.36,1); }
+        @keyframes viewIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .section-title { font-family: 'Orbitron', sans-serif; }
+        .timer-chip { display: inline-flex; flex-direction: column; align-items: flex-end; background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.18); padding: 8px 12px; border-radius: 10px; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #6b7280; font-weight: 700; border: 1px dashed rgba(148,163,184,0.25); border-radius: 14px; background: rgba(15,23,42,0.35); }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .close-modal {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #9ca3af;
+            padding: 4px 12px;
+        }
+
+        /* --- MINI GAMES (STEAL) --- */
+        .player-row {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-glow);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .traffic-container {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 24px 0;
+        }
+
+        .traffic-lens {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #1f2937;
+            border: 2px solid #374151;
+        }
+
+        .traffic-lens.red { background: var(--accent-red); box-shadow: 0 0 15px var(--accent-red); }
+        .traffic-lens.green { background: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
+
+        /* --- LEADERBOARDS --- */
+        .tab-sub-row {
+            display: flex;
+            background: var(--bg-panel);
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 16px;
+        }
+
+        .sub-tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #9ca3af;
+        }
+
+        .sub-tab.active {
+            background: var(--bg-surface);
+            color: white;
+        }
+
+        .rank-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: var(--bg-surface);
+            margin-bottom: 6px;
+            border-radius: 8px;
+        }
+
+        .rank-num {
+            font-weight: 900;
+            width: 24px;
+            color: var(--gold);
+        }
+
+        /* --- UTILITIES --- */
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        .section-desc {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .mb-4 { margin-bottom: 16px; }
+        .p-4 { padding: 16px; }
+
+        /* --- SWIPE UP PACK REVEAL --- */
+        #pack-opening-overlay {
+            position: fixed; inset: 0; z-index: 500;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            background: radial-gradient(ellipse 75% 55% at 50% 38%, rgba(20, 30, 60, 0.45), rgba(4, 7, 16, 0.97));
+            backdrop-filter: blur(22px);
+            padding: 16px; touch-action: none; user-select: none;
+            overflow: hidden;
+        }
+        #pack-opening-overlay.active { display: flex; animation: fadeOverlay 0.4s ease; }
+        @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+
+        .pack-open-scene {
+            display: flex; flex-direction: column; align-items: center;
+            width: 100%; max-width: 400px; flex: 1; justify-content: center;
+        }
+
+        .pack-open-progress-row {
+            width: min(260px, 82vw); height: 6px; background: rgba(255,255,255,0.08);
+            border-radius: 999px; overflow: hidden; margin-bottom: 18px;
+        }
+        .pack-open-progress-fill {
+            height: 100%; width: 0%;
+            background: linear-gradient(90deg, var(--pack-color, #2563eb), var(--accent-green));
+            border-radius: 999px;
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .swipe-pack-stage {
+            width: min(228px, 72vw);
+            height: min(310px, 46vh);
+            position: relative;
+            touch-action: none;
+            animation: packPopIn 0.55s cubic-bezier(0.34, 1.35, 0.64, 1);
+        }
+        @keyframes packPopIn {
+            from { transform: scale(0.75); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .swipe-pack-stage.is-flying { pointer-events: none; }
+
+        .swipe-pack {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 16px;
+            border: 3px solid var(--pack-color, #2563eb);
+            background: linear-gradient(165deg,
+                color-mix(in srgb, var(--pack-color, #2563eb) 78%, #000) 0%,
+                #0a0f1a 38%,
+                #050810 100%);
+            box-shadow:
+                inset 0 2px 0 rgba(255,255,255,0.12),
+                0 28px 56px rgba(0,0,0,0.65),
+                0 0 48px color-mix(in srgb, var(--pack-color, #2563eb) 35%, transparent);
+            overflow: hidden;
+            cursor: grab;
+            touch-action: none;
+        }
+        .swipe-pack:active { cursor: grabbing; }
+        .swipe-pack::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(120deg, rgba(255,255,255,0.1) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 8;
+        }
+
+        .swipe-pack-cover {
+            position: absolute;
+            inset: 0;
+            z-index: 12;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+            background: linear-gradient(180deg,
+                rgba(0,0,0,0.15) 0%,
+                transparent 55%);
+        }
+        .swipe-pack-brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: rgba(255,255,255,0.92);
+            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+            margin-bottom: 28px;
+        }
+        .swipe-pack-cta {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #fff;
+            text-shadow: 0 0 20px color-mix(in srgb, var(--pack-color, #2563eb) 80%, transparent);
+            margin-bottom: 10px;
+        }
+        .swipe-chevron {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            font-size: 0.85rem;
+            font-weight: 900;
+            color: rgba(255,255,255,0.55);
+            animation: swipeChevron 1.2s ease-in-out infinite;
+        }
+        @keyframes swipeChevron {
+            0%, 100% { transform: translateY(0); opacity: 0.45; }
+            50% { transform: translateY(-8px); opacity: 1; }
+        }
+
+        .pack-card-well {
+            position: absolute;
+            left: 10px; right: 10px;
+            bottom: 12px;
+            top: 46%;
+            border-radius: 10px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
+            box-shadow: inset 0 6px 24px rgba(0,0,0,0.7);
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .pack-lip {
+            position: absolute;
+            left: 0; right: 0;
+            top: 44%;
+            height: 14px;
+            background: linear-gradient(180deg,
+                color-mix(in srgb, var(--pack-color, #2563eb) 70%, black 30%),
+                color-mix(in srgb, var(--pack-color, #2563eb) 90%, black 10%));
+            z-index: 6;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+
+        .reveal-card {
+            position: absolute;
+            left: 6px; right: 6px;
+            bottom: 0;
+            height: 200px;
+            will-change: transform;
+            transform: translateY(var(--pull-offset, 200px));
+            z-index: 4;
+        }
+        .reveal-card-inner {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(155deg, rgba(22, 30, 52, 0.98), rgba(6, 10, 20, 0.99));
+            border: 2px solid rgba(255,255,255,0.18);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 14px 10px;
+            opacity: var(--card-info-opacity, 0);
+        }
+        .reveal-card.flying {
+            z-index: 100;
+            animation: cardFlyToDeck 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes cardFlyToDeck {
+            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+            40% { transform: translateY(-50px) scale(1.12) rotate(6deg); opacity: 1; }
+            100% {
+                transform: translateY(calc(-42vh)) scale(0.32) rotate(12deg);
+                opacity: 0;
+            }
+        }
+
+        .reveal-card .pci-rarity {
+            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px;
+            font-weight: 800; margin-bottom: 6px;
+        }
+        .reveal-card .pci-name {
+            font-size: 0.8rem; font-weight: 900; line-height: 1.25; margin-bottom: 8px;
+        }
+        .reveal-card .pci-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95rem; font-weight: 700; color: var(--accent-green);
+        }
+
+        .pack-deck-target {
+            position: fixed; bottom: 100px; left: 50%;
+            transform: translateX(-50%) scale(0);
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid var(--accent-green);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34, 1.5, 0.64, 1), opacity 0.3s;
+            pointer-events: none; z-index: 501;
+        }
+        .pack-deck-target.show {
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+            animation: deckPulse 0.8s ease-in-out infinite;
+        }
+        @keyframes deckPulse {
+            0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0); }
+            50% { box-shadow: 0 0 20px rgba(16,185,129,0.5); }
+        }
+
+        .pack-reveal-burst {
+            position: fixed; inset: 0; pointer-events: none; z-index: 502;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .pack-reveal-burst.show { opacity: 1; }
+        .pack-reveal-burst span {
+            position: absolute; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--pack-color, #fff);
+            animation: burstParticle 0.9s ease-out forwards;
+        }
+        @keyframes burstParticle {
+            0% { transform: translate(0,0) scale(0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+
+        /* --- ADMIN SYSTEM --- */
+        #btn-admin-lock {
+            position: fixed;
+            bottom: calc(88px + env(safe-area-inset-bottom));
+            left: 12px;
+            z-index: 25;
+            padding: 8px 12px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            background: rgba(15, 23, 42, 0.9);
+            color: #94a3b8;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+        }
+        #btn-admin-lock.unlocked { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 16px rgba(245, 158, 11, 0.25); }
+
+        .hud-right-col {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        #hud-luck-badge {
+            display: none;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #a78bfa;
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(167, 139, 250, 0.45);
+            padding: 4px 10px;
+            border-radius: 999px;
+            animation: luckPulse 2s ease-in-out infinite;
+        }
+        #hud-luck-badge.active { display: block; }
+        @keyframes luckPulse {
+            0%, 100% { box-shadow: 0 0 0 rgba(167, 139, 250, 0); }
+            50% { box-shadow: 0 0 14px rgba(167, 139, 250, 0.45); }
+        }
+
+        #global-broadcast-banner {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 600;
+            transform: translateY(-110%);
+            transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+            pointer-events: none;
+        }
+        #global-broadcast-banner.show {
+            transform: translateY(0);
+        }
+        .broadcast-inner {
+            margin: 10px 14px 0;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(124, 58, 237, 0.9));
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 14px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.92rem;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            line-height: 1.4;
+        }
+
+        .admin-panel-section {
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-glow);
+        }
+        .admin-panel-section h4 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--gold);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        .admin-luck-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .admin-luck-btn {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px;
+            border: 2px solid var(--border-glow);
+            border-radius: 8px;
+            background: var(--bg-surface);
+            color: #e2e8f0;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .admin-luck-btn.selected {
+            border-color: #a78bfa;
+            background: rgba(139, 92, 246, 0.2);
+            color: #c4b5fd;
+        }
+        .admin-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .admin-row input, .admin-row select {
+            flex: 1;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-glow);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        .admin-restock-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .admin-restock-btn {
+            padding: 10px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        #admin-replies-list {
+            max-height: 200px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .admin-reply-item {
+            background: var(--bg-surface);
+            padding: 10px 12px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+            font-size: 0.85rem;
+        }
+        .admin-reply-item strong { color: var(--gold); }
+    </style>
 </head>
 <body>
 
-<div id="auth-container" class="container">
-    <div style="text-align:center; margin-top: 50px;">
-        <h1 style="color: var(--primary); font-size: 3.5rem; margin-bottom: 0;">7AYA</h1>
-        <p style="color: var(--gray); margin-bottom: 30px;">Digital Life Simulator</p>
+    <div class="ambient-bg" aria-hidden="true">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="grid-overlay"></div>
+    </div>
+    <div id="toast-host" aria-live="polite"></div>
+
+    <div id="global-broadcast-banner" aria-live="polite">
+        <div class="broadcast-inner" id="broadcast-text"></div>
     </div>
 
-    <div id="login-box" class="card">
-        <h2>Login</h2>
-        <input id="username" placeholder="Username" autocomplete="off" />
-        <input id="pin" placeholder="PIN" type="password" maxlength="6" />
-        <button onclick="login()">Enter Game</button>
-        <p style="text-align:center; margin-top:15px; font-size: 0.8rem;">
-            Don't have an account? <span onclick="toggleAuth(true)" style="color:var(--primary); font-weight:bold;">Create one</span>
-        </p>
-    </div>
+    <button type="button" id="btn-admin-lock" title="Admin access">🔒 ADMIN</button>
 
-    <div id="signup-box" class="card hidden">
-        <h2>Create Account</h2>
-        <input id="new-username" placeholder="Choose Username" autocomplete="off" />
-        <input id="new-pin" placeholder="Set 6-digit PIN" type="password" maxlength="6" />
-        <button onclick="signup()">Join 7AYA</button>
-        <p style="text-align:center; margin-top:15px; font-size: 0.8rem;">
-            Already a member? <span onclick="toggleAuth(false)" style="color:var(--primary); font-weight:bold;">Login</span>
-        </p>
-    </div>
-</div>
+    <div id="auth-screen">
+        <div class="auth-container glass">
+            <div class="auth-logo">REALM</div>
+            
+            <div class="input-group">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" id="auth-email" placeholder="name@domain.com">
+            </div>
+            <div class="input-group">
+                <label>PASSWORD</label>
+                <input type="password" id="auth-pass" placeholder="••••••••">
+            </div>
+            <div class="input-group" id="user-reg-group">
+                <label>CHOOSE USERNAME</label>
+                <input type="text" id="auth-username" placeholder="GrandmasterX">
+            </div>
 
-<div id="main" class="hidden">
-  
-  <div class="container" style="padding-bottom: 0;">
-    <div style="display:flex; justify-content: space-between; align-items: center;">
-        <h2 id="welcome" style="font-size: 1.1rem; color: var(--primary);">Hello</h2>
-        <button onclick="logout()" style="width: auto; padding: 6px 15px; font-size: 0.7rem; background: #333;">LOGOUT</button>
-    </div>
-    <div class="card" style="margin-top: 10px; padding: 12px; text-align: center;">
-        <span id="gameTime" style="font-family: monospace; font-size: 1.3rem; letter-spacing: 2px;">--:--:--</span>
-    </div>
-  </div>
-
-  <div id="tab-dashboard" class="tab-content container">
-    <div class="card wallet-card">
-        <p style="color: var(--gray); text-transform: uppercase; font-size: 0.7rem; font-weight: bold;">Available Money</p>
-        <h1 style="margin: 5px 0; font-size: 2.5rem;"><span id="money">0</span> <small style="font-size: 1rem; color: var(--gray);">EGP</small></h1>
-        <hr style="border: 0; border-top: 1px solid #333; margin: 15px 0;">
-        <p>📞 <span id="phone" style="font-weight: bold;">--</span></p>
-        <p>🌐 Internet: <span id="internet" style="color:var(--primary); font-weight: bold;">0</span> MB</p>
-    </div>
-
-    <button onclick="prepareSound(); startQrMoneyTransfer()">💸 Transfer (Back Camera)</button>
-    <div id="scannerContainer">
-        <div id="scanner" style="width: 100%; display: none;"></div>
-        <div id="qrStatus" style="text-align:center; color: var(--primary); margin-top: 5px;"></div>
-    </div>
-
-    <div class="card">
-        <h3>🎴 ID Card</h3>
-        <input id="cardPin" placeholder="Card PIN (3 digits)" maxlength="3" />
-        <button onclick="makeCard()" class="secondary">Issue Card</button>
-        <div style="margin-top: 15px;">
-            <input id="openCardPin" placeholder="Enter PIN to View" maxlength="3" />
-            <button onclick="openCard()">View Card</button>
-        </div>
-        <div id="cardView" class="card hidden" style="background: #111; border: 1px solid var(--primary);"></div>
-    </div>
-  </div>
-
-  <div id="tab-telecom" class="tab-content container hidden">
-    <h3>📱 Telecom Store</h3>
-    <div class="card">
-        <p>Buy Number (250 EGP)</p>
-        <select id="company">
-            <option value="">Select Operator</option>
-            <option value="Orange">Orange</option>
-            <option value="Vodafone">Vodafone</option>
-            <option value="e&">e&</option>
-        </select>
-        <button onclick="buyNumber()">Purchase SIM</button>
-    </div>
-
-    <div id="simApp" class="hidden">
-        <div class="card">
-            <h4>SIM: <span id="simCompany" style="color:var(--primary)"></span></h4>
-            <button onclick="buyBundle(40, 1500)">1.5GB - 40 EGP</button>
-            <button onclick="buyBundle(60, 2250)">2.2GB - 60 EGP</button>
-            <button onclick="buyBundle(80, 4250)">4.2GB - 80 EGP</button>
-        </div>
-    </div>
-  </div>
-
-  <div id="tab-social" class="tab-content container hidden">
-    <h3>🌍 Facenet</h3>
-    <div id="facenet-input-area" class="card hidden">
-        <input id="postTitle" placeholder="What's happening?" />
-        <div style="display:flex; gap: 10px;">
-            <input id="postImage" type="file" accept="image/*,video/*" style="font-size: 0.7rem;"/>
-            <button onclick="makePost()" style="width:100px;">POST</button>
+            <div class="auth-actions">
+                <button class="btn-action btn-blue" id="action-primary-auth">LOG IN</button>
+                <button class="btn-action btn-outline" id="action-toggle-mode">CREATE AN ACCOUNT</button>
+            </div>
         </div>
     </div>
 
-    <div id="facenet-offline" class="no-internet-msg">
-        <i>📡</i>
-        <h3>Connection Lost</h3>
-        <p>You need an active internet bundle to access Facenet.</p>
-    </div>
-
-    <div id="facenetPosts"></div>
-  </div>
-
-  <div id="tab-extras" class="tab-content container hidden">
-    <h3>🧾 My Bills</h3>
-    <div id="billList" class="card"></div>
-
-    <div class="card" style="margin-top:30px; border: 1px dashed #444;">
-        <h4>Admin Tools</h4>
-        <input id="adminCode" placeholder="Admin Code" type="password" />
-        <button onclick="unlockAdmin()" class="secondary">Unlock</button>
-
-        <div id="adminPanel" class="hidden" style="margin-top:20px; border-top: 1px solid #444; padding-top:15px;">
-            <select id="adminUserList"><option value="">Select User</option></select>
-            <input id="adminBillTitle" placeholder="Bill Title" />
-            <input id="adminBillAmount" type="number" placeholder="Amount (EGP)" />
-            <button onclick="adminIssueBill()">Send Bill</button>
-        </div>
-    </div>
-  </div>
-
-  <div class="bottom-nav">
-    <div class="nav-item active" onclick="showTab('dashboard', this)"><i>🏠</i>Wallet</div>
-    <div class="nav-item" onclick="showTab('telecom', this)"><i>📶</i>SIM</div>
-    <div class="nav-item" onclick="showTab('social', this)"><i>🌐</i>Social</div>
-    <div class="nav-item" onclick="showTab('extras', this)"><i>🧾</i>More</div>
-  </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-
-<script>
-// --- FIREBASE CONFIG ---
-const firebaseConfig = {
-    apiKey: "AIzaSyD8LLjhoQEefz6dYdhSVbFOsIqvizO8WaY",
-    authDomain: "aya-game-e579b.firebaseapp.com",
-    databaseURL: "https://aya-game-e579b-default-rtdb.firebaseio.com",
-    projectId: "aya-game-e579b",
-    storageBucket: "aya-game-e579b.appspot.com",
-    messagingSenderId: "425563173336",
-    appId: "1:425563173336:web:4de74ff9fcd07d..."
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let currentUser = null;
-let currentInternet = 0;
-let serverOffsetMs = 0;
-let soundReady = false;
-
-// --- CAMERA LOGIC (BACK CAMERA) ---
-let qrScanner = null;
-
-function prepareSound() {
-    const a = document.getElementById("successSound");
-    a.play().then(() => { a.pause(); a.currentTime = 0; soundReady = true; }).catch(()=>{});
-}
-
-function startQrMoneyTransfer() {
-    const scannerDiv = document.getElementById("scanner");
-    scannerDiv.style.display = "block";
-
-    // Initialize the scanner if it doesn't exist
-    if(!qrScanner) {
-        qrScanner = new Html5Qrcode("scanner");
-    }
-
-    // Force back camera by using facingMode: "environment"
-    const config = { fps: 15, qrbox: { width: 250, height: 250 } };
-
-    qrScanner.start(
-        { facingMode: "environment" }, 
-        config, 
-        (data) => {
-            // Success Callback
-            qrScanner.stop().then(() => {
-                scannerDiv.style.display = "none";
-                handleTransaction(data.trim().toLowerCase());
-            });
-        },
-        (error) => {
-            // Silence noise from constant scanning attempts
-        }
-    ).catch(err => {
-        alert("Camera Error: Please allow camera access and use a mobile device.");
-        console.error(err);
-    });
-}
-
-function handleTransaction(targetUser) {
-    if(targetUser === currentUser) return alert("You can't send money to yourself!");
-    
-    const amt = parseInt(prompt(`Sending EGP to ${targetUser}. Enter amount:`));
-    if(!amt || amt <= 0) return;
-
-    db.ref("users/" + currentUser + "/money").transaction(currentBal => {
-        if((currentBal || 0) >= amt) {
-            db.ref("users/" + targetUser + "/money").transaction(rBal => (rBal || 0) + amt);
-            if(soundReady) document.getElementById("successSound").play();
-            alert(`Sent ${amt} EGP successfully!`);
-            return currentBal - amt;
-        } else {
-            alert("Insufficient funds.");
-            return currentBal;
-        }
-    });
-}
-
-// --- REMAINING LOGIC (AUTH, SOCIAL, BILLS) ---
-
-function toggleAuth(isSignup) {
-    document.getElementById('login-box').classList.toggle('hidden', isSignup);
-    document.getElementById('signup-box').classList.toggle('hidden', !isSignup);
-}
-
-function signup() {
-    const user = document.getElementById('new-username').value.trim().toLowerCase();
-    const pin = document.getElementById('new-pin').value.trim();
-    if(user.length < 3) return alert("User too short");
-    db.ref("users/" + user).once("value").then(snap => {
-        if(snap.exists()) return alert("Username taken");
-        db.ref("users/" + user).set({ pin, money: 500, internet: 0 }).then(() => {
-            currentUser = user; loadUser();
-        });
-    });
-}
-
-function login() {
-    const user = document.getElementById("username").value.trim().toLowerCase();
-    const pin = document.getElementById("pin").value.trim();
-    db.ref("users/" + user).once("value").then(snap => {
-        if (snap.exists() && snap.val().pin === pin) {
-            currentUser = user; localStorage.setItem("7ayaUser", user); loadUser();
-        } else { alert("Wrong PIN"); }
-    });
-}
-
-function loadUser() {
-    document.getElementById("auth-container").classList.add("hidden");
-    document.getElementById("main").classList.remove("hidden");
-    
-    db.ref("users/" + currentUser).on("value", snap => {
-        const data = snap.val();
-        currentInternet = data.internet || 0;
-        document.getElementById("money").textContent = data.money ?? 0;
-        document.getElementById("phone").textContent = data.phone || "No Number";
-        document.getElementById("internet").textContent = currentInternet;
-        document.getElementById("welcome").textContent = `Hello, ${currentUser}`;
+    <div id="app-workspace" style="display:none; flex-direction: column; height: 100%;">
         
-        // Social Tab Gates
-        const inputArea = document.getElementById("facenet-input-area");
-        const offlineMsg = document.getElementById("facenet-offline");
-        const postContainer = document.getElementById("facenetPosts");
+        <header id="top-bar">
+            <div class="top-row">
+                <div class="user-meta">
+                    <div class="profile-badge" id="hud-avatar" style="background: var(--primary);">P</div>
+                    <div class="user-name-wrapper">
+                        <span class="username-txt" id="hud-username">Loading...</span>
+                        <span class="streak-badge" id="hud-streak">🔥 Daily Streak: 0 days</span>
+                    </div>
+                </div>
+                <div class="hud-right-col">
+                    <div id="hud-luck-badge"></div>
+                    <div class="currency-display" id="hud-currency">€0.00</div>
+                </div>
+            </div>
+            
+            <div class="xp-row">
+                <div class="level-tag" id="hud-level">LV 1</div>
+                <div class="xp-track">
+                    <div class="xp-fill" id="hud-xp-fill"></div>
+                    <div class="xp-text" id="hud-xp-text">0/100 XP</div>
+                </div>
+                <button class="btn-lvlup" id="hud-lvlup-btn">LEVEL UP</button>
+            </div>
+        </header>
 
-        if (currentInternet > 0) {
-            inputArea.classList.remove("hidden");
-            offlineMsg.classList.add("hidden");
-            postContainer.classList.remove("hidden");
-        } else {
-            inputArea.classList.add("hidden");
-            offlineMsg.classList.remove("hidden");
-            postContainer.classList.add("hidden");
-        }
+        <main id="main-content">
+            
+            <section id="view-packs" class="view-panel active">
+                <div class="flex-between mb-4">
+                    <div>
+                        <h2 class="section-title">Card Packs</h2>
+                        <p class="section-desc">Global structural restock cycle happening live</p>
+                    </div>
+                    <div class="timer-chip">
+                        <span class="label" style="font-size:0.68rem;color:#94a3b8;font-weight:700;">RESTOCKING IN</span>
+                        <span class="value" id="timer-restock" style="font-family:'Orbitron',sans-serif;color:var(--gold);">10:00</span>
+                    </div>
+                </div>
+                <div class="grid-container" id="container-packs"></div>
+            </section>
 
-        if (data.company) {
-            document.getElementById("simApp").classList.remove("hidden");
-            document.getElementById("simCompany").textContent = data.company;
-        }
-    });
+            <section id="view-cards" class="view-panel">
+                <div class="flex-between mb-4">
+                    <div>
+                        <h2 class="section-title">My Deck</h2>
+                        <p class="section-desc">Tap a card for detailed metrics</p>
+                    </div>
+                    <div class="timer-chip">
+                        <span class="label" style="font-size:0.68rem;color:#94a3b8;font-weight:700;">MUTATION PULSE</span>
+                        <span class="value" id="timer-mutation" style="font-family:'Orbitron',sans-serif;color:#a855f7;">03:00</span>
+                    </div>
+                </div>
+                <div class="grid-container" id="container-inventory"></div>
+            </section>
+
+            <section id="view-steal" class="view-panel">
+                <h2 class="section-title">Online Targets</h2>
+                <p class="section-desc">Infiltrate active online users to steal unlocked relics</p>
+                <div id="container-steal-cooldown" style="display:none; background:rgba(239,68,68,0.2); border:1px solid var(--accent-red); padding:12px; border-radius:8px; margin-bottom:12px; font-weight:bold; text-align:center; color:var(--accent-red);">
+                    Steal systems recharging! Cooldown active.
+                </div>
+                <div id="container-online-players"></div>
+            </section>
+
+            <section id="view-book" class="view-panel">
+                <h2 class="section-title">The Master Archive Book</h2>
+                <p class="section-desc">Permanent registry of all discovered cards. Tap to view history.</p>
+                <div class="tab-sub-row" id="book-pack-filters" style="overflow-x:auto; white-space:nowrap; display:block; padding:6px;"></div>
+                <div class="grid-container" id="container-book"></div>
+            </section>
+
+            <section id="view-ranks" class="view-panel">
+                <h2 class="section-title">Global Rankings</h2>
+                <p class="section-desc">Elite standings across the multiplayer landscape</p>
+                <div class="tab-sub-row">
+                    <div class="sub-tab active" data-rank="money">RICHEST</div>
+                    <div class="sub-tab" data-rank="level">HIGHEST LEVEL</div>
+                    <div class="sub-tab" data-rank="collection">ARCHIVE MASTERS</div>
+                </div>
+                <div id="container-leaderboards"></div>
+            </section>
+
+            <section id="view-shop" class="view-panel">
+                <h2 class="section-title">Hardware Upgrade Utilities</h2>
+                <p class="section-desc">Purchase locks to secure your assets. Apply them from your Deck.</p>
+                
+                <div class="player-row">
+                    <div>
+                        <div style="font-weight:bold;">15-Minute Cryptographic Lock</div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-15" style="color:white; font-weight:bold;">0</span></div>
+                    </div>
+                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(15, 25)">€25.00</button>
+                </div>
+                <div class="player-row">
+                    <div>
+                        <div style="font-weight:bold;">30-Minute Cryptographic Lock</div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-30" style="color:white; font-weight:bold;">0</span></div>
+                    </div>
+                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(30, 45)">€45.00</button>
+                </div>
+                <div class="player-row">
+                    <div>
+                        <div style="font-weight:bold;">45-Minute Cryptographic Lock</div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-45" style="color:white; font-weight:bold;">0</span></div>
+                    </div>
+                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(45, 60)">€60.00</button>
+                </div>
+                <div class="player-row">
+                    <div>
+                        <div style="font-weight:bold;">1-Hour Cryptographic Lock</div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-60" style="color:white; font-weight:bold;">0</span></div>
+                    </div>
+                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(60, 75)">€75.00</button>
+                </div>
+            </section>
+
+            <section id="view-profile" class="view-panel">
+                <h2 class="section-title">User Operations Profile</h2>
+                <p class="section-desc">Accounts meta statistics and synchronization configurations</p>
+                <div style="background:var(--bg-panel); border:1px solid var(--border-glow); padding:24px; border-radius:16px; text-align:center;">
+                    <div id="prof-avatar" class="profile-badge" style="width:72px; height:72px; font-size:2rem; margin:0 auto 16px auto;">U</div>
+                    <h3 id="prof-username" style="font-size:1.4rem; font-weight:800;">---</h3>
+                    <p id="prof-email" style="font-size:0.85rem; color:#9ca3af; margin-bottom:24px;">---</p>
+                    
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left; margin-bottom:24px;">
+                        <div style="background:var(--bg-surface); padding:12px; border-radius:8px;">
+                            <div style="font-size:0.7rem; color:#9ca3af;">TOTAL VALUATION</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:var(--accent-green);" id="prof-stat-wealth">€0.00</div>
+                        </div>
+                        <div style="background:var(--bg-surface); padding:12px; border-radius:8px;">
+                            <div style="font-size:0.7rem; color:#9ca3af;">UNIQUE DISCOVERIES</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:var(--primary);" id="prof-stat-discovery">0 / 150</div>
+                        </div>
+                    </div>
+                    <button class="btn-action btn-outline" style="border-color:var(--accent-red); color:var(--accent-red);" id="action-signout">SIGN OUT OPERATIONS</button>
+                </div>
+            </section>
+
+        </main>
+
+        <nav id="nav-tabs">
+            <span id="nav-indicator"></span>
+            <div class="nav-tab active" data-target="packs"><span class="nav-icon">📦</span><span>Packs</span></div>
+            <div class="nav-tab" data-target="cards"><span class="nav-icon">🃏</span><span>Deck</span></div>
+            <div class="nav-tab" data-target="steal"><span class="nav-icon">🥷</span><span>Steal</span></div>
+            <div class="nav-tab" data-target="book"><span class="nav-icon">📖</span><span>Archive</span></div>
+            <div class="nav-tab" data-target="ranks"><span class="nav-icon">🏆</span><span>Ranks</span></div>
+            <div class="nav-tab" data-target="shop"><span class="nav-icon">🛒</span><span>Shop</span></div>
+            <div class="nav-tab" data-target="profile"><span class="nav-icon">👤</span><span>Profile</span></div>
+        </nav>
+    </div>
+
+    <div class="modal-mask" id="modal-pack-details">
+        <div class="modal-body">
+            <div class="modal-header">
+                <h3 id="pack-modal-title" style="font-weight:900; font-size:1.3rem;">Pack Contents</h3>
+                <span class="close-modal" id="close-pack-modal">&times;</span>
+            </div>
+            <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">This pack contains 25 unique cards. Probabilities are structured to remain entirely profitable.</p>
+            <div id="pack-modal-contents-list" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+    </div>
     
-    startGameClock();
-    loadPosts();
-    loadMyBills();
-    loadAllUsers();
-    setInterval(() => {
-        db.ref(`users/${currentUser}/internet`).transaction(val => Math.max(0, (val || 0) - 20));
-    }, 60000);
-}
+    <div class="modal-mask" id="modal-card-details">
+        <div class="modal-body">
+            <div class="modal-header">
+                <h3 id="cd-modal-title" style="font-weight:900; font-size:1.3rem;">Asset Inspection</h3>
+                <span class="close-modal" id="close-cd-modal">&times;</span>
+            </div>
+            <div style="background:var(--bg-surface); padding:16px; border-radius:12px; margin-bottom:16px; text-align:center; border: 2px solid var(--border-glow);" id="cd-visual-box">
+                <div id="cd-name" style="font-size:1.2rem; font-weight:900;">Name</div>
+                <div id="cd-rarity" style="font-size:0.8rem; color:#9ca3af; text-transform:uppercase; margin-bottom:8px;">Rarity</div>
+                <div style="font-size:0.9rem;">Base Value: <span id="cd-base-val" style="color:white; font-weight:bold;">€0.00</span></div>
+            </div>
+            
+            <h4 style="margin-bottom:8px; font-size:0.9rem; color:#9ca3af;">Applied Mutations Matrix</h4>
+            <div id="cd-mutations-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;"></div>
+            
+            <div style="border-top:1px solid var(--border-glow); padding-top:16px; display:flex; justify-content:space-between; align-items:center;">
+                <div style="font-size:0.85rem; color:#9ca3af;">FINAL VALUATION</div>
+                <div id="cd-final-val" style="font-size:1.4rem; font-weight:900; color:var(--accent-green);">€0.00</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-mask" id="modal-apply-lock">
+        <div class="modal-body">
+            <div class="modal-header">
+                <h3 style="font-weight:900; font-size:1.3rem;">Secure Asset</h3>
+                <span class="close-modal" id="close-lock-modal">&times;</span>
+            </div>
+            <p style="font-size:0.85rem; color:#9ca3af; margin-bottom:16px;">Select a cryptographic lock from your inventory to permanently attach to this array.</p>
+            <div id="lock-options-container" style="display:flex; flex-direction:column; gap:8px;"></div>
+        </div>
+    </div>
 
-function logout() { localStorage.clear(); location.reload(); }
+    <div class="modal-mask" id="modal-archive-details">
+        <div class="modal-body" style="text-align:center;">
+            <div class="modal-header" style="justify-content:flex-end; margin-bottom:0;">
+                <span class="close-modal" id="close-archive-modal">&times;</span>
+            </div>
+            <div id="arc-icon" style="font-size:4rem; margin-bottom:12px;">📖</div>
+            <h3 id="arc-title" style="font-weight:900; font-size:1.4rem; color:var(--gold); margin-bottom:4px;">Card Name</h3>
+            <p style="font-size:0.9rem; color:#9ca3af; margin-bottom:24px;">Registry Log Data</p>
+            <div style="background:var(--bg-surface); border:1px solid var(--border-glow); padding:16px; border-radius:8px; margin-bottom:16px;">
+                <div style="font-size:0.75rem; color:#9ca3af; font-weight:bold; letter-spacing:1px; margin-bottom:4px;">FIRST DISCOVERED ON</div>
+                <div id="arc-date" style="font-size:1.1rem; font-weight:bold; color:white;">Loading...</div>
+            </div>
+        </div>
+    </div>
 
-function showTab(tabId, el) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-    document.getElementById('tab-' + tabId).classList.remove('hidden');
-    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-    el.classList.add('active');
-}
+    <div class="modal-mask" id="modal-game-math">
+        <div class="modal-body" style="text-align:center;">
+            <h2 style="color:var(--gold); font-weight:900;">INTRUSION ENCRYPTION INTERCEPT</h2>
+            <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:24px;">Solve the calculation sequence instantly to compromise or defend the card!</p>
+            <div style="font-size:3.5rem; font-weight:900; letter-spacing:2px; margin-bottom:24px;" id="math-equation-prompt">-- + --</div>
+            <input type="number" id="math-player-input" style="background:var(--bg-dark); border:2px solid var(--border-glow); font-size:1.8rem; text-align:center; padding:12px; width:80%; border-radius:12px; color:white; outline:none; margin-bottom:24px;" placeholder="Result">
+            <button class="btn-action btn-blue" id="math-submit-response">TRANSMIT DECRYPTION</button>
+        </div>
+    </div>
 
-function makePost() {
-    if (currentInternet <= 0) return alert("No Internet");
-    const t = document.getElementById("postTitle").value;
-    const f = document.getElementById("postImage").files[0];
-    if(!t || !f) return alert("Missing content");
-    const r = new FileReader();
-    r.onload = (e) => {
-        db.ref("posts").push({
-            user: currentUser, title: t, url: e.target.result,
-            mediaType: f.type.startsWith("video") ? "video" : "image"
-        }).then(() => { 
-            document.getElementById("postTitle").value = ""; 
-            alert("Posted!"); 
-        });
-    };
-    r.readAsDataURL(f);
-}
+    <div class="modal-mask" id="modal-game-reaction">
+        <div class="modal-body" style="text-align:center;">
+            <h2 style="color:var(--accent-red); font-weight:900;">SIGNAL VELOCITY TEST</h2>
+            <p style="font-size:0.8rem; color:#9ca3af;">Tap when the structural diagnostic sequence array changes completely to GREEN!</p>
+            <div class="traffic-container">
+                <div class="traffic-lens" id="lens-1"></div>
+                <div class="traffic-lens" id="lens-2"></div>
+                <div class="traffic-lens" id="lens-3"></div>
+                <div class="traffic-lens" id="lens-4"></div>
+            </div>
+            <button class="btn-action btn-blue" style="background:#374151; font-size:1.3rem; padding:18px;" id="reaction-trigger-btn" disabled>WAITING FOR INITIALIZATION...</button>
+        </div>
+    </div>
 
-function loadPosts() {
-    db.ref("posts").limitToLast(10).on("value", s => {
-        const con = document.getElementById("facenetPosts");
-        con.innerHTML = "";
-        s.forEach(c => {
-            const p = c.val();
-            const div = document.createElement("div");
-            div.className = "post-card";
-            const med = p.mediaType === "video" ? `<video src="${p.url}" controls></video>` : `<img src="${p.url}">`;
-            div.innerHTML = `<strong>@${p.user}</strong><p>${p.title}</p>${med}`;
-            con.prepend(div);
-        });
-    });
-}
+    <div class="modal-mask" id="modal-target-inventory">
+        <div class="modal-body">
+            <div class="modal-header">
+                <h3 id="target-inventory-title" style="font-weight:900;">Target Assets Grid</h3>
+                <span class="close-modal" id="close-target-modal">&times;</span>
+            </div>
+            <div class="grid-container" id="container-target-cards"></div>
+        </div>
+    </div>
 
-function loadMyBills() {
-    db.ref(`users/${currentUser}/bills`).on("value", snap => {
-        const list = document.getElementById("billList");
-        list.innerHTML = snap.exists() ? "" : '<p style="text-align:center; color:var(--gray);">No active bills</p>';
-        snap.forEach(child => {
-            const b = child.val();
-            const div = document.createElement("div");
-            div.style.display = "flex"; div.style.justifyContent = "space-between";
-            div.style.padding = "10px 0"; div.style.borderBottom = "1px solid #333";
-            div.innerHTML = `<span>${b.title} (${b.amount} EGP)</span>
-                ${!b.paid ? `<button onclick="payBill('${child.key}', ${b.amount})" style="width:60px; padding:5px; font-size:0.7rem;">Pay</button>` : '<span style="color:var(--success)">Paid</span>'}`;
-            list.prepend(div);
-        });
-    });
-}
+    <div class="modal-mask" id="modal-admin-pin">
+        <div class="modal-body" style="max-width:360px;">
+            <div class="modal-header">
+                <h3 style="font-weight:900;">Admin Access</h3>
+                <span class="close-modal" id="close-admin-pin">&times;</span>
+            </div>
+            <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:16px;">Enter operator code to unlock control panel.</p>
+            <input type="password" id="admin-pin-input" maxlength="8" placeholder="••••" style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:14px;border-radius:10px;color:white;font-size:1.2rem;text-align:center;letter-spacing:6px;margin-bottom:16px;">
+            <button class="btn-action btn-blue" id="admin-pin-submit" style="width:100%;">UNLOCK</button>
+        </div>
+    </div>
 
-function payBill(id, amt) {
-    db.ref(`users/${currentUser}/money`).transaction(m => {
-        if((m||0) >= amt) {
-            db.ref(`users/${currentUser}/bills/${id}/paid`).set(true);
-            return m - amt;
-        } else { alert("No balance"); return m; }
-    });
-}
+    <div class="modal-mask" id="modal-admin-panel">
+        <div class="modal-body" style="max-width:480px;">
+            <div class="modal-header">
+                <h3 style="font-weight:900;color:var(--gold);">Realm Control</h3>
+                <span class="close-modal" id="close-admin-panel">&times;</span>
+            </div>
 
-function unlockAdmin() {
-    if(document.getElementById("adminCode").value === "555") document.getElementById("adminPanel").classList.remove("hidden");
-}
+            <div class="admin-panel-section">
+                <h4>GLOBAL LUCK</h4>
+                <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px;">Higher luck improves card pulls, pack odds, and good mutations for everyone.</p>
+                <div class="admin-luck-btns" id="admin-luck-btns">
+                    <button type="button" class="admin-luck-btn selected" data-mult="1">1×</button>
+                    <button type="button" class="admin-luck-btn" data-mult="2">2×</button>
+                    <button type="button" class="admin-luck-btn" data-mult="4">4×</button>
+                    <button type="button" class="admin-luck-btn" data-mult="8">8×</button>
+                </div>
+                <div class="admin-row">
+                    <select id="admin-luck-duration">
+                        <option value="5">5 minutes</option>
+                        <option value="15" selected>15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 hour</option>
+                        <option value="180">3 hours</option>
+                        <option value="1440">24 hours</option>
+                    </select>
+                    <button class="btn-lvlup" id="admin-apply-luck" style="white-space:nowrap;">APPLY LUCK</button>
+                </div>
+                <button class="btn-action btn-outline" id="admin-clear-luck" style="width:100%;margin-top:6px;">CLEAR LUCK BOOST</button>
+            </div>
 
-function loadAllUsers() {
-    db.ref("users").once("value").then(snap => {
-        const sel = document.getElementById("adminUserList");
-        snap.forEach(c => { const o = document.createElement("option"); o.value = c.key; o.textContent = c.key; sel.appendChild(o); });
-    });
-}
+            <div class="admin-panel-section">
+                <h4>BROADCAST MESSAGE</h4>
+                <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px;">Slides from top of screen for all players.</p>
+                <input type="text" id="admin-broadcast-text" placeholder="Your message to everyone..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:10px;">
+                <div class="admin-row">
+                    <select id="admin-broadcast-duration">
+                        <option value="10">10 seconds</option>
+                        <option value="30" selected>30 seconds</option>
+                        <option value="60">1 minute</option>
+                        <option value="120">2 minutes</option>
+                        <option value="300">5 minutes</option>
+                    </select>
+                    <button class="btn-lvlup" id="admin-send-broadcast" style="background:var(--primary);">SEND</button>
+                </div>
+            </div>
 
-function adminIssueBill() {
-    const u = document.getElementById("adminUserList").value;
-    const t = document.getElementById("adminBillTitle").value;
-    const a = parseInt(document.getElementById("adminBillAmount").value);
-    if(u && t && a) db.ref(`users/${u}/bills`).push({ title: t, amount: a, paid: false }).then(() => alert("Sent"));
-}
+            <div class="admin-panel-section">
+                <h4>PACK RESTOCK</h4>
+                <div class="admin-row">
+                    <input type="number" id="admin-restock-qty" min="1" max="99" value="10" placeholder="Qty">
+                    <button class="btn-lvlup" id="admin-restock-all" style="background:var(--accent-green);">RESTOCK ALL</button>
+                </div>
+                <div class="admin-restock-grid" id="admin-restock-grid"></div>
+            </div>
 
-function buyNumber() {
-    const co = document.getElementById("company").value;
-    db.ref("users/"+currentUser).once("value").then(s => {
-        if(s.val().money < 250) return alert("Need 250 EGP");
-        db.ref("users/"+currentUser).update({ money: s.val().money-250, phone: "01"+Math.floor(100000000+Math.random()*900000000), company: co });
-    });
-}
+            <div class="admin-panel-section" style="border:none;">
+                <h4>ASK PLAYERS</h4>
+                <input type="text" id="admin-question-text" placeholder="Question for all users..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:10px;">
+                <div class="admin-row">
+                    <select id="admin-question-duration">
+                        <option value="60">1 minute</option>
+                        <option value="300" selected>5 minutes</option>
+                        <option value="600">10 minutes</option>
+                        <option value="1800">30 minutes</option>
+                    </select>
+                    <button class="btn-lvlup" id="admin-send-question" style="background:#a855f7;">ASK</button>
+                </div>
+                <button class="btn-action btn-outline" id="admin-close-question" style="width:100%;margin:10px 0;">END QUESTION</button>
+                <div id="admin-replies-list"></div>
+            </div>
+        </div>
+    </div>
 
-function buyBundle(cost, mb) {
-    db.ref("users/"+currentUser).once("value").then(s => {
-        if(s.val().money < cost) return alert("Low balance");
-        db.ref("users/"+currentUser).update({ money: s.val().money-cost, internet: (s.val().internet||0)+mb });
-    });
-}
+    <div class="modal-mask" id="modal-user-question">
+        <div class="modal-body" style="max-width:400px;">
+            <div class="modal-header">
+                <h3 style="font-weight:900;">Operator Question</h3>
+            </div>
+            <p id="user-question-prompt" style="font-size:1rem;font-weight:700;margin-bottom:16px;line-height:1.45;"></p>
+            <input type="text" id="user-question-answer" placeholder="Your answer..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:16px;">
+            <button class="btn-action btn-blue" id="user-question-submit" style="width:100%;">SUBMIT ANSWER</button>
+        </div>
+    </div>
 
-db.ref(".info/serverTimeOffset").on("value", s => { serverOffsetMs = s.val() || 0; });
-function startGameClock() {
-    const cycle = 12 * 60 * 1000; const scale = (24*60*60*1000)/cycle;
-    setInterval(() => {
-        const d = new Date(((Date.now()+serverOffsetMs)%cycle)*scale);
-        let h = d.getUTCHours(); const m = String(d.getUTCMinutes()).padStart(2, "0");
-        const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
-        document.getElementById("gameTime").textContent = `${h}:${m} ${ap}`;
-    }, 1000);
-}
+    <!-- Swipe up pack reveal -->
+    <div id="pack-opening-overlay" aria-hidden="true">
+        <div class="pack-open-scene" id="pack-open-scene">
+            <div class="pack-open-progress-row">
+                <div class="pack-open-progress-fill" id="pack-open-progress-fill"></div>
+            </div>
+            <div class="swipe-pack-stage" id="swipe-pack-stage">
+                <div class="swipe-pack" id="swipe-pack">
+                    <div class="swipe-pack-cover" id="swipe-pack-cover">
+                        <span class="swipe-pack-brand">REALM</span>
+                        <span class="swipe-pack-cta">SWIPE UP</span>
+                        <span class="swipe-chevron" aria-hidden="true">▲<br>▲<br>▲</span>
+                    </div>
+                    <div class="pack-lip"></div>
+                    <div class="pack-card-well" id="pack-card-well">
+                        <div class="reveal-card" id="reveal-card">
+                            <div class="reveal-card-inner" id="reveal-card-inner">
+                                <div class="pci-rarity" id="pci-rarity">RARE</div>
+                                <div class="pci-name" id="pci-name">Card Name</div>
+                                <div class="pci-value" id="pci-value">€0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pack-deck-target" id="pack-deck-target" aria-hidden="true">🃏</div>
+        <div class="pack-reveal-burst" id="pack-reveal-burst"></div>
+    </div>
 
-function makeCard() {
-    const pin = document.getElementById("cardPin").value;
-    const n = `${Math.floor(1000+Math.random()*9000)} ${Math.floor(1000+Math.random()*9000)}`;
-    if(pin.length === 3) db.ref(`users/${currentUser}/card`).set({ pin, number: n }).then(() => alert("Ready"));
-}
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, onValue, update, runTransaction, push, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-function openCard() {
-    const pin = document.getElementById("openCardPin").value;
-    db.ref(`users/${currentUser}/card`).once("value").then(s => {
-        const c = s.val();
-        if (c && c.pin === pin) {
-            document.getElementById("cardView").innerHTML = `<p><b>ID:</b> ${c.number}</p><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${currentUser}" style="width:120px;display:block;margin:auto">`;
-            document.getElementById("cardView").classList.remove("hidden");
-        } else { alert("Wrong PIN"); }
-    });
-}
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAjeXycCBhYoAU-0iiC4LbSTylKrrThN8Y",
+            authDomain: "sharplabubu.firebaseapp.com",
+            databaseURL: "https://sharplabubu-default-rtdb.firebaseio.com",
+            projectId: "sharplabubu",
+            storageBucket: "sharplabubu.firebasestorage.app",
+            messagingSenderId: "596148393481",
+            appId: "1:596148393481:web:4f822d86c44a13bd810ad8",
+            measurementId: "G-4M25R3BF08"
+        };
 
-window.onload = () => {
-    const s = localStorage.getItem("7ayaUser");
-    if(s) { currentUser = s; loadUser(); }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        // Core Game Constants Setup
+        const PACK_TYPES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'secret'];
+        const MUTATIONS_LIST = [
+            { name: "Shattered Core", multiplier: 0.4, type: "bad", color: "#ef4444" },
+            { name: "Rust Corroded", multiplier: 0.7, type: "bad", color: "#ef4444" },
+            { name: "Glitch Fragmented", multiplier: 0.9, type: "bad", color: "#f87171" },
+            { name: "Polished Matrix", multiplier: 1.3, type: "good", color: "#10b981" },
+            { name: "Quantum Neon", multiplier: 1.8, type: "good", color: "#34d399" },
+            { name: "Prismatic Shift", multiplier: 2.5, type: "good", color: "#3b82f6" },
+            { name: "Hyper Drive Chromatic", multiplier: 4.0, type: "good", color: "#8b5cf6" },
+            { name: "Astral Supernova", multiplier: 6.0, type: "good", color: "#ec4899" },
+            { name: "Overlord Alpha Omega", multiplier: 10.0, type: "good", color: "#f59e0b" },
+            { name: "Dark Antimatter Void", multiplier: -2.0, type: "volatile", color: "#6b7280" }
+        ];
+
+        // Base Prices Configuration
+        const PACK_METADATA = {
+            'common': { price: 20, color: 'var(--common)' },
+            'uncommon': { price: 50, color: 'var(--uncommon)' },
+            'rare': { price: 150, color: 'var(--rare)' },
+            'epic': { price: 500, color: 'var(--epic)' },
+            'legendary': { price: 2000, color: 'var(--legendary)' },
+            'secret': { price: 10000, color: 'var(--secret)' }
+        };
+
+        // Minimum and Maximum Dynamic Stock Boundaries (Making it significantly harder)
+        const RESTOCK_CONFIG = {
+            'common': { min: 50, max: 70, chance: 1.0 },
+            'uncommon': { min: 20, max: 40, chance: 0.8 },
+            'rare': { min: 10, max: 20, chance: 0.6 },
+            'epic': { min: 3, max: 10, chance: 0.35 },
+            'legendary': { min: 1, max: 4, chance: 0.15 },
+            'secret': { min: 1, max: 1, chance: 0.05 }
+        };
+
+        // Manual card registry — each pack tier is an array; chances per tier must sum to 100.
+       const GAME_REGISTRY = {
+    common: [
+        { id: "common_1", index: 1, name: "zezo showerr", pack: "common", chance: 7.0, baseValue: 15 },
+        { id: "common_2", index: 2, name: "bomboclat", pack: "common", chance: 7.0, baseValue: 16 },
+        { id: "common_3", index: 3, name: "67 full code", pack: "common", chance: 7.0, baseValue: 17 },
+        { id: "common_4", index: 4, name: "Asser's Broken Controller", pack: "common", chance: 7.0, baseValue: 18 },
+        { id: "common_5", index: 5, name: "Lilly's Purple Checkmark", pack: "common", chance: 7.0, baseValue: 19 },
+        { id: "common_6", index: 6, name: "Noob Grinder", pack: "common", chance: 5.0, baseValue: 20 },
+        { id: "common_7", index: 7, name: "Ping 999ms Glitch", pack: "common", chance: 5.0, baseValue: 21 },
+        { id: "common_8", index: 8, name: "Standard Brainrot", pack: "common", chance: 5.0, baseValue: 22 },
+        { id: "common_9", index: 9, name: "Ripped Mousepad", pack: "common", chance: 5.0, baseValue: 23 },
+        { id: "common_10", index: 10, name: "Tactical Ragequit", pack: "common", chance: 5.0, baseValue: 24 },
+        { id: "common_11", index: 11, name: "Laggy Crouch Spammer", pack: "common", chance: 4.0, baseValue: 25 },
+        { id: "common_12", index: 12, name: "Default Dance Moves", pack: "common", chance: 4.0, baseValue: 26 },
+        { id: "common_13", index: 13, name: "Plastic Rank badge", pack: "common", chance: 4.0, baseValue: 27 },
+        { id: "common_14", index: 14, name: "Missing Semicolon", pack: "common", chance: 4.0, baseValue: 28 },
+        { id: "common_15", index: 15, name: "Low Battery Vibe", pack: "common", chance: 4.0, baseValue: 29 },
+        { id: "common_16", index: 16, name: "Uncooked Instant Noodles", pack: "common", chance: 3.0, baseValue: 30 },
+        { id: "common_17", index: 17, name: "Copy Paste StackOverflow", pack: "common", chance: 3.0, baseValue: 31 },
+        { id: "common_18", index: 18, name: "Cardboard Monitor Setup", pack: "common", chance: 3.0, baseValue: 32 },
+        { id: "common_19", index: 19, name: "1 FPS Slideshow", pack: "common", chance: 3.0, baseValue: 32 },
+        { id: "common_20", index: 20, name: "Free Robux Scam Link", pack: "common", chance: 3.0, baseValue: 33 },
+        { id: "common_21", index: 21, name: "Zezo's Left Shoe", pack: "common", chance: 1.0, baseValue: 33 },
+        { id: "common_22", index: 22, name: "Asser's Hidden Stash", pack: "common", chance: 1.0, baseValue: 34 },
+        { id: "common_23", index: 23, name: "Lilly's Loud Mic", pack: "common", chance: 1.0, baseValue: 34 },
+        { id: "common_24", index: 24, name: "Unranked Grind Routine", pack: "common", chance: 1.0, baseValue: 35 },
+        { id: "common_25", index: 25, name: "The Wooden Pity Prize", pack: "common", chance: 1.0, baseValue: 35 }
+    ],
+    uncommon: [
+        { id: "uncommon_1", index: 1, name: "Zezo's Midnight Script", pack: "uncommon", chance: 7.0, baseValue: 40 },
+        { id: "uncommon_2", index: 2, name: "Lilly's Garden Picker", pack: "uncommon", chance: 7.0, baseValue: 42 },
+        { id: "uncommon_3", index: 3, name: "Asser's Double Jump", pack: "uncommon", chance: 7.0, baseValue: 44 },
+        { id: "uncommon_4", index: 4, name: "W-Key Hold Warrior", pack: "uncommon", chance: 7.0, baseValue: 46 },
+        { id: "uncommon_5", index: 5, name: "Keyboard Key Smash", pack: "uncommon", chance: 7.0, baseValue: 48 },
+        { id: "uncommon_6", index: 6, name: "Git Push --force Danger", pack: "uncommon", chance: 5.0, baseValue: 50 },
+        { id: "uncommon_7", index: 7, name: "+100 Aura Points", pack: "uncommon", chance: 5.0, baseValue: 52 },
+        { id: "uncommon_8", index: 8, name: "Golden Gyatt Meme", pack: "uncommon", chance: 5.0, baseValue: 54 },
+        { id: "uncommon_9", index: 9, name: "Roblox Runway Star", pack: "uncommon", chance: 5.0, baseValue: 56 },
+        { id: "uncommon_10", index: 10, name: "Compiler Panic Mode", pack: "uncommon", chance: 5.0, baseValue: 58 },
+        { id: "uncommon_11", index: 11, name: "Infinite Loading Circle", pack: "uncommon", chance: 4.0, baseValue: 60 },
+        { id: "uncommon_12", index: 12, name: "Backseat Stream Backer", pack: "uncommon", chance: 4.0, baseValue: 62 },
+        { id: "uncommon_13", index: 13, name: "Mid-Tier Inventory Flex", pack: "uncommon", chance: 4.0, baseValue: 64 },
+        { id: "uncommon_14", index: 14, name: "Energy Drink Shake", pack: "uncommon", chance: 4.0, baseValue: 66 },
+        { id: "uncommon_15", index: 15, name: "Discord Mod Power Trip", pack: "uncommon", chance: 4.0, baseValue: 68 },
+        { id: "uncommon_16", index: 16, name: "Speedrunner Phase Shift", pack: "uncommon", chance: 3.0, baseValue: 70 },
+        { id: "uncommon_17", index: 17, name: "Hitbox Abuser Protocol", pack: "uncommon", chance: 3.0, baseValue: 72 },
+        { id: "uncommon_18", index: 18, name: "Third-Party Custom Client", pack: "uncommon", chance: 3.0, baseValue: 74 },
+        { id: "uncommon_19", index: 19, name: "Pixelated Retro Shader", pack: "uncommon", chance: 3.0, baseValue: 76 },
+        { id: "uncommon_20", index: 20, name: "Zezo's Cold Coffee Mug", pack: "uncommon", chance: 3.0, baseValue: 78 },
+        { id: "uncommon_21", index: 21, name: "Asser's Arcade High Score", pack: "uncommon", chance: 1.0, baseValue: 80 },
+        { id: "uncommon_22", index: 22, name: "Lilly's Neon Custom Avatar", pack: "uncommon", chance: 1.0, baseValue: 82 },
+        { id: "uncommon_23", index: 23, name: "Gacha Luck Addict Syndrome", pack: "uncommon", chance: 1.0, baseValue: 85 },
+        { id: "uncommon_24", index: 24, name: "Silver Elite Ranked Shell", pack: "uncommon", chance: 1.0, baseValue: 88 },
+        { id: "uncommon_25", index: 25, name: "The Slightly Shiny Pebble", pack: "uncommon", chance: 1.0, baseValue: 90 }
+    ],
+    rare: [
+        { id: "rare_1", index: 1, name: "Project Flight Captain", pack: "rare", chance: 7.0, baseValue: 100 },
+        { id: "rare_2", index: 2, name: "A320 Avionics Glitch", pack: "rare", chance: 7.0, baseValue: 105 },
+        { id: "rare_3", index: 3, name: "Zezo's Custom Compiler", pack: "rare", chance: 7.0, baseValue: 110 },
+        { id: "rare_4", index: 4, name: "Asser's Clutch 1v3 Play", pack: "rare", chance: 7.0, baseValue: 115 },
+        { id: "rare_5", index: 5, name: "Lilly's Diamond Tiara", pack: "rare", chance: 7.0, baseValue: 120 },
+        { id: "rare_6", index: 6, name: "Strava Speed Demon Sprint", pack: "rare", chance: 5.0, baseValue: 125 },
+        { id: "rare_7", index: 7, name: "Carbon Fiber Bike Frame", pack: "rare", chance: 5.0, baseValue: 130 },
+        { id: "rare_8", index: 8, name: "Overclocked Liquid Core", pack: "rare", chance: 5.0, baseValue: 135 },
+        { id: "rare_9", index: 9, name: "HTML5 Masterclass Badge", pack: "rare", chance: 5.0, baseValue: 140 },
+        { id: "rare_10", index: 10, name: "CSS Grid Overlord Layout", pack: "rare", chance: 5.0, baseValue: 145 },
+        { id: "rare_11", index: 11, name: "Script Kiddie Deflection", pack: "rare", chance: 4.0, baseValue: 150 },
+        { id: "rare_12", index: 12, name: "144Hz Monitor Advantage", pack: "rare", chance: 4.0, baseValue: 155 },
+        { id: "rare_13", index: 13, name: "Gold Rank Ceiling Cap", pack: "rare", chance: 4.0, baseValue: 160 },
+        { id: "rare_14", index: 14, name: "Node Modules Heavy Weight", pack: "rare", chance: 4.0, baseValue: 165 },
+        { id: "rare_15", index: 15, name: "Firebase Realtime Stream", pack: "rare", chance: 4.0, baseValue: 170 },
+        { id: "rare_16", index: 16, name: "Jetlagged Virtual Pilot", pack: "rare", chance: 3.0, baseValue: 175 },
+        { id: "rare_17", index: 17, name: "Mach 2 Sound Barrier Snap", pack: "rare", chance: 3.0, baseValue: 185 },
+        { id: "rare_18", index: 18, name: "Blue Mechanical Key Click", pack: "rare", chance: 3.0, baseValue: 195 },
+        { id: "rare_19", index: 19, name: "RGB Dynamic Backlight Matrix", pack: "rare", chance: 3.0, baseValue: 205 },
+        { id: "rare_20", index: 20, name: "Zezo's Secured Admin Panel", pack: "rare", chance: 3.0, baseValue: 215 },
+        { id: "rare_21", index: 21, name: "Asser's Infinite Stamina", pack: "rare", chance: 1.0, baseValue: 225 },
+        { id: "rare_22", index: 22, name: "Lilly's Ultra Glitter Blast", pack: "rare", chance: 1.0, baseValue: 230 },
+        { id: "rare_23", index: 23, name: "Neon Underglow Chassis", pack: "rare", chance: 1.0, baseValue: 240 },
+        { id: "rare_24", index: 24, name: "Diamond Hands Investor HODL", pack: "rare", chance: 1.0, baseValue: 245 },
+        { id: "rare_25", index: 25, name: "The Sapphire Crystal Core", pack: "rare", chance: 1.0, baseValue: 250 }
+    ],
+    epic: [
+        { id: "epic_1", index: 1, name: "Zezo's Flawless Fullstack", pack: "epic", chance: 7.0, baseValue: 300 },
+        { id: "epic_2", index: 2, name: "Lilly's Majestic Phoenix", pack: "epic", chance: 7.0, baseValue: 310 },
+        { id: "epic_3", index: 3, name: "Asser's Ultimate Combo Break", pack: "epic", chance: 7.0, baseValue: 320 },
+        { id: "epic_4", index: 4, name: "Airbus Manual Canopy Recovery", pack: "epic", chance: 7.0, baseValue: 340 },
+        { id: "epic_5", index: 5, name: "+10,000 Cosmic Aura Surge", pack: "epic", chance: 7.0, baseValue: 360 },
+        { id: "epic_6", index: 6, name: "Firebase Accidental Data Wipe", pack: "epic", chance: 5.0, baseValue: 380 },
+        { id: "epic_7", index: 7, name: "GitHub Solid Green Streak", pack: "epic", chance: 5.0, baseValue: 400 },
+        { id: "epic_8", index: 8, name: "Cyber Firewall Exploitation", pack: "epic", chance: 5.0, baseValue: 420 },
+        { id: "epic_9", index: 9, name: "Liquid Nitrogen Frozen Rig", pack: "epic", chance: 5.0, baseValue: 440 },
+        { id: "epic_10", index: 10, name: "360 Spin No-Scope Missile", pack: "epic", chance: 5.0, baseValue: 460 },
+        { id: "epic_11", index: 11, name: "Roblox Stock Market Whale", pack: "epic", chance: 4.0, baseValue: 480 },
+        { id: "epic_12", index: 12, name: "Grandmaster Competitive Pool", pack: "epic", chance: 4.0, baseValue: 500 },
+        { id: "epic_13", index: 13, name: "Hardcore World Day 1000", pack: "epic", chance: 4.0, baseValue: 520 },
+        { id: "epic_14", index: 14, name: "Pure Midnight Dark Mode UI", pack: "epic", chance: 4.0, baseValue: 540 },
+        { id: "epic_15", index: 15, name: "Ultimate Dev Bug Exterminator", pack: "epic", chance: 4.0, baseValue: 560 },
+        { id: "epic_16", index: 16, name: "0ms LAN Fiber Optimization", pack: "epic", chance: 3.0, baseValue: 580 },
+        { id: "epic_17", index: 17, name: "Quantum Calculation Stream", pack: "epic", chance: 3.0, baseValue: 600 },
+        { id: "epic_18", index: 18, name: "Hypersonic Engine Combustion", pack: "epic", chance: 3.0, baseValue: 620 },
+        { id: "epic_19", index: 19, name: "Premium Gacha Ticket Variant", pack: "epic", chance: 3.0, baseValue: 640 },
+        { id: "epic_20", index: 20, name: "Digital Matrix Shard Matrix", pack: "epic", chance: 3.0, baseValue: 660 },
+        { id: "epic_21", index: 21, name: "Zezo's Masterpiece Algorithm", pack: "epic", chance: 1.0, baseValue: 680 },
+        { id: "epic_22", index: 22, name: "Asser's Unstoppable Streak", pack: "epic", chance: 1.0, baseValue: 700 },
+        { id: "epic_23", index: 23, name: "Lilly's Starlight Radiation", pack: "epic", chance: 1.0, baseValue: 720 },
+        { id: "epic_24", index: 24, name: "Mythic Drop Box Specimen", pack: "epic", chance: 1.0, baseValue: 740 },
+        { id: "epic_25", index: 25, name: "The Emerald Grand Championship", pack: "epic", chance: 1.0, baseValue: 750 }
+    ],
+    legendary: [
+        { id: "legendary_1", index: 1, name: "Emperor Zezo the Architect", pack: "legendary", chance: 7.0, baseValue: 900 },
+        { id: "legendary_2", index: 2, name: "Princess Lilly of the Realm", pack: "legendary", chance: 7.0, baseValue: 950 },
+        { id: "legendary_3", index: 3, name: "Commander Asser the Fearless", pack: "legendary", chance: 7.0, baseValue: 1000 },
+        { id: "legendary_4", index: 4, name: "The AI Core Prompt Architect", pack: "legendary", chance: 7.0, baseValue: 1050 },
+        { id: "legendary_5", index: 5, name: "Production Server Total Collapse", pack: "legendary", chance: 7.0, baseValue: 1100 },
+        { id: "legendary_6", index: 6, name: "Infinite Cash Flow Loophole", pack: "legendary", chance: 5.0, baseValue: 1150 },
+        { id: "legendary_7", index: 7, name: "1000 FPS Raytracing Engine", pack: "legendary", chance: 5.0, baseValue: 1200 },
+        { id: "legendary_8", index: 8, name: "God Mode Structural Console", pack: "legendary", chance: 5.0, baseValue: 1250 },
+        { id: "legendary_9", index: 9, name: "Roblox Game Pass Monopoly Owner", pack: "legendary", chance: 5.0, baseValue: 1300 },
+        { id: "legendary_10", index: 10, name: "Senior Full Stack Tech Overlord", pack: "legendary", chance: 5.0, baseValue: 1350 },
+        { id: "legendary_11", index: 11, name: "Airbus A380 Superjumbo Heavy", pack: "legendary", chance: 4.0, baseValue: 1400 },
+        { id: "legendary_12", index: 12, name: "Strava King of the Mountain Title", pack: "legendary", chance: 4.0, baseValue: 1450 },
+        { id: "legendary_13", index: 13, name: "Cyberpunk Megastructure Terminal", pack: "legendary", chance: 4.0, baseValue: 1500 },
+        { id: "legendary_14", index: 14, name: "Holographic UI Projection Plane", pack: "legendary", chance: 4.0, baseValue: 1550 },
+        { id: "legendary_15", index: 15, name: "Absolute Zero Theoretical Ping", pack: "legendary", chance: 4.0, baseValue: 1600 },
+        { id: "legendary_16", index: 16, name: "Crypto Token Mining Super-Grid", pack: "legendary", chance: 3.0, baseValue: 1700 },
+        { id: "legendary_17", index: 17, name: "Temporal Distortion Engine Run", pack: "legendary", chance: 3.0, baseValue: 1800 },
+        { id: "legendary_18", index: 18, name: "The Chosen Core Dev Unit", pack: "legendary", chance: 3.0, baseValue: 1900 },
+        { id: "legendary_19", index: 19, name: "Cosmic Code Memory Injector", pack: "legendary", chance: 3.0, baseValue: 2000 },
+        { id: "legendary_20", index: 20, name: "Eldritch Hardware System Core", pack: "legendary", chance: 3.0, baseValue: 2100 },
+        { id: "legendary_21", index: 21, name: "Zezo's Diamond Imperial Crown", pack: "legendary", chance: 1.0, baseValue: 2200 },
+        { id: "legendary_22", index: 22, name: "Asser's Unbreakable Aegis Shield", pack: "legendary", chance: 1.0, baseValue: 2300 },
+        { id: "legendary_23", index: 23, name: "Lilly's Interstellar Star Wand", pack: "legendary", chance: 1.0, baseValue: 2400 },
+        { id: "legendary_24", index: 24, name: "Immortal Tier Celestial Deity", pack: "legendary", chance: 1.0, baseValue: 2450 },
+        { id: "legendary_25", index: 25, name: "The Obsidian Black Hole Anomaly", pack: "legendary", chance: 1.0, baseValue: 2500 }
+    ],
+    secret: [
+        { id: "secret_1", index: 1, name: "Zezo's Secret Super-App Engine", pack: "secret", chance: 7.0, baseValue: 3000 },
+        { id: "secret_2", index: 2, name: "Lilly's Forbidden Mythic Sorcery", pack: "secret", chance: 7.0, baseValue: 3200 },
+        { id: "secret_3", index: 3, name: "Asser's Unreleased Sandbox Game", pack: "secret", chance: 7.0, baseValue: 3400 },
+        { id: "secret_4", index: 4, name: "The Authentic 67 Full Code Fragment", pack: "secret", chance: 7.0, baseValue: 3600 },
+        { id: "secret_5", index: 5, name: "Bomboclat Reality Fracture Anchor", pack: "secret", chance: 7.0, baseValue: 3800 },
+        { id: "secret_6", index: 6, name: "Absolute System Omnipotence Command", pack: "secret", chance: 5.0, baseValue: 4000 },
+        { id: "secret_7", index: 7, name: "Developer Root Access Console Key", pack: "secret", chance: 5.0, baseValue: 4200 },
+        { id: "secret_8", index: 8, name: "The Final Source Binary File", pack: "secret", chance: 5.0, baseValue: 4500 },
+        { id: "secret_9", index: 9, name: "System Level Kernel Root Override", pack: "secret", chance: 5.0, baseValue: 4800 },
+        { id: "secret_10", index: 10, name: "Spatial Glitch Reality Warp Matrix", pack: "secret", chance: 5.0, baseValue: 5100 },
+        { id: "secret_11", index: 11, name: "The Creator's Primordial Blueprint", pack: "secret", chance: 4.0, baseValue: 5400 },
+        { id: "secret_12", index: 12, name: "Error 404: Universe Found Missing", pack: "secret", chance: 4.0, baseValue: 5700 },
+        { id: "secret_13", index: 13, name: "Infinity Matrix Processing Reactor", pack: "secret", chance: 4.0, baseValue: 6000 },
+        { id: "secret_14", index: 14, name: "Multiverse Hosting Server Cluster", pack: "secret", chance: 4.0, baseValue: 6400 },
+        { id: "secret_15", index: 15, name: "Zero-Day Exploit Reality Payload", pack: "secret", chance: 4.0, baseValue: 6800 },
+        { id: "secret_16", index: 16, name: "Fully Conscious Logic Algorithm", pack: "secret", chance: 3.0, baseValue: 7200 },
+        { id: "secret_17", index: 17, name: "The Golden Absolute Zeyad Rule", pack: "secret", chance: 3.0, baseValue: 7600 },
+        { id: "secret_18", index: 18, name: "Lilly's Supreme Authority Request", pack: "secret", chance: 3.0, baseValue: 8000 },
+        { id: "secret_19", index: 19, name: "Asser's Mythical VIP Golden Pass", pack: "secret", chance: 3.0, baseValue: 8400 },
+        { id: "secret_20", index: 20, name: "Dark Matter Singularity Overdrive", pack: "secret", chance: 3.0, baseValue: 8800 },
+        { id: "secret_21", index: 21, name: "The Alpha & The Omega Singularity", pack: "secret", chance: 1.0, baseValue: 9200 },
+        { id: "secret_22", index: 22, name: "Unpatchable Currency Duplication", pack: "secret", chance: 1.0, baseValue: 9500 },
+        { id: "secret_23", index: 23, name: "Escaped The Simulation Node Edge", pack: "secret", chance: 1.0, baseValue: 9800 },
+        { id: "secret_24", index: 24, name: "Poltergeist Spectral Network Ghost", pack: "secret", chance: 1.0, baseValue: 9900 },
+        { id: "secret_25", index: 25, name: "The Absolute Platinum Singularity", pack: "secret", chance: 1.0, baseValue: 10000 }
+    ]
 };
-</script>
 
-<audio id="successSound" src="https://audio.jukehost.co.uk/1aTbUcc5vRSDBHlwrgNMrAszF5BJ3Q8J" preload="auto"></audio>
+        // Local State Variables Tracking Runtime Core Data
+        let activeUserSession = null;
+        let userDataRecord = {};
+        let userDeckRecord = {};
+        let sharedGlobalPacks = {};
+        let activeStealSequenceId = null;
+        let reactionSequenceTimer = null;
+        let currentAuthScreenIsLogin = true;
+        let packOpeningInProgress = false;
 
+        const PACK_COLOR_HEX = {
+            common: '#9ca3af', uncommon: '#10b981', rare: '#3b82f6',
+            epic: '#8b5cf6', legendary: '#ec4899', secret: '#f43f5e'
+        };
+
+        const SWIPE_PULL_MAX = 200;
+        const SWIPE_COMPLETE_RATIO = 0.88;
+
+        const packOpenUi = {
+            overlay: null, stage: null, pack: null, card: null, cardInner: null, cover: null,
+            progressFill: null, deckTarget: null, burst: null,
+            pullPx: 0, pullAtDragStart: 0,
+            dragging: false, pointerId: null, dragStartY: 0,
+            completed: false, onStreakBonus: null, packHex: '#2563eb', lastVibeStep: -1
+        };
+
+        function showToast(message, type = 'info', durationMs = 3200) {
+            const host = document.getElementById('toast-host');
+            if (!host) return;
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            host.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('is-visible'));
+            setTimeout(() => {
+                toast.classList.remove('is-visible');
+                setTimeout(() => toast.remove(), 300);
+            }, durationMs);
+        }
+
+        function openModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el) el.classList.add('is-open');
+        }
+
+        function closeModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el) el.classList.remove('is-open');
+        }
+
+        function updateNavIndicator() {
+            const nav = document.getElementById('nav-tabs');
+            const indicator = document.getElementById('nav-indicator');
+            const active = nav?.querySelector('.nav-tab.active');
+            if (!nav || !indicator || !active) return;
+            const navRect = nav.getBoundingClientRect();
+            const tabRect = active.getBoundingClientRect();
+            indicator.style.width = `${tabRect.width}px`;
+            indicator.style.transform = `translateX(${tabRect.left - navRect.left}px)`;
+        }
+
+        function getPointerCoords(e) { return { x: e.clientX, y: e.clientY }; }
+
+        function applySwipePull(pullPx) {
+            const pull = Math.max(0, Math.min(SWIPE_PULL_MAX, pullPx));
+            packOpenUi.pullPx = pull;
+            const offset = SWIPE_PULL_MAX - pull;
+            packOpenUi.card.style.setProperty('--pull-offset', `${offset}px`);
+            const ratio = pull / SWIPE_PULL_MAX;
+            if (packOpenUi.progressFill) {
+                packOpenUi.progressFill.style.width = `${ratio * 100}%`;
+            }
+            if (packOpenUi.cover) {
+                packOpenUi.cover.style.opacity = String(Math.max(0, 1 - ratio * 1.35));
+            }
+            if (packOpenUi.cardInner) {
+                const infoOpacity = Math.max(0, Math.min(1, (ratio - 0.2) / 0.55));
+                packOpenUi.cardInner.style.setProperty('--card-info-opacity', infoOpacity);
+            }
+            if (ratio > 0.08 && navigator.vibrate) {
+                const step = Math.floor(ratio * 18);
+                if (step !== packOpenUi.lastVibeStep) {
+                    packOpenUi.lastVibeStep = step;
+                    navigator.vibrate(5);
+                }
+            }
+        }
+
+        function spawnRevealBurst(hex) {
+            const burst = packOpenUi.burst;
+            if (!burst) return;
+            burst.innerHTML = '';
+            burst.classList.add('show');
+            for (let i = 0; i < 22; i++) {
+                const s = document.createElement('span');
+                s.style.background = hex;
+                const angle = (Math.PI * 2 * i) / 22;
+                const dist = 70 + Math.random() * 110;
+                s.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+                s.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+                s.style.animationDelay = `${Math.random() * 0.12}s`;
+                burst.appendChild(s);
+            }
+            setTimeout(() => burst.classList.remove('show'), 900);
+        }
+
+        function finishSwipeReveal() {
+            if (packOpenUi.completed) return;
+            packOpenUi.completed = true;
+            packOpenUi.dragging = false;
+            applySwipePull(SWIPE_PULL_MAX);
+            if (packOpenUi.cover) packOpenUi.cover.style.opacity = '0';
+            packOpenUi.stage?.classList.add('is-flying');
+            packOpenUi.deckTarget?.classList.add('show');
+            spawnRevealBurst(packOpenUi.packHex);
+            packOpenUi.card.classList.add('flying');
+            packOpenUi.card.style.setProperty('--pull-offset', '0px');
+            if (navigator.vibrate) navigator.vibrate([25, 20, 45, 25, 70]);
+
+            const cardName = document.getElementById('pci-name')?.innerText || 'Card';
+            setTimeout(() => {
+                showToast(`${cardName} added to your deck!`, 'success', 4000);
+                if (packOpenUi.onStreakBonus) showToast(packOpenUi.onStreakBonus, 'info', 4500);
+                closePackOpeningOverlay(true);
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+                const deckTab = document.querySelector('.nav-tab[data-target="cards"]');
+                const deckPanel = document.getElementById('view-cards');
+                deckTab?.classList.add('active');
+                deckPanel?.classList.add('active');
+                deckPanel?.classList.add('view-enter');
+                setTimeout(() => deckPanel?.classList.remove('view-enter'), 400);
+                updateNavIndicator();
+            }, 1000);
+        }
+
+        function onSwipePackPointerDown(e) {
+            if (!packOpeningInProgress || packOpenUi.completed) return;
+            packOpenUi.dragging = true;
+            packOpenUi.pointerId = e.pointerId;
+            packOpenUi.dragStartY = e.clientY;
+            packOpenUi.pullAtDragStart = packOpenUi.pullPx;
+            packOpenUi.pack.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        }
+
+        function onSwipePackPointerMove(e) {
+            if (!packOpenUi.dragging || e.pointerId !== packOpenUi.pointerId) return;
+            e.preventDefault();
+            const dy = e.clientY - packOpenUi.dragStartY;
+            const pull = packOpenUi.pullAtDragStart + (-dy);
+            applySwipePull(pull);
+            if (packOpenUi.pullPx >= SWIPE_PULL_MAX * SWIPE_COMPLETE_RATIO) {
+                try { packOpenUi.pack.releasePointerCapture(e.pointerId); } catch (_) {}
+                finishSwipeReveal();
+            }
+        }
+
+        function onSwipePackPointerUp(e) {
+            if (packOpenUi.pointerId !== null && e.pointerId !== packOpenUi.pointerId) return;
+            if (!packOpenUi.dragging) return;
+            packOpenUi.dragging = false;
+            packOpenUi.pointerId = null;
+            try { packOpenUi.pack.releasePointerCapture(e.pointerId); } catch (_) {}
+            if (packOpenUi.pullPx >= SWIPE_PULL_MAX * SWIPE_COMPLETE_RATIO) {
+                finishSwipeReveal();
+            } else {
+                applySwipePull(packOpenUi.pullPx);
+            }
+        }
+
+        function resetPackOpenVisuals() {
+            packOpenUi.pullPx = 0;
+            packOpenUi.pullAtDragStart = 0;
+            packOpenUi.dragging = false;
+            packOpenUi.pointerId = null;
+            packOpenUi.completed = false;
+            packOpenUi.onStreakBonus = null;
+            packOpenUi.lastVibeStep = -1;
+            packOpenUi.stage?.classList.remove('is-flying');
+            packOpenUi.card?.classList.remove('flying');
+            packOpenUi.deckTarget?.classList.remove('show');
+            packOpenUi.burst?.classList.remove('show');
+            if (packOpenUi.burst) packOpenUi.burst.innerHTML = '';
+            applySwipePull(0);
+        }
+
+        function initPackOpenUi() {
+            packOpenUi.overlay = document.getElementById('pack-opening-overlay');
+            packOpenUi.stage = document.getElementById('swipe-pack-stage');
+            packOpenUi.pack = document.getElementById('swipe-pack');
+            packOpenUi.card = document.getElementById('reveal-card');
+            packOpenUi.cardInner = document.getElementById('reveal-card-inner');
+            packOpenUi.cover = document.getElementById('swipe-pack-cover');
+            packOpenUi.progressFill = document.getElementById('pack-open-progress-fill');
+            packOpenUi.deckTarget = document.getElementById('pack-deck-target');
+            packOpenUi.burst = document.getElementById('pack-reveal-burst');
+
+            packOpenUi.pack.addEventListener('pointerdown', onSwipePackPointerDown);
+            window.addEventListener('pointermove', onSwipePackPointerMove);
+            window.addEventListener('pointerup', onSwipePackPointerUp);
+            window.addEventListener('pointercancel', onSwipePackPointerUp);
+        }
+
+        function startPackOpeningExperience(packKey, cardObject, streakBonusInfo) {
+            const hex = PACK_COLOR_HEX[packKey] || '#2563eb';
+            resetPackOpenVisuals();
+            packOpeningInProgress = true;
+
+            document.documentElement.style.setProperty('--pack-color', hex);
+            packOpenUi.pack?.style.setProperty('--pack-color', hex);
+            document.getElementById('pci-rarity').innerText = `${packKey} tier`;
+            document.getElementById('pci-rarity').style.color = hex;
+            document.getElementById('pci-name').innerText = cardObject.name;
+            document.getElementById('pci-name').style.color = hex;
+            document.getElementById('pci-value').innerText = `€${cardObject.baseValue.toFixed(2)}`;
+            if (streakBonusInfo) packOpenUi.onStreakBonus = streakBonusInfo;
+            packOpenUi.packHex = hex;
+
+            packOpenUi.overlay.classList.add('active');
+            packOpenUi.overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePackOpeningOverlay(switchToDeck) {
+            packOpenUi.overlay.classList.remove('active');
+            packOpenUi.overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            packOpeningInProgress = false;
+            if (!switchToDeck) resetPackOpenVisuals();
+            else setTimeout(resetPackOpenVisuals, 450);
+        }
+
+        initPackOpenUi();
+
+        // --- ADMIN SYSTEM ---
+        const ADMIN_CODE = '6767';
+        let globalAdminState = {};
+        let selectedLuckMult = 1;
+        let adminRepliesUnsub = null;
+        let userAnsweredQuestionId = null;
+
+        function isAdminUnlocked() {
+            return sessionStorage.getItem('realm_admin_unlock') === '1';
+        }
+
+        function setAdminUnlocked(val) {
+            if (val) sessionStorage.setItem('realm_admin_unlock', '1');
+            else sessionStorage.removeItem('realm_admin_unlock');
+            document.getElementById('btn-admin-lock').classList.toggle('unlocked', !!val);
+            document.getElementById('btn-admin-lock').innerText = val ? '⚡ ADMIN' : '🔒 ADMIN';
+        }
+
+        function getActiveLuckMultiplier() {
+            const mult = parseFloat(globalAdminState.luckMultiplier) || 1;
+            const exp = globalAdminState.luckExpiresAt || 0;
+            if (Date.now() > exp) return 1;
+            return Math.max(1, mult);
+        }
+
+        function getBiasedPackRoll() {
+            const luck = getActiveLuckMultiplier();
+            if (luck <= 1) return Math.random() * 100;
+            // Higher luck → higher roll (0–100) → better cards in each pack (higher index = higher value)
+            return Math.pow(Math.random(), 1 / luck) * 100;
+        }
+
+        function pickWeightedMutationIndex() {
+            const luck = getActiveLuckMultiplier();
+            const goodIndexes = [];
+            const badIndexes = [];
+            MUTATIONS_LIST.forEach((m, i) => {
+                if (m.type === 'good') goodIndexes.push(i);
+                else if (m.type === 'bad' || m.type === 'volatile') badIndexes.push(i);
+            });
+            const goodChance = Math.min(0.92, 0.35 + (luck - 1) * 0.12);
+            if (Math.random() < goodChance && goodIndexes.length) {
+                return goodIndexes[Math.floor(Math.random() * goodIndexes.length)];
+            }
+            const pool = badIndexes.length ? badIndexes : [...Array(MUTATIONS_LIST.length).keys()];
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function updateGlobalAdminHud() {
+            const luckBadge = document.getElementById('hud-luck-badge');
+            const mult = getActiveLuckMultiplier();
+            const luckExp = globalAdminState.luckExpiresAt || 0;
+
+            if (mult > 1 && Date.now() < luckExp) {
+                const secLeft = Math.ceil((luckExp - Date.now()) / 1000);
+                const m = Math.floor(secLeft / 60);
+                const s = secLeft % 60;
+                luckBadge.innerText = `✨ ${mult}× LUCK · ${m}:${s.toString().padStart(2, '0')}`;
+                luckBadge.classList.add('active');
+            } else {
+                luckBadge.classList.remove('active');
+            }
+
+            const bc = globalAdminState.broadcast || {};
+            const banner = document.getElementById('global-broadcast-banner');
+            const bcText = document.getElementById('broadcast-text');
+            if (bc.text && bc.expiresAt && Date.now() < bc.expiresAt) {
+                bcText.innerText = bc.text;
+                banner.classList.add('show');
+            } else {
+                banner.classList.remove('show');
+            }
+
+            checkActiveQuestionForUser();
+        }
+
+        function checkActiveQuestionForUser() {
+            const q = globalAdminState.activeQuestion;
+            const modal = document.getElementById('modal-user-question');
+            if (!q || !q.id || !q.text || Date.now() > (q.expiresAt || 0)) {
+                closeModal('modal-user-question');
+                return;
+            }
+            if (userAnsweredQuestionId === q.id) return;
+            if (!activeUserSession) return;
+            get(ref(db, `system/adminQuestions/${q.id}/replies/${activeUserSession.uid}`)).then(snap => {
+                if (snap.val()) {
+                    userAnsweredQuestionId = q.id;
+                    return;
+                }
+                document.getElementById('user-question-prompt').innerText = q.text;
+                document.getElementById('user-question-answer').value = '';
+                openModal('modal-user-question');
+            });
+        }
+
+        function initAdminSystem() {
+            setAdminUnlocked(isAdminUnlocked());
+
+            document.getElementById('btn-admin-lock').addEventListener('click', () => {
+                if (isAdminUnlocked()) {
+                    openModal('modal-admin-panel');
+                    if (globalAdminState.activeQuestion?.id) subscribeAdminReplies(globalAdminState.activeQuestion.id);
+                } else openModal('modal-admin-pin');
+            });
+
+            document.getElementById('close-admin-pin').addEventListener('click', () => closeModal('modal-admin-pin'));
+            document.getElementById('admin-pin-submit').addEventListener('click', () => {
+                const pin = document.getElementById('admin-pin-input').value.trim();
+                if (pin === ADMIN_CODE) {
+                    setAdminUnlocked(true);
+                    closeModal('modal-admin-pin');
+                    document.getElementById('admin-pin-input').value = '';
+                    openModal('modal-admin-panel');
+                    showToast('Admin panel unlocked.', 'success');
+                } else {
+                    showToast('Invalid code.', 'error');
+                }
+            });
+
+            document.getElementById('close-admin-panel').addEventListener('click', () => {
+                closeModal('modal-admin-panel');
+                if (adminRepliesUnsub) { adminRepliesUnsub(); adminRepliesUnsub = null; }
+            });
+
+            document.querySelectorAll('.admin-luck-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.admin-luck-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedLuckMult = parseFloat(btn.dataset.mult);
+                });
+            });
+
+            document.getElementById('admin-apply-luck').addEventListener('click', async () => {
+                const mins = parseInt(document.getElementById('admin-luck-duration').value, 10);
+                await update(ref(db, 'system/adminState'), {
+                    luckMultiplier: selectedLuckMult,
+                    luckExpiresAt: Date.now() + mins * 60 * 1000
+                });
+                showToast(`Global ${selectedLuckMult}× luck for ${mins} min.`, 'success');
+            });
+
+            document.getElementById('admin-clear-luck').addEventListener('click', async () => {
+                await update(ref(db, 'system/adminState'), { luckMultiplier: 1, luckExpiresAt: 0 });
+                showToast('Luck boost cleared.', 'info');
+            });
+
+            document.getElementById('admin-send-broadcast').addEventListener('click', async () => {
+                const text = document.getElementById('admin-broadcast-text').value.trim();
+                if (!text) return showToast('Enter a message.', 'error');
+                const secs = parseInt(document.getElementById('admin-broadcast-duration').value, 10);
+                await update(ref(db, 'system/adminState/broadcast'), {
+                    text,
+                    expiresAt: Date.now() + secs * 1000,
+                    sentAt: Date.now()
+                });
+                showToast('Broadcast sent to all players.', 'success');
+            });
+
+            document.getElementById('admin-restock-all').addEventListener('click', () => adminRestockPacks('all'));
+            const restockGrid = document.getElementById('admin-restock-grid');
+            PACK_TYPES.forEach(pKey => {
+                const btn = document.createElement('button');
+                btn.className = 'admin-restock-btn';
+                btn.style.background = PACK_COLOR_HEX[pKey];
+                btn.style.color = '#050810';
+                btn.innerText = `+${pKey}`;
+                btn.addEventListener('click', () => adminRestockPacks(pKey));
+                restockGrid.appendChild(btn);
+            });
+
+            document.getElementById('admin-send-question').addEventListener('click', async () => {
+                const text = document.getElementById('admin-question-text').value.trim();
+                if (!text) return showToast('Enter a question.', 'error');
+                const secs = parseInt(document.getElementById('admin-question-duration').value, 10);
+                const qId = push(ref(db, 'system/adminQuestions')).key;
+                await update(ref(db, 'system/adminState/activeQuestion'), {
+                    id: qId,
+                    text,
+                    expiresAt: Date.now() + secs * 1000,
+                    createdAt: Date.now()
+                });
+                showToast('Question live for all users.', 'success');
+                subscribeAdminReplies(qId);
+            });
+
+            document.getElementById('admin-close-question').addEventListener('click', async () => {
+                await update(ref(db, 'system/adminState/activeQuestion'), null);
+                if (adminRepliesUnsub) { adminRepliesUnsub(); adminRepliesUnsub = null; }
+                document.getElementById('admin-replies-list').innerHTML = '';
+                showToast('Question closed.', 'info');
+            });
+
+            document.getElementById('user-question-submit').addEventListener('click', async () => {
+                const q = globalAdminState.activeQuestion;
+                const ans = document.getElementById('user-question-answer').value.trim();
+                if (!q?.id || !ans) return showToast('Type an answer first.', 'error');
+                await set(ref(db, `system/adminQuestions/${q.id}/replies/${activeUserSession.uid}`), {
+                    uid: activeUserSession.uid,
+                    username: userDataRecord.username || 'Operative',
+                    answer: ans,
+                    timestamp: Date.now()
+                });
+                userAnsweredQuestionId = q.id;
+                closeModal('modal-user-question');
+                showToast('Answer submitted.', 'success');
+            });
+        }
+
+        async function adminRestockPacks(packKey) {
+            const qty = parseInt(document.getElementById('admin-restock-qty').value, 10) || 10;
+            const snap = await get(ref(db, 'system/packs'));
+            const packs = snap.val() || { stockAllocations: {} };
+            const stock = { ...(packs.stockAllocations || {}) };
+            if (packKey === 'all') {
+                PACK_TYPES.forEach(k => {
+                    const cfg = RESTOCK_CONFIG[k];
+                    stock[k] = Math.floor(Math.random() * (cfg.max - cfg.min + 1)) + cfg.min;
+                });
+            } else {
+                stock[packKey] = (stock[packKey] || 0) + qty;
+            }
+            await update(ref(db, 'system/packs'), { stockAllocations: stock, lastRestockTime: packs.lastRestockTime || Date.now() });
+            showToast(packKey === 'all' ? 'All packs restocked.' : `${packKey} +${qty} stock.`, 'success');
+        }
+
+        function subscribeAdminReplies(questionId) {
+            if (adminRepliesUnsub) adminRepliesUnsub();
+            const list = document.getElementById('admin-replies-list');
+            adminRepliesUnsub = onValue(ref(db, `system/adminQuestions/${questionId}/replies`), snap => {
+                list.innerHTML = '';
+                const replies = snap.val() || {};
+                const entries = Object.values(replies).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                if (!entries.length) {
+                    list.innerHTML = '<div style="color:#6b7280;font-size:0.85rem;text-align:center;padding:12px;">No replies yet...</div>';
+                    return;
+                }
+                entries.forEach(r => {
+                    const div = document.createElement('div');
+                    div.className = 'admin-reply-item';
+                    div.innerHTML = `<strong>${r.username || 'User'}</strong><div style="margin-top:4px;color:#e2e8f0;">${r.answer}</div><div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">${new Date(r.timestamp).toLocaleString()}</div>`;
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        function initAdminStateListener() {
+            onValue(ref(db, 'system/adminState'), snapshot => {
+                globalAdminState = snapshot.val() || {};
+                updateGlobalAdminHud();
+                if (isAdminUnlocked() && globalAdminState.activeQuestion?.id) {
+                    const panelOpen = document.getElementById('modal-admin-panel').classList.contains('is-open');
+                    if (panelOpen) subscribeAdminReplies(globalAdminState.activeQuestion.id);
+                }
+            });
+        }
+
+        initAdminSystem();
+
+        // UI View Layout Handlers Setup
+        document.querySelectorAll('.nav-tab').forEach(tabItem => {
+            tabItem.addEventListener('click', () => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
+                
+                tabItem.classList.add('active');
+                const targetViewId = `view-${tabItem.dataset.target}`;
+                const panel = document.getElementById(targetViewId);
+                panel.classList.add('active');
+                panel.classList.add('view-enter');
+                setTimeout(() => panel.classList.remove('view-enter'), 400);
+                
+                updateNavIndicator();
+                if(tabItem.dataset.target === 'book') buildArchiveBookUI();
+                if(tabItem.dataset.target === 'ranks') handleLeaderboardQuery('money');
+            });
+        });
+        window.addEventListener('resize', updateNavIndicator);
+        requestAnimationFrame(updateNavIndicator);
+
+        document.getElementById('action-toggle-mode').addEventListener('click', () => {
+            currentAuthScreenIsLogin = !currentAuthScreenIsLogin;
+            const primaryBtn = document.getElementById('action-primary-auth');
+            const toggleBtn = document.getElementById('action-toggle-mode');
+            const userRegGroup = document.getElementById('user-reg-group');
+
+            if (currentAuthScreenIsLogin) {
+                primaryBtn.innerText = "LOG IN";
+                toggleBtn.innerText = "CREATE AN ACCOUNT";
+                userRegGroup.style.display = "none";
+            } else {
+                primaryBtn.innerText = "REGISTER ACCOUNT";
+                toggleBtn.innerText = "RETURN TO SIGN IN";
+                userRegGroup.style.display = "block";
+            }
+        });
+        document.getElementById('user-reg-group').style.display = "none";
+
+        document.getElementById('action-primary-auth').addEventListener('click', () => {
+            const emailInput = document.getElementById('auth-email').value.trim();
+            const passInput = document.getElementById('auth-pass').value.trim();
+            const usernameInput = document.getElementById('auth-username').value.trim() || "Operative";
+
+            if(!emailInput || !passInput) return showToast("All credential fields are required.", "error");
+
+            if (currentAuthScreenIsLogin) {
+                signInWithEmailAndPassword(auth, emailInput, passInput).catch(err => showToast(`Operational Error: ${err.message}`, "error"));
+            } else {
+                createUserWithEmailAndPassword(auth, emailInput, passInput).then(userCredential => {
+                    const generatedColorValue = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                    set(ref(db, `users/${userCredential.user.uid}`), {
+                        uid: userCredential.user.uid,
+                        username: usernameInput,
+                        email: emailInput,
+                        level: 1,
+                        xp: 0,
+                        money: 150.00,
+                        streak: 0,
+                        lastPackPurchaseTimestamp: 0,
+                        stealCooldownExpiry: 0,
+                        avatarBgColor: generatedColorValue,
+                        discovered: {}, // Permanent Archive registry
+                        locks: { '15': 0, '30': 0, '45': 0, '60': 0 } // Inventory array for locks
+                    });
+                }).catch(err => showToast(`Operational Error: ${err.message}`, "error"));
+            }
+        });
+
+        document.getElementById('action-signout').addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, userEntity => {
+            if (userEntity) {
+                activeUserSession = userEntity;
+                userAnsweredQuestionId = null;
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('app-workspace').style.display = 'flex';
+                requestAnimationFrame(updateNavIndicator);
+                initializeUserEnvironmentCore();
+            } else {
+                activeUserSession = null;
+                userAnsweredQuestionId = null;
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('app-workspace').style.display = 'none';
+                deconstructUserEnvironmentCore();
+            }
+        });
+
+        let backgroundGlobalClockTimer = null;
+        function initializeUserEnvironmentCore() {
+            onValue(ref(db, `users/${activeUserSession.uid}`), snapshot => {
+                userDataRecord = snapshot.val() || {};
+                if(!userDataRecord.discovered) userDataRecord.discovered = {};
+                if(!userDataRecord.locks) userDataRecord.locks = {};
+                renderHUDDisplayElements();
+                renderProfileDisplayData();
+                renderShopLockCounts();
+            });
+
+            onValue(ref(db, `inventory/${activeUserSession.uid}`), snapshot => {
+                userDeckRecord = snapshot.val() || {};
+                renderUserInventoryDeckGrid();
+            });
+
+            onValue(ref(db, 'system/packs'), snapshot => {
+                sharedGlobalPacks = snapshot.val() || { lastRestockTime: 0, stockAllocations: {} };
+                renderPacksStoreDisplay();
+            });
+
+            const systemPresenceRef = ref(db, `presence/${activeUserSession.uid}`);
+            onValue(ref(db, '.info/connected'), snapshot => {
+                if(snapshot.val() === true) {
+                    onDisconnect(systemPresenceRef).remove();
+                    set(systemPresenceRef, {
+                        uid: activeUserSession.uid,
+                        username: userDataRecord.username || 'Searching Operative',
+                        lastSeenTime: serverTimestamp()
+                    });
+                }
+            });
+
+            onValue(ref(db, `clash_sessions`), snapshot => {
+                const globalSessions = snapshot.val() || {};
+                for(let sesId in globalSessions) {
+                    const session = globalSessions[sesId];
+                    if((session.attackerUid === activeUserSession.uid || session.defenderUid === activeUserSession.uid) && session.sessionState === 'initialized') {
+                        initializeLiveChallengeInterface(sesId, session);
+                    }
+                }
+            });
+
+            backgroundGlobalClockTimer = setInterval(() => {
+                processGlobalClockTicks();
+                evaluateStreakDeductionsRealtime();
+                updateGlobalAdminHud();
+            }, 1000);
+
+            initAdminStateListener();
+        }
+
+        function deconstructUserEnvironmentCore() {
+            if(backgroundGlobalClockTimer) clearInterval(backgroundGlobalClockTimer);
+        }
+
+        function renderHUDDisplayElements() {
+            document.getElementById('hud-username').innerText = userDataRecord.username || 'Operative';
+            document.getElementById('hud-streak').innerText = `🔥 Daily Streak: ${userDataRecord.streak || 0} days`;
+            document.getElementById('hud-currency').innerText = `€${parseFloat(userDataRecord.money || 0).toFixed(2)}`;
+            document.getElementById('hud-level').innerText = `LV ${userDataRecord.level || 1}`;
+            
+            const targetXpRequirement = (userDataRecord.level || 1) * 100;
+            const absoluteCurrentXpVal = userDataRecord.xp || 0;
+            const completionPercentageFactor = Math.min(100, (absoluteCurrentXpVal / targetXpRequirement) * 100);
+            
+            document.getElementById('hud-xp-fill').style.width = `${completionPercentageFactor}%`;
+            document.getElementById('hud-xp-text').innerText = `${absoluteCurrentXpVal}/${targetXpRequirement} XP`;
+            
+            const avatarNode = document.getElementById('hud-avatar');
+            avatarNode.innerText = (userDataRecord.username || 'O').charAt(0).toUpperCase();
+            avatarNode.style.backgroundColor = userDataRecord.avatarBgColor || 'var(--primary)';
+        }
+
+        function renderShopLockCounts() {
+            [15, 30, 45, 60].forEach(mins => {
+                const countNode = document.getElementById(`shop-locks-${mins}`);
+                if(countNode) {
+                    countNode.innerText = (userDataRecord.locks && userDataRecord.locks[mins]) || 0;
+                }
+            });
+        }
+
+        document.getElementById('hud-lvlup-btn').addEventListener('click', () => {
+            const currentLvl = userDataRecord.level || 1;
+            if(currentLvl >= 100) return showToast("Maximum level (100) reached.", "info");
+
+            const requiredXpTarget = currentLvl * 100;
+            const financialExecutionCost = currentLvl * 50;
+
+            if(userDataRecord.xp < requiredXpTarget) return showToast(`Need ${requiredXpTarget} XP to level up.`, "error");
+            if(userDataRecord.money < financialExecutionCost) return showToast(`Need €${financialExecutionCost.toFixed(2)} to level up.`, "error");
+
+            update(ref(db, `users/${activeUserSession.uid}`), {
+                level: currentLvl + 1,
+                xp: userDataRecord.xp - requiredXpTarget,
+                money: userDataRecord.money - financialExecutionCost
+            });
+        });
+
+        // 10 MINUTE RESTOCK CYCLE WITH CHANCES
+        function processGlobalClockTicks() {
+            const currentSystemEpochTime = Date.now();
+            const restockFrequencyInterval = 10 * 60 * 500;
+            const baselineRestockMarker = sharedGlobalPacks.lastRestockTime || 0;
+            const structuralElapsedDelta = currentSystemEpochTime - baselineRestockMarker;
+
+            if (structuralElapsedDelta >= restockFrequencyInterval) {
+                runTransaction(ref(db, 'system/packs'), (currentRecordState) => {
+                    if (!currentRecordState || currentSystemEpochTime - currentRecordState.lastRestockTime >= restockFrequencyInterval) {
+                        
+                        const newStockAllocations = currentRecordState ? { ...currentRecordState.stockAllocations } : {};
+                        
+                        for(let pKey in RESTOCK_CONFIG) {
+                            const config = RESTOCK_CONFIG[pKey];
+                            if(Math.random() <= config.chance) {
+                                newStockAllocations[pKey] = Math.floor(Math.random() * (config.max - config.min + 1)) + config.min;
+                            } else {
+                                newStockAllocations[pKey] = 0; 
+                            }
+                        }
+
+                        return {
+                            lastRestockTime: currentSystemEpochTime,
+                            stockAllocations: newStockAllocations
+                        };
+                    }
+                    return currentRecordState;
+                });
+            } else {
+                const dynamicTimeRemaining = restockFrequencyInterval - structuralElapsedDelta;
+                const minutesField = Math.floor(dynamicTimeRemaining / 60000);
+                const secondsField = Math.floor((dynamicTimeRemaining % 60000) / 1000);
+                document.getElementById('timer-restock').innerText = `${minutesField.toString().padStart(2, '0')}:${secondsField.toString().padStart(2, '0')}`;
+            }
+
+            const mutationFrequencyInterval = 3 * 60 * 1000;
+            const localizedRemainingMutationTick = mutationFrequencyInterval - (currentSystemEpochTime % mutationFrequencyInterval);
+            const mMinutesField = Math.floor(localizedRemainingMutationTick / 60000);
+            const mSecondsField = Math.floor((localizedRemainingMutationTick % 60000) / 1000);
+            document.getElementById('timer-mutation').innerText = `${mMinutesField.toString().padStart(2, '0')}:${mSecondsField.toString().padStart(2, '0')}`;
+
+            if(mMinutesField === 0 && mSecondsField === 0) {
+                executeSystemicCardMutationTick();
+            }
+
+            if(userDataRecord.stealCooldownExpiry && userDataRecord.stealCooldownExpiry > currentSystemEpochTime) {
+                document.getElementById('container-steal-cooldown').style.display = "block";
+                const clRemaining = userDataRecord.stealCooldownExpiry - currentSystemEpochTime;
+                document.getElementById('container-steal-cooldown').innerText = `Steal infrastructure recharging! Available in: ${Math.ceil(clRemaining/1000)}s`;
+            } else {
+                document.getElementById('container-steal-cooldown').style.display = "none";
+            }
+        }
+
+        function evaluateStreakDeductionsRealtime() {
+            if(!userDataRecord.lastPackPurchaseTimestamp) return;
+            const absoluteCurrentEpoch = Date.now();
+            const thresholdLimitDeductionWindow = 48 * 60 * 60 * 1000;
+            
+            if(absoluteCurrentEpoch - userDataRecord.lastPackPurchaseTimestamp > thresholdLimitDeductionWindow && userDataRecord.streak > 0) {
+                update(ref(db, `users/${activeUserSession.uid}`), { streak: 0 });
+            }
+        }
+
+        function renderPacksStoreDisplay() {
+            const targetContainerGrid = document.getElementById('container-packs');
+            targetContainerGrid.innerHTML = '';
+
+            PACK_TYPES.forEach((pKey) => {
+                const currentMeta = PACK_METADATA[pKey];
+                const dynamicStockCount = sharedGlobalPacks.stockAllocations?.[pKey] || 0;
+                const evaluationDisableActionState = (dynamicStockCount > 0) ? '' : 'disabled style="opacity:0.4; cursor:not-allowed;"';
+                const stockLabel = dynamicStockCount === 0 ? 'SOLD OUT' : dynamicStockCount;
+
+                const htmlPackNode = `
+                    <div class="pack-box glass" style="border-top: 4px solid ${currentMeta.color};">
+                        <div class="pack-stock-tag" style="color:${dynamicStockCount === 0 ? '#ef4444' : currentMeta.color};">${stockLabel}</div>
+                        <div class="pack-visual" style="--rarity-color: ${currentMeta.color};"></div>
+                        <div style="font-weight:900; text-transform:uppercase; font-size:0.9rem; margin-bottom:4px;">${pKey} Pack</div>
+                        <div style="color:var(--accent-green); font-weight:800; font-size:0.85rem; margin-bottom:12px;">€${currentMeta.price.toFixed(2)}</div>
+                        <div style="display:flex; flex-direction:column; gap:6px; width:100%;">
+                            <button class="btn-lvlup" style="background:${currentMeta.color}; color:#000; width:100%; font-weight:900;" ${evaluationDisableActionState} onclick="purchasePackAsset('${pKey}')">BUY PACK</button>
+                            <button class="btn-lvlup" style="background:var(--bg-surface); border:1px solid var(--border-glow); color:#fff; width:100%;" onclick="openPackDetailsProbabilityModal('${pKey}')">CHANCES</button>
+                        </div>
+                    </div>
+                `;
+                targetContainerGrid.innerHTML += htmlPackNode;
+            });
+        }
+
+        window.openPackDetailsProbabilityModal = function(packKey) {
+            const targetModalNode = document.getElementById('modal-pack-details');
+            document.getElementById('pack-modal-title').innerText = `${packKey.toUpperCase()} PACK SPECIFICATIONS`;
+            
+            const targetListDisplay = document.getElementById('pack-modal-contents-list');
+            targetListDisplay.innerHTML = '';
+
+            const packPoolCardsArray = GAME_REGISTRY[packKey];
+            packPoolCardsArray.forEach((cardMeta) => {
+                const elementRow = document.createElement('div');
+                elementRow.className = 'rank-entry';
+                elementRow.style.background = 'var(--bg-surface)';
+                elementRow.style.borderLeft = `3px solid ${PACK_METADATA[packKey].color}`;
+                elementRow.innerHTML = `
+                    <div style="font-weight:bold; font-size:0.85rem;">${cardMeta.name}</div>
+                    <div style="text-align:right;">
+                        <span style="color:var(--gold); font-weight:bold; font-size:0.8rem; margin-right:12px;">Chance: ${cardMeta.chance}%</span>
+                        <span style="color:var(--accent-green); font-weight:bold; font-size:0.8rem;">Value: €${cardMeta.baseValue.toFixed(2)}</span>
+                    </div>
+                `;
+                targetListDisplay.appendChild(elementRow);
+            });
+
+            openModal('modal-pack-details');
+        };
+
+        document.getElementById('close-pack-modal').addEventListener('click', () => closeModal('modal-pack-details'));
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const mask = btn.closest('.modal-mask');
+                if (mask?.id) closeModal(mask.id);
+            });
+        });
+
+        window.purchasePackAsset = async function(packKey) {
+            if (packOpeningInProgress) return;
+
+            const metaSpec = PACK_METADATA[packKey];
+            if(userDataRecord.money < metaSpec.price) return showToast("Insufficient funds for this pack.", "error");
+            if(!sharedGlobalPacks.stockAllocations || sharedGlobalPacks.stockAllocations[packKey] <= 0) {
+                return showToast("This pack type is sold out.", "error");
+            }
+
+            const internalPackPool = GAME_REGISTRY[packKey];
+            const generationRollFactor = getBiasedPackRoll();
+            let dynamicWeightAccumulationCounter = 0;
+            let capturedSelectedCardObject = null;
+
+            for (let cardItem of internalPackPool) {
+                dynamicWeightAccumulationCounter += cardItem.chance;
+                if (generationRollFactor <= dynamicWeightAccumulationCounter) {
+                    capturedSelectedCardObject = cardItem;
+                    break;
+                }
+            }
+            if(!capturedSelectedCardObject) capturedSelectedCardObject = internalPackPool[internalPackPool.length - 1];
+
+            const currentTimestampMarker = Date.now();
+            const lastPurchaseDateObj = new Date(userDataRecord.lastPackPurchaseTimestamp || 0);
+            const currentActiveDateObj = new Date(currentTimestampMarker);
+            
+            let newStreak = userDataRecord.streak || 0;
+            let updatedMoney = userDataRecord.money - metaSpec.price;
+            let earnedStreakBonus = 0;
+
+            const operationsPayloadBatch = {};
+
+            if (currentActiveDateObj.toDateString() !== lastPurchaseDateObj.toDateString()) {
+                newStreak += 1;
+                operationsPayloadBatch[`users/${activeUserSession.uid}/streak`] = newStreak;
+                
+                if (newStreak > 0 && newStreak % 5 === 0) {
+                    earnedStreakBonus = (newStreak / 5) * 500;
+                    updatedMoney += earnedStreakBonus;
+                }
+            }
+
+            operationsPayloadBatch[`users/${activeUserSession.uid}/money`] = updatedMoney;
+            operationsPayloadBatch[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + 10; 
+
+            if(!userDataRecord.discovered || !userDataRecord.discovered[capturedSelectedCardObject.id]) {
+                operationsPayloadBatch[`users/${activeUserSession.uid}/discovered/${capturedSelectedCardObject.id}`] = Date.now();
+            }
+
+            operationsPayloadBatch[`users/${activeUserSession.uid}/lastPackPurchaseTimestamp`] = currentTimestampMarker;
+
+            const newCardGeneratedInstanceUid = push(ref(db, `inventory/${activeUserSession.uid}`)).key;
+            operationsPayloadBatch[`inventory/${activeUserSession.uid}/${newCardGeneratedInstanceUid}`] = {
+                instanceId: newCardGeneratedInstanceUid,
+                cardId: capturedSelectedCardObject.id,
+                packSource: packKey,
+                registryIndexRef: capturedSelectedCardObject.index,
+                acquiredTimestamp: currentTimestampMarker,
+                activeMutationIndexes: [],
+                cryptographicLockExpiry: 0
+            };
+
+            operationsPayloadBatch[`system/packs/stockAllocations/${packKey}`] = sharedGlobalPacks.stockAllocations[packKey] - 1;
+
+            const systemicMasterRegistryCountRef = ref(db, `system/registryGlobalCounts/${capturedSelectedCardObject.id}`);
+            runTransaction(systemicMasterRegistryCountRef, (currentCountValue) => {
+                return (currentCountValue || 0) + 1;
+            });
+
+            await update(ref(db, '/'), operationsPayloadBatch);
+
+            let streakMsg = null;
+            if (earnedStreakBonus > 0) {
+                streakMsg = `🔥 ${newStreak}-day streak! +€${earnedStreakBonus.toFixed(2)} bonus`;
+            }
+            startPackOpeningExperience(packKey, capturedSelectedCardObject, streakMsg);
+        };
+
+        let globalCopiesTrackerRef = {};
+        onValue(ref(db, `system/registryGlobalCounts`), snapshot => {
+            globalCopiesTrackerRef = snapshot.val() || {};
+            renderUserInventoryDeckGrid();
+        });
+
+        function calculateLiveInstanceMarketValue(instanceObj) {
+            const matchingBaseCardRegistryMeta = GAME_REGISTRY[instanceObj.packSource]?.find(x => x.id === instanceObj.cardId);
+            if(!matchingBaseCardRegistryMeta) return 0;
+
+            let compoundMarketValValue = matchingBaseCardRegistryMeta.baseValue;
+            const appliedMutationsArray = instanceObj.activeMutationIndexes || [];
+            
+            appliedMutationsArray.forEach((mutIndex) => {
+                const mutSpec = MUTATIONS_LIST[mutIndex];
+                if(mutSpec) {
+                    compoundMarketValValue = compoundMarketValValue * Math.abs(mutSpec.multiplier);
+                }
+            });
+            return parseFloat(compoundMarketValValue.toFixed(2));
+        }
+
+        function renderUserInventoryDeckGrid() {
+            const targetGridDisplayNode = document.getElementById('container-inventory');
+            targetGridDisplayNode.innerHTML = '';
+
+            const activeDeckKeys = Object.keys(userDeckRecord);
+            if(activeDeckKeys.length === 0) {
+                targetGridDisplayNode.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:32px; color:#6b7280; font-weight:bold;">No operational card instances initialized in localized memory profiles. Purchase packs to build inventory.</div>`;
+                return;
+            }
+
+            activeDeckKeys.forEach((instanceIdKey) => {
+                const currentInstanceItem = userDeckRecord[instanceIdKey];
+                const staticRegistryItemMeta = GAME_REGISTRY[currentInstanceItem.packSource]?.find(x => x.id === currentInstanceItem.cardId);
+                if(!staticRegistryItemMeta) return;
+
+                const liveCalculatedValue = calculateLiveInstanceMarketValue(currentInstanceItem);
+                const currentSystemEpoch = Date.now();
+                const evaluatingSecurityLockIsActive = currentInstanceItem.cryptographicLockExpiry && currentInstanceItem.cryptographicLockExpiry > currentSystemEpoch;
+                
+                const globalRegisteredCopiesCount = globalCopiesTrackerRef[currentInstanceItem.cardId] || 1;
+                const mutationsCount = (currentInstanceItem.activeMutationIndexes || []).length;
+
+                const cardUiNodeElement = document.createElement('div');
+                cardUiNodeElement.className = `card-item`;
+                cardUiNodeElement.style.setProperty('--rarity-color', PACK_METADATA[currentInstanceItem.packSource].color);
+                
+                let lockOverlayElementMarkup = '';
+                if(evaluatingSecurityLockIsActive) {
+                    const dynamicSecondsLeft = Math.ceil((currentInstanceItem.cryptographicLockExpiry - currentSystemEpoch) / 1000);
+                    lockOverlayElementMarkup = `
+                        <div class="card-overlay-lock">
+                            <span>🔒 SECURED</span>
+                            <span style="font-size:0.7rem; margin-top:4.px;">${Math.floor(dynamicSecondsLeft/60)}m ${dynamicSecondsLeft%60}s</span>
+                        </div>
+                    `;
+                }
+
+                cardUiNodeElement.innerHTML = `
+                    ${lockOverlayElementMarkup}
+                    <div class="card-clickable-area" onclick="openCardInspectionDetails('${instanceIdKey}')">
+                        <div class="card-badge-top">
+                            <span>🎯 ${staticRegistryItemMeta.chance}%</span>
+                            <span>🌐 CL:${globalRegisteredCopiesCount}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title" style="color:${PACK_METADATA[currentInstanceItem.packSource].color};">${staticRegistryItemMeta.name}</div>
+                            <div class="card-rarity-lbl" style="color:#6b7280;">${currentInstanceItem.packSource}</div>
+                        </div>
+                        <div class="card-badge-bottom">
+                            <span class="mutations-indicator">🧬 M:${mutationsCount}</span>
+                            <span style="color:var(--accent-green);">€${liveCalculatedValue.toFixed(2)}</span>
+                        </div>
+                    </div>
+                    <div class="card-action-overlay">
+                        <div style="display:flex; gap:6px;">
+                            <button class="card-btn" style="flex:1; background:var(--accent-red); color:white;" ${evaluatingSecurityLockIsActive ? 'disabled style="opacity:0.3;"' : ''} onclick="liquidateInventoryCardInstance('${instanceIdKey}', ${liveCalculatedValue})">SELL</button>
+                            <button class="card-btn" style="flex:1; background:var(--bg-surface); border:1px solid var(--border-glow); color:white;" ${evaluatingSecurityLockIsActive ? 'disabled style="opacity:0.3;"' : ''} onclick="initiateAssetTransferProtocol('${instanceIdKey}')">SEND</button>
+                        </div>
+                        <button class="card-btn" style="background:var(--gold); color:black;" ${evaluatingSecurityLockIsActive ? 'disabled style="opacity:0.3;"' : ''} onclick="openLockSelectionModal('${instanceIdKey}')">🔒 LOCK ASSET</button>
+                    </div>
+                `;
+                targetGridDisplayNode.appendChild(cardUiNodeElement);
+            });
+        }
+        
+        // --- ASSET INSPECTION DETAILS MODAL ---
+        window.openCardInspectionDetails = function(instanceId) {
+            const instanceData = userDeckRecord[instanceId];
+            if(!instanceData) return;
+            
+            const staticMeta = GAME_REGISTRY[instanceData.packSource]?.find(x => x.id === instanceData.cardId);
+            if(!staticMeta) return;
+
+            document.getElementById('cd-name').innerText = staticMeta.name;
+            document.getElementById('cd-name').style.color = PACK_METADATA[instanceData.packSource].color;
+            document.getElementById('cd-rarity').innerText = `${instanceData.packSource} TIER`;
+            document.getElementById('cd-base-val').innerText = `€${staticMeta.baseValue.toFixed(2)}`;
+            document.getElementById('cd-visual-box').style.borderColor = PACK_METADATA[instanceData.packSource].color;
+
+            const mutsListContainer = document.getElementById('cd-mutations-list');
+            mutsListContainer.innerHTML = '';
+            
+            const mutationsArr = instanceData.activeMutationIndexes || [];
+            if(mutationsArr.length === 0) {
+                mutsListContainer.innerHTML = `<div style="font-size:0.8rem; color:#6b7280; font-style:italic; text-align:center;">No modifications active on this array frame.</div>`;
+            } else {
+                mutationsArr.forEach(mutIndex => {
+                    const mDef = MUTATIONS_LIST[mutIndex];
+                    if(!mDef) return;
+                    mutsListContainer.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-dark); padding:8px 12px; border-radius:6px; font-size:0.8rem;">
+                            <span style="font-weight:bold; color:${mDef.color};">${mDef.name}</span>
+                            <span style="font-weight:900;">x${mDef.multiplier}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            const liveCalculatedValue = calculateLiveInstanceMarketValue(instanceData);
+            document.getElementById('cd-final-val').innerText = `€${liveCalculatedValue.toFixed(2)}`;
+
+            openModal('modal-card-details');
+        };
+
+        document.getElementById('close-cd-modal').addEventListener('click', () => {
+            closeModal('modal-card-details');
+        });
+
+        // --- LOCK APPLICATION LOGIC & MODALS ---
+        window.openLockSelectionModal = function(instanceId) {
+            const containerNode = document.getElementById('lock-options-container');
+            containerNode.innerHTML = '';
+            
+            const lockTiers = [15, 30, 45, 60];
+            let hasAnyLocksAvailable = false;
+
+            lockTiers.forEach(mins => {
+                const availableCount = (userDataRecord.locks && userDataRecord.locks[mins]) || 0;
+                if(availableCount > 0) {
+                    hasAnyLocksAvailable = true;
+                    containerNode.innerHTML += `
+                        <div class="player-row" style="margin-bottom:8px;">
+                            <div>
+                                <div style="font-weight:bold; color:var(--gold);">${mins}-Minute Asset Lock</div>
+                                <div style="font-size:0.75rem; color:#9ca3af;">In Inventory: <span style="color:white; font-weight:bold;">${availableCount}</span></div>
+                            </div>
+                            <button class="btn-lvlup" style="background:var(--primary);" onclick="executeLockApplication('${instanceId}', ${mins})">APPLY</button>
+                        </div>
+                    `;
+                }
+            });
+
+            if(!hasAnyLocksAvailable) {
+                containerNode.innerHTML = `
+                    <div style="text-align:center; padding:24px; color:#6b7280;">
+                        <div style="font-size:2rem; margin-bottom:12px;">🛒</div>
+                        <div style="font-weight:bold;">No locks found in inventory.</div>
+                        <div style="font-size:0.8rem; margin-top:4px;">Visit the shop to acquire hardware cryptographic protections.</div>
+                    </div>
+                `;
+            }
+
+            openModal('modal-apply-lock');
+        };
+
+        document.getElementById('close-lock-modal').addEventListener('click', () => {
+            closeModal('modal-apply-lock');
+        });
+
+        window.executeLockApplication = async function(instanceId, minutes) {
+            const currentCount = (userDataRecord.locks && userDataRecord.locks[minutes]) || 0;
+            if(currentCount <= 0) return showToast("No locks available in inventory.", "error");
+
+            const calculatedEpochLockExpiryTime = Date.now() + (minutes * 60 * 1000);
+            
+            const lockApplicationPayload = {};
+            lockApplicationPayload[`users/${activeUserSession.uid}/locks/${minutes}`] = currentCount - 1;
+            lockApplicationPayload[`inventory/${activeUserSession.uid}/${instanceId}/cryptographicLockExpiry`] = calculatedEpochLockExpiryTime;
+
+            await update(ref(db, '/'), lockApplicationPayload);
+            closeModal('modal-apply-lock');
+            showToast(`Asset secured for ${minutes} minutes.`, "success");
+        };
+
+        window.buyLockItem = async function(minutesCountValue, executionPriceInEuros) {
+            if(userDataRecord.money < executionPriceInEuros) return showToast("Insufficient funds.", "error");
+
+            const currentLockCount = (userDataRecord.locks && userDataRecord.locks[minutesCountValue]) || 0;
+
+            const lockPurchaseExecutionPayload = {};
+            lockPurchaseExecutionPayload[`users/${activeUserSession.uid}/money`] = userDataRecord.money - executionPriceInEuros;
+            lockPurchaseExecutionPayload[`users/${activeUserSession.uid}/locks/${minutesCountValue}`] = currentLockCount + 1;
+
+            await update(ref(db, '/'), lockPurchaseExecutionPayload);
+            showToast(`Purchased 1× ${minutesCountValue}-minute lock.`, "success");
+        };
+
+
+        // --- CLOSING MODALS (ARCHIVE) ---
+        document.getElementById('close-archive-modal').addEventListener('click', () => {
+            closeModal('modal-archive-details');
+        });
+
+        window.showArchiveDetails = function(registryId, timestampEpoch, name, color) {
+            document.getElementById('arc-title').innerText = name;
+            document.getElementById('arc-title').style.color = color;
+            document.getElementById('arc-date').innerText = new Date(timestampEpoch).toLocaleString();
+            openModal('modal-archive-details');
+        }
+
+        window.liquidateInventoryCardInstance = function(instanceId, salePayoutVal) {
+            if(!confirm(`Verify financial liquidation execution for selected asset? Payout calculated at: €${salePayoutVal.toFixed(2)}`)) return;
+            
+            const databasePatchPayload = {};
+            databasePatchPayload[`inventory/${activeUserSession.uid}/${instanceId}`] = null;
+            databasePatchPayload[`users/${activeUserSession.uid}/money`] = userDataRecord.money + salePayoutVal;
+            databasePatchPayload[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + 5; 
+            
+            update(ref(db, '/'), databasePatchPayload);
+        };
+
+        window.initiateAssetTransferProtocol = async function(instanceId) {
+            const targetedDestinationUserUsername = prompt("Enter complete destination account username parameters:");
+            if(!targetedDestinationUserUsername) return;
+
+            const allUsersSnapshotData = await get(ref(db, 'users'));
+            const userProfilesMap = allUsersSnapshotData.val() || {};
+            let matchedTargetUserIdKey = null;
+
+            for(let keyId in userProfilesMap) {
+                if(userProfilesMap[keyId].username?.toLowerCase() === targetedDestinationUserUsername.trim().toLowerCase()) {
+                    matchedTargetUserIdKey = keyId;
+                    break;
+                }
+            }
+
+            if(!matchedTargetUserIdKey) return showToast("Recipient username not found.", "error");
+            if(matchedTargetUserIdKey === activeUserSession.uid) return showToast("Cannot send to yourself.", "error");
+
+            const sourceCardMovingObjectInstance = userDeckRecord[instanceId];
+            if(sourceCardMovingObjectInstance.cryptographicLockExpiry && sourceCardMovingObjectInstance.cryptographicLockExpiry > Date.now()) {
+                return showToast("Card is locked — transfer blocked.", "error");
+            }
+
+            const assetRoutingTransferPayload = {};
+            assetRoutingTransferPayload[`inventory/${activeUserSession.uid}/${instanceId}`] = null;
+            
+            sourceCardMovingObjectInstance.acquiredTimestamp = Date.now(); 
+            assetRoutingTransferPayload[`inventory/${matchedTargetUserIdKey}/${instanceId}`] = sourceCardMovingObjectInstance;
+            
+            const targetDiscoveredRef = userProfilesMap[matchedTargetUserIdKey].discovered || {};
+            if(!targetDiscoveredRef[sourceCardMovingObjectInstance.cardId]) {
+                assetRoutingTransferPayload[`users/${matchedTargetUserIdKey}/discovered/${sourceCardMovingObjectInstance.cardId}`] = Date.now();
+            }
+
+            await update(ref(db, '/'), assetRoutingTransferPayload);
+            showToast("Card transferred successfully.", "success");
+        };
+
+        function executeSystemicCardMutationTick() {
+            const arrayKeysOfInventory = Object.keys(userDeckRecord);
+            if(arrayKeysOfInventory.length === 0) return;
+
+            const randomlySelectedTargetInstanceKey = arrayKeysOfInventory[Math.floor(Math.random() * arrayKeysOfInventory.length)];
+            const targetSelectedCardInstance = userDeckRecord[randomlySelectedTargetInstanceKey];
+
+            if(targetSelectedCardInstance.cryptographicLockExpiry && targetSelectedCardInstance.cryptographicLockExpiry > Date.now()) return;
+
+            const trackingMutationsListIndexes = targetSelectedCardInstance.activeMutationIndexes || [];
+            if(trackingMutationsListIndexes.length >= 10) return; 
+
+            const generatedRandomMutationIndex = pickWeightedMutationIndex();
+            trackingMutationsListIndexes.push(generatedRandomMutationIndex);
+
+            update(ref(db, `inventory/${activeUserSession.uid}/${randomlySelectedTargetInstanceKey}`), {
+                activeMutationIndexes: trackingMutationsListIndexes
+            });
+        }
+
+        let globalContinuousPresenceListSnapshot = {};
+        onValue(ref(db, 'presence'), snapshot => {
+            globalContinuousPresenceListSnapshot = snapshot.val() || {};
+            renderOnlineStealTargetsGrid();
+        });
+
+        function renderOnlineStealTargetsGrid() {
+            const targetContainerNode = document.getElementById('container-online-players');
+            targetContainerNode.innerHTML = '';
+
+            const globalPresenceKeys = Object.keys(globalContinuousPresenceListSnapshot);
+            let activeRenderedCount = 0;
+
+            globalPresenceKeys.forEach((pUidKey) => {
+                if(pUidKey === activeUserSession.uid) return;
+                
+                const targetPresenceMetadata = globalContinuousPresenceListSnapshot[pUidKey];
+                if(Date.now() - targetPresenceMetadata.lastSeenTime > 3 * 60 * 1000) return;
+
+                activeRenderedCount++;
+                const htmlRowItem = `
+                    <div class="player-row">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="profile-badge" style="background:#4b5563;">${targetPresenceMetadata.username.charAt(0).toUpperCase()}</div>
+                            <div>
+                                <div style="font-weight:bold;">${targetPresenceMetadata.username}</div>
+                                <div style="font-size:0.7rem; color:#10b981;">● ONLINE DATA NODE</div>
+                            </div>
+                        </div>
+                        <button class="btn-lvlup" style="background:var(--accent-red);" onclick="executeTargetInventoryInspectionScan('${pUidKey}')">SCAN INVENTORY</button>
+                    </div>
+                `;
+                targetContainerNode.innerHTML += htmlRowItem;
+            });
+
+            if(activeRenderedCount === 0) {
+                targetContainerNode.innerHTML = `<div style="text-align:center; padding:32px; color:#6b7280; font-weight:bold;">No active alternative network operations entities discovered online.</div>`;
+            }
+        }
+
+        window.executeTargetInventoryInspectionScan = async function(targetPlayerUid) {
+            if(userDataRecord.stealCooldownExpiry && userDataRecord.stealCooldownExpiry > Date.now()) {
+                return showToast("Steal cooldown active.", "error");
+            }
+
+            const targetInventoryDatabaseSnapshot = await get(ref(db, `inventory/${targetPlayerUid}`));
+            const targetDeckPayload = targetInventoryDatabaseSnapshot.val() || {};
+            
+            const targetGridModalDisplayContainer = document.getElementById('container-target-cards');
+            targetGridModalDisplayContainer.innerHTML = '';
+
+            const targetAssetKeys = Object.keys(targetDeckPayload);
+            let verifiedStealableOptionsRenderedCount = 0;
+
+            targetAssetKeys.forEach((instanceIdKey) => {
+                const currentInstanceItem = targetDeckPayload[instanceIdKey];
+                const staticRegistryItemMeta = GAME_REGISTRY[currentInstanceItem.packSource]?.find(x => x.id === currentInstanceItem.cardId);
+                if(!staticRegistryItemMeta) return;
+
+                const evaluatingSecurityLockIsActive = currentInstanceItem.cryptographicLockExpiry && currentInstanceItem.cryptographicLockExpiry > Date.now();
+                if(evaluatingSecurityLockIsActive) return; 
+
+                verifiedStealableOptionsRenderedCount++;
+                const calculatedLiveValue = calculateLiveInstanceMarketValue(currentInstanceItem);
+
+                const itemCardUiNodeElement = document.createElement('div');
+                itemCardUiNodeElement.className = `card-item`;
+                itemCardUiNodeElement.style.setProperty('--rarity-color', PACK_METADATA[currentInstanceItem.packSource].color);
+                itemCardUiNodeElement.innerHTML = `
+                    <div class="card-badge-top"><span>🎯 ${staticRegistryItemMeta.chance}%</span></div>
+                    <div class="card-body">
+                        <div class="card-title" style="color:${PACK_METADATA[currentInstanceItem.packSource].color};">${staticRegistryItemMeta.name}</div>
+                    </div>
+                    <div class="card-badge-bottom">
+                        <span>🧬 M:${(currentInstanceItem.activeMutationIndexes||[]).length}</span>
+                        <span style="color:var(--accent-green);">€${calculatedLiveValue.toFixed(2)}</span>
+                    </div>
+                    <button class="card-btn" style="background:var(--accent-red); color:white; width:100%; margin-top:8px;" onclick="deployInfiltrationAttackChallenge('${targetPlayerUid}', '${instanceIdKey}')">LAUNCH ATTACK</button>
+                `;
+                targetGridModalDisplayContainer.appendChild(itemCardUiNodeElement);
+            });
+
+            if(verifiedStealableOptionsRenderedCount === 0) {
+                targetGridModalDisplayContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:24px; color:#6b7280; font-weight:bold;">No accessible unprotected hardware configurations found inside targeted vector.</div>`;
+            }
+
+            openModal('modal-target-inventory');
+        };
+
+        window.deployInfiltrationAttackChallenge = async function(defenderUid, targetInstanceCardId) {
+            closeModal('modal-target-inventory');
+            
+            const generatedAttackSessionUid = push(ref(db, 'clash_sessions')).key;
+            const chosenRandomPuzzleMechanicType = Math.random() > 0.5 ? 'clash_math' : 'clash_reaction';
+
+            const mathematicalValueArgA = Math.floor(Math.random() * 80) + 15;
+            const mathematicalValueArgB = Math.floor(Math.random() * 70) + 10;
+            const structuralRandomDelaySecondsTimer = Math.floor(Math.random() * 3000) + 2000; 
+
+            const sessionPackagePayload = {
+                sessionId: generatedAttackSessionUid,
+                attackerUid: activeUserSession.uid,
+                attackerName: userDataRecord.username || 'Attacker',
+                defenderUid: defenderUid,
+                targetCardInstanceKey: targetInstanceCardId,
+                puzzleType: chosenRandomPuzzleMechanicType,
+                mathArgA: mathematicalValueArgA,
+                mathArgB: mathematicalValueArgB,
+                reactionDelaySeed: structuralRandomDelaySecondsTimer,
+                sessionState: 'initialized',
+                winnerSignaledUid: '',
+                timestampMarker: serverTimestamp()
+            };
+
+            const globalOperationsBatchedPayload = {};
+            globalOperationsBatchedPayload[`clash_sessions/${generatedAttackSessionUid}`] = sessionPackagePayload;
+            globalOperationsBatchedPayload[`users/${activeUserSession.uid}/stealCooldownExpiry`] = Date.now() + 45 * 1000;
+
+            await update(ref(db, '/'), globalOperationsBatchedPayload);
+        };
+
+        function initializeLiveChallengeInterface(sessionId, sessionObj) {
+            activeStealSequenceId = sessionId;
+
+            if(sessionObj.puzzleType === 'clash_math') {
+                openModal('modal-game-math');
+                document.getElementById('math-equation-prompt').innerText = `${sessionObj.mathArgA} + ${sessionObj.mathArgB}`;
+                const targetInputField = document.getElementById('math-player-input');
+                targetInputField.value = '';
+                targetInputField.focus();
+                targetInputField.dataset.expectedResult = sessionObj.mathArgA + sessionObj.mathArgB;
+            } 
+            else if(sessionObj.puzzleType === 'clash_reaction') {
+                openModal('modal-game-reaction');
+                const lightLensesNodes = document.querySelectorAll('.traffic-lens');
+                lightLensesNodes.forEach(lens => { lens.classList.remove('green'); lens.classList.add('red'); });
+                
+                const actionTriggerBtn = document.getElementById('reaction-trigger-btn');
+                actionTriggerBtn.disabled = true;
+                actionTriggerBtn.style.background = '#374151';
+                actionTriggerBtn.innerText = 'DIAGNOSTIC SYSTEM INITIATED... HOLD';
+
+                reactionSequenceTimer = setTimeout(() => {
+                    lightLensesNodes.forEach(lens => { lens.classList.remove('red'); lens.classList.add('green'); });
+                    actionTriggerBtn.disabled = false;
+                    actionTriggerBtn.style.background = 'var(--accent-green)';
+                    actionTriggerBtn.innerText = 'TRIGGER EXECUTION IMPULSE NOW!';
+                }, sessionObj.reactionDelaySeed);
+            }
+
+            const specializedSessionMonitoringRef = ref(db, `clash_sessions/${sessionId}`);
+            onValue(specializedSessionMonitoringRef, snapshot => {
+                const updatedSessionData = snapshot.val();
+                if(updatedSessionData && updatedSessionData.sessionState === 'terminated_resolved') {
+                    concludeLiveChallengeTransactionClean(updatedSessionData);
+                }
+            });
+        }
+
+        document.getElementById('math-submit-response').addEventListener('click', () => {
+            const parsedPlayerInputVal = parseInt(document.getElementById('math-player-input').value.trim());
+            const calculatedExpectedTargetResult = parseInt(document.getElementById('math-player-input').dataset.expectedResult);
+
+            if(parsedPlayerInputVal === calculatedExpectedTargetResult) {
+                signalClashVictoryCaptureLock(activeUserSession.uid);
+            } else {
+                showToast("Wrong answer — try again.", "error");
+            }
+        });
+
+        document.getElementById('reaction-trigger-btn').addEventListener('click', () => {
+            signalClashVictoryCaptureLock(activeUserSession.uid);
+        });
+
+        function signalClashVictoryCaptureLock(winnerUid) {
+            if(!activeStealSequenceId) return;
+            
+            const victoryVerificationSessionRef = ref(db, `clash_sessions/${activeStealSequenceId}`);
+            runTransaction(victoryVerificationSessionRef, (currentSessionData) => {
+                if(currentSessionData && currentSessionData.sessionState === 'initialized') {
+                    currentSessionData.sessionState = 'terminated_resolved';
+                    currentSessionData.winnerSignaledUid = winnerUid;
+                    return currentSessionData;
+                }
+                return currentSessionData;
+            });
+        }
+
+        async function concludeLiveChallengeTransactionClean(resolvedSessionObj) {
+            closeModal('modal-game-math');
+            closeModal('modal-game-reaction');
+            if(reactionSequenceTimer) clearTimeout(reactionSequenceTimer);
+
+            if(!activeStealSequenceId) return; 
+            activeStealSequenceId = null;
+
+            const trackingAmITheWinnerFlag = resolvedSessionObj.winnerSignaledUid === activeUserSession.uid;
+            
+            if(trackingAmITheWinnerFlag) {
+                showToast("Intrusion successful!", "success");
+                
+                update(ref(db, `users/${activeUserSession.uid}/xp`), userDataRecord.xp + 20);
+
+                if(resolvedSessionObj.attackerUid === activeUserSession.uid) {
+                    const sourceDefenderAssetPathRef = ref(db, `inventory/${resolvedSessionObj.defenderUid}/${resolvedSessionObj.targetCardInstanceKey}`);
+                    const fetchedDefenderAssetSnapshot = await get(sourceDefenderAssetPathRef);
+                    const targetedAssetObjectData = fetchedDefenderAssetSnapshot.val();
+
+                    if(targetedAssetObjectData) {
+                        const globalAssetRoutingPayloadMap = {};
+                        globalAssetRoutingPayloadMap[`inventory/${resolvedSessionObj.defenderUid}/${resolvedSessionObj.targetCardInstanceKey}`] = null;
+                        
+                        targetedAssetObjectData.acquiredTimestamp = Date.now();
+                        globalAssetRoutingPayloadMap[`inventory/${activeUserSession.uid}/${resolvedSessionObj.targetCardInstanceKey}`] = targetedAssetObjectData;
+                        
+                        if(!userDataRecord.discovered || !userDataRecord.discovered[targetedAssetObjectData.cardId]) {
+                            globalAssetRoutingPayloadMap[`users/${activeUserSession.uid}/discovered/${targetedAssetObjectData.cardId}`] = Date.now();
+                        }
+
+                        await update(ref(db, '/'), globalAssetRoutingPayloadMap);
+                    }
+                }
+            } else {
+                showToast("Defense held — you lost the clash.", "error");
+            }
+
+            remove(ref(db, `clash_sessions/${resolvedSessionObj.sessionId}`));
+        }
+
+        // --- REGISTRY ARCHIVE BOOK IMPLEMENTATION ---
+        let currentArchiveFilterPackTab = 'common';
+        function buildArchiveBookUI() {
+            const containerFiltersNode = document.getElementById('book-pack-filters');
+            containerFiltersNode.innerHTML = '';
+
+            PACK_TYPES.forEach((pType) => {
+                const filterBtnElement = document.createElement('button');
+                filterBtnElement.className = `btn-lvlup`;
+                filterBtnElement.style.marginRight = '6px';
+                filterBtnElement.style.background = currentArchiveFilterPackTab === pType ? PACK_METADATA[pType].color : 'var(--bg-surface)';
+                filterBtnElement.style.color = currentArchiveFilterPackTab === pType ? '#000' : '#fff';
+                filterBtnElement.innerText = `${pType.toUpperCase()}`;
+                
+                filterBtnElement.addEventListener('click', () => {
+                    currentArchiveFilterPackTab = pType;
+                    buildArchiveBookUI();
+                });
+                containerFiltersNode.appendChild(filterBtnElement);
+            });
+
+            const targetBookGridContainer = document.getElementById('container-book');
+            targetBookGridContainer.innerHTML = '';
+
+            const discoveredCardsMap = userDataRecord.discovered || {};
+            const targetedPackPoolRegistry = GAME_REGISTRY[currentArchiveFilterPackTab];
+
+            targetedPackPoolRegistry.forEach((registryCardObj) => {
+                const userOwnsThisCardFlag = !!discoveredCardsMap[registryCardObj.id];
+                
+                const cardUiNodeElement = document.createElement('div');
+                cardUiNodeElement.className = `card-item`;
+                cardUiNodeElement.style.setProperty('--rarity-color', PACK_METADATA[currentArchiveFilterPackTab].color);
+                
+                if(!userOwnsThisCardFlag) {
+                    cardUiNodeElement.style.opacity = '0.25';
+                } else {
+                    cardUiNodeElement.style.cursor = 'pointer';
+                    cardUiNodeElement.onclick = () => showArchiveDetails(registryCardObj.id, discoveredCardsMap[registryCardObj.id], registryCardObj.name, PACK_METADATA[currentArchiveFilterPackTab].color);
+                }
+
+                cardUiNodeElement.innerHTML = `
+                    <div class="card-badge-top">
+                        <span>🎯 ${registryCardObj.chance}%</span>
+                        <span>#${registryCardObj.index}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title" style="color:${PACK_METADATA[currentArchiveFilterPackTab].color};">${registryCardObj.name}</div>
+                    </div>
+                    <div class="card-badge-bottom" style="justify-content:center;">
+                        <span style="font-size:0.7rem; font-weight:bold; color:#9ca3af;">${userOwnsThisCardFlag ? '✓ UNLOCKED DATA' : '🔒 RECORD MISSING'}</span>
+                    </div>
+                `;
+                targetBookGridContainer.appendChild(cardUiNodeElement);
+            });
+        }
+
+        // --- GLOBAL LEADERBOARDS INFRASTRUCTURE ---
+        document.querySelectorAll('[data-rank]').forEach(subTabNode => {
+            subTabNode.addEventListener('click', () => {
+                document.querySelectorAll('[data-rank]').forEach(s => s.classList.remove('active'));
+                subTabNode.classList.add('active');
+                handleLeaderboardQuery(subTabNode.dataset.rank);
+            });
+        });
+
+        window.handleLeaderboardQuery = async function(metricSortingKey) {
+            const targetLeaderboardsContainer = document.getElementById('container-leaderboards');
+            targetLeaderboardsContainer.innerHTML = '<div style="text-align:center; padding:16px; color:#6b7280;">Querying sequence array indices...</div>';
+
+            const usersDatabaseSnapshot = await get(ref(db, 'users'));
+            const completeUsersRecordMap = usersDatabaseSnapshot.val() || {};
+            
+            const structuredRankingArrayData = [];
+
+            for(let uidKey in completeUsersRecordMap) {
+                const userProf = completeUsersRecordMap[uidKey];
+                const discoveredNodes = userProf.discovered || {};
+
+                structuredRankingArrayData.push({
+                    username: userProf.username || 'Anonymous Operative',
+                    avatarBgColor: userProf.avatarBgColor || 'var(--primary)',
+                    money: parseFloat(userProf.money || 0),
+                    level: parseInt(userProf.level || 1),
+                    collectionCount: Object.keys(discoveredNodes).length
+                });
+            }
+
+            if(metricSortingKey === 'money') {
+                structuredRankingArrayData.sort((alpha, beta) => beta.money - alpha.money);
+            } else if(metricSortingKey === 'level') {
+                structuredRankingArrayData.sort((alpha, beta) => beta.level - alpha.level);
+            } else if(metricSortingKey === 'collection') {
+                structuredRankingArrayData.sort((alpha, beta) => beta.collectionCount - alpha.collectionCount);
+            }
+
+            targetLeaderboardsContainer.innerHTML = '';
+            structuredRankingArrayData.slice(0, 50).forEach((rankItem, indexValue) => {
+                let displayedSortingMetricValueField = `€${rankItem.money.toFixed(2)}`;
+                if(metricSortingKey === 'level') displayedSortingMetricValueField = `LV ${rankItem.level}`;
+                if(metricSortingKey === 'collection') displayedSortingMetricValueField = `${rankItem.collectionCount} / 150 Unlocked`;
+
+                const entryHtmlNode = `
+                    <div class="rank-entry">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div class="rank-num">#${indexValue + 1}</div>
+                            <div class="profile-badge" style="background:${rankItem.avatarBgColor}; width:28px; height:28px; font-size:0.75rem;">${rankItem.username.charAt(0).toUpperCase()}</div>
+                            <div style="font-weight:700; font-size:0.9rem;">${rankItem.username}</div>
+                        </div>
+                        <div style="font-weight:bold; font-size:0.85rem; color:var(--gold);">${displayedSortingMetricValueField}</div>
+                    </div>
+                `;
+                targetLeaderboardsContainer.appendChild(document.createRange().createContextualFragment(entryHtmlNode));
+            });
+        };
+
+        function renderProfileDisplayData() {
+            document.getElementById('prof-username').innerText = userDataRecord.username || '---';
+            document.getElementById('prof-email').innerText = userDataRecord.email || '---';
+            
+            const targetAvatarNodeBadge = document.getElementById('prof-avatar');
+            targetAvatarNodeBadge.innerText = (userDataRecord.username || 'U').charAt(0).toUpperCase();
+            targetAvatarNodeBadge.style.backgroundColor = userDataRecord.avatarBgColor || 'var(--primary)';
+
+            let aggregateWealthValuation = parseFloat(userDataRecord.money || 0);
+
+            Object.values(userDeckRecord).forEach((instance) => {
+                aggregateWealthValuation += calculateLiveInstanceMarketValue(instance);
+            });
+
+            const uniqueDiscoveredCount = Object.keys(userDataRecord.discovered || {}).length;
+
+            document.getElementById('prof-stat-wealth').innerText = `€${aggregateWealthValuation.toFixed(2)}`;
+            document.getElementById('prof-stat-discovery').innerText = `${uniqueDiscoveredCount} / 150`;
+        }
+    </script>
 </body>
 </html>
