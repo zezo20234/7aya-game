@@ -1,32 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Realm - Card Economy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-dark: #090d16;
             --bg-panel: #111827;
             --bg-surface: #1f2937;
             --border-glow: #374151;
-            
+
             --primary: #2563eb;
             --primary-glow: rgba(37, 99, 235, 0.4);
             --accent-green: #10b981;
             --accent-red: #ef4444;
             --gold: #f59e0b;
 
-            /* Rarity Themes */
-            --common: #9ca3af;
-            --uncommon: #10b981;
-            --rare: #3b82f6;
-            --epic: #8b5cf6;
-            --legendary: #ec4899;
-            --secret: #f43f5e;
+            /* Pack tier themes (15 tiers) */
+            --paper: #d4c4a8;
+            --wood: #a67c52;
+            --stone: #78716c;
+            --bronze: #cd7f32;
+            --silver: #c0c0c0;
+            --gold: #ffd700;
+            --platinum: #e5e4e2;
+            --diamond: #7df9ff;
+            --mythic: #a855f7;
+            --exotic: #ff6b35;
+            --divine: #fff8dc;
+            --celestial: #87ceeb;
+            --galactic: #6a0dad;
+            --universal: #ff1493;
+            --secret: #ff0040;
         }
 
         * {
@@ -78,7 +90,7 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
 
         .user-name-wrapper {
@@ -145,7 +157,7 @@
             font-weight: 700;
             line-height: 12px;
             color: #ffffff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
 
         .btn-lvlup {
@@ -215,7 +227,10 @@
         /* --- AUTH SCREEN --- */
         #auth-screen {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: var(--bg-dark);
             z-index: 100;
             display: flex;
@@ -284,14 +299,26 @@
             transition: opacity 0.2s;
         }
 
-        .btn-action:active { opacity: 0.8; }
-        .btn-blue { background: var(--primary); color: white; }
-        .btn-outline { background: transparent; border: 1px solid var(--border-glow); color: white; }
+        .btn-action:active {
+            opacity: 0.8;
+        }
+
+        .btn-blue {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-glow);
+            color: white;
+        }
 
         /* --- GAME CARDS SYSTEMS --- */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); /* Mobile friendly scale */
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            /* Mobile friendly scale */
             gap: 12px;
             margin-top: 12px;
         }
@@ -367,8 +394,11 @@
 
         .card-overlay-lock {
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.75);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -388,7 +418,8 @@
         }
 
         .card-btn {
-            padding: 8px 4px; /* Better tap target for mobile */
+            padding: 8px 4px;
+            /* Better tap target for mobile */
             font-size: 0.7rem;
             font-weight: bold;
             border-radius: 4px;
@@ -415,15 +446,16 @@
             background: linear-gradient(135deg, var(--rarity-color), var(--bg-dark));
             border-radius: 8px;
             margin-bottom: 12px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
             border: 1px solid var(--rarity-color);
         }
 
         .pack-stock-tag {
             position: absolute;
-            top: 8px; right: 8px;
+            top: 8px;
+            right: 8px;
             font-size: 0.7rem;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             padding: 4px 8px;
             border-radius: 4px;
             font-weight: bold;
@@ -443,7 +475,11 @@
             opacity: 0;
             transition: opacity 0.25s ease;
         }
-        .modal-mask.is-open { display: flex; opacity: 1; }
+
+        .modal-mask.is-open {
+            display: flex;
+            opacity: 1;
+        }
 
         .modal-body {
             background: rgba(17, 24, 39, 0.85);
@@ -456,9 +492,12 @@
             max-height: 85vh;
             overflow-y: auto;
             transform: scale(0.94) translateY(8px);
-            transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1);
+            transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
-        .modal-mask.is-open .modal-body { transform: scale(1) translateY(0); }
+
+        .modal-mask.is-open .modal-body {
+            transform: scale(1) translateY(0);
+        }
 
         .glass {
             background: rgba(17, 24, 39, 0.72);
@@ -468,40 +507,172 @@
             box-shadow: 0 0 40px rgba(59, 130, 246, 0.12);
         }
 
-        .ambient-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-        .ambient-bg .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.35; animation: orbFloat 14s ease-in-out infinite; }
-        .ambient-bg .orb-1 { width: 320px; height: 320px; background: #1d4ed8; top: -8%; left: -5%; }
-        .ambient-bg .orb-2 { width: 280px; height: 280px; background: #7c3aed; bottom: 10%; right: -8%; animation-delay: -5s; }
-        .ambient-bg .orb-3 { width: 200px; height: 200px; background: #059669; top: 40%; left: 35%; animation-delay: -9s; opacity: 0.2; }
-        @keyframes orbFloat { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(24px,-18px) scale(1.08); } }
+        .ambient-bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .ambient-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.35;
+            animation: orbFloat 14s ease-in-out infinite;
+        }
+
+        .ambient-bg .orb-1 {
+            width: 320px;
+            height: 320px;
+            background: #1d4ed8;
+            top: -8%;
+            left: -5%;
+        }
+
+        .ambient-bg .orb-2 {
+            width: 280px;
+            height: 280px;
+            background: #7c3aed;
+            bottom: 10%;
+            right: -8%;
+            animation-delay: -5s;
+        }
+
+        .ambient-bg .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: #059669;
+            top: 40%;
+            left: 35%;
+            animation-delay: -9s;
+            opacity: 0.2;
+        }
+
+        @keyframes orbFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(24px, -18px) scale(1.08);
+            }
+        }
+
         .grid-overlay {
-            position: absolute; inset: 0;
-            background-image: linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px);
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(59, 130, 246, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.06) 1px, transparent 1px);
             background-size: 48px 48px;
             mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 20%, transparent 75%);
         }
 
-        #toast-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; width: min(92vw, 380px); pointer-events: none; }
-        .toast { padding: 12px 16px; border-radius: 10px; font-weight: 700; font-size: 0.85rem; background: rgba(17,24,39,0.95); border: 1px solid rgba(148,163,184,0.18); opacity: 0; transform: translateY(-12px); transition: opacity 0.3s, transform 0.3s; }
-        .toast.is-visible { opacity: 1; transform: translateY(0); }
-        .toast-success { border-color: rgba(16,185,129,0.5); color: #6ee7b7; }
-        .toast-error { border-color: rgba(239,68,68,0.5); color: #fca5a5; }
-        .toast-info { border-color: rgba(59,130,246,0.5); color: #93c5fd; }
+        #toast-host {
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: min(92vw, 380px);
+            pointer-events: none;
+        }
+
+        .toast {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            opacity: 0;
+            transform: translateY(-12px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .toast.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast-success {
+            border-color: rgba(16, 185, 129, 0.5);
+            color: #6ee7b7;
+        }
+
+        .toast-error {
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        .toast-info {
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #93c5fd;
+        }
 
         #nav-indicator {
-            position: absolute; top: 6px; left: 0; height: calc(100% - 12px);
-            background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.35);
-            border-radius: 12px; transition: transform 0.3s cubic-bezier(0.34,1.2,0.64,1), width 0.3s ease;
-            pointer-events: none; z-index: 0;
+            position: absolute;
+            top: 6px;
+            left: 0;
+            height: calc(100% - 12px);
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.35);
+            border-radius: 12px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1), width 0.3s ease;
+            pointer-events: none;
+            z-index: 0;
         }
-        .nav-tab { position: relative; z-index: 1; }
 
-        .view-panel.view-enter { animation: viewIn 0.35s cubic-bezier(0.22,1,0.36,1); }
-        @keyframes viewIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .nav-tab {
+            position: relative;
+            z-index: 1;
+        }
 
-        .section-title { font-family: 'Orbitron', sans-serif; }
-        .timer-chip { display: inline-flex; flex-direction: column; align-items: flex-end; background: rgba(15,23,42,0.6); border: 1px solid rgba(148,163,184,0.18); padding: 8px 12px; border-radius: 10px; }
-        .empty-state { grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: #6b7280; font-weight: 700; border: 1px dashed rgba(148,163,184,0.25); border-radius: 14px; background: rgba(15,23,42,0.35); }
+        .view-panel.view-enter {
+            animation: viewIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        @keyframes viewIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .timer-chip {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-end;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.18);
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+            font-weight: 700;
+            border: 1px dashed rgba(148, 163, 184, 0.25);
+            border-radius: 14px;
+            background: rgba(15, 23, 42, 0.35);
+        }
 
         .modal-header {
             display: flex;
@@ -544,8 +715,15 @@
             border: 2px solid #374151;
         }
 
-        .traffic-lens.red { background: var(--accent-red); box-shadow: 0 0 15px var(--accent-red); }
-        .traffic-lens.green { background: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
+        .traffic-lens.red {
+            background: var(--accent-red);
+            box-shadow: 0 0 15px var(--accent-red);
+        }
+
+        .traffic-lens.green {
+            background: var(--accent-green);
+            box-shadow: 0 0 15px var(--accent-green);
+        }
 
         /* --- LEADERBOARDS --- */
         .tab-sub-row {
@@ -594,39 +772,81 @@
             font-weight: 800;
             margin-bottom: 4px;
         }
+
         .section-desc {
             font-size: 0.8rem;
             color: #9ca3af;
             margin-bottom: 16px;
         }
 
-        .flex-between { display: flex; justify-content: space-between; align-items: center; }
-        .mb-4 { margin-bottom: 16px; }
-        .p-4 { padding: 16px; }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        .p-4 {
+            padding: 16px;
+        }
 
         /* --- SWIPE UP PACK REVEAL --- */
         #pack-opening-overlay {
-            position: fixed; inset: 0; z-index: 500;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             background: radial-gradient(ellipse 75% 55% at 50% 38%, rgba(20, 30, 60, 0.45), rgba(4, 7, 16, 0.97));
             backdrop-filter: blur(22px);
-            padding: 16px; touch-action: none; user-select: none;
+            padding: 16px;
+            touch-action: none;
+            user-select: none;
             overflow: hidden;
         }
-        #pack-opening-overlay.active { display: flex; animation: fadeOverlay 0.4s ease; }
-        @keyframes fadeOverlay { from { opacity: 0; } to { opacity: 1; } }
+
+        #pack-opening-overlay.active {
+            display: flex;
+            animation: fadeOverlay 0.4s ease;
+        }
+
+        @keyframes fadeOverlay {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
 
         .pack-open-scene {
-            display: flex; flex-direction: column; align-items: center;
-            width: 100%; max-width: 400px; flex: 1; justify-content: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 400px;
+            flex: 1;
+            justify-content: center;
         }
 
         .pack-open-progress-row {
-            width: min(260px, 82vw); height: 6px; background: rgba(255,255,255,0.08);
-            border-radius: 999px; overflow: hidden; margin-bottom: 18px;
+            width: min(260px, 82vw);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 18px;
         }
+
         .pack-open-progress-fill {
-            height: 100%; width: 0%;
+            height: 100%;
+            width: 0%;
             background: linear-gradient(90deg, var(--pack-color, #2563eb), var(--accent-green));
             border-radius: 999px;
             box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
@@ -639,11 +859,22 @@
             touch-action: none;
             animation: packPopIn 0.55s cubic-bezier(0.34, 1.35, 0.64, 1);
         }
+
         @keyframes packPopIn {
-            from { transform: scale(0.75); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            from {
+                transform: scale(0.75);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
-        .swipe-pack-stage.is-flying { pointer-events: none; }
+
+        .swipe-pack-stage.is-flying {
+            pointer-events: none;
+        }
 
         .swipe-pack {
             position: relative;
@@ -652,22 +883,27 @@
             border-radius: 16px;
             border: 3px solid var(--pack-color, #2563eb);
             background: linear-gradient(165deg,
-                color-mix(in srgb, var(--pack-color, #2563eb) 78%, #000) 0%,
-                #0a0f1a 38%,
-                #050810 100%);
+                    color-mix(in srgb, var(--pack-color, #2563eb) 78%, #000) 0%,
+                    #0a0f1a 38%,
+                    #050810 100%);
             box-shadow:
-                inset 0 2px 0 rgba(255,255,255,0.12),
-                0 28px 56px rgba(0,0,0,0.65),
+                inset 0 2px 0 rgba(255, 255, 255, 0.12),
+                0 28px 56px rgba(0, 0, 0, 0.65),
                 0 0 48px color-mix(in srgb, var(--pack-color, #2563eb) 35%, transparent);
             overflow: hidden;
             cursor: grab;
             touch-action: none;
         }
-        .swipe-pack:active { cursor: grabbing; }
+
+        .swipe-pack:active {
+            cursor: grabbing;
+        }
+
         .swipe-pack::before {
             content: '';
-            position: absolute; inset: 0;
-            background: linear-gradient(120deg, rgba(255,255,255,0.1) 0%, transparent 40%);
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
             pointer-events: none;
             z-index: 8;
         }
@@ -685,18 +921,20 @@
             pointer-events: none;
             transition: opacity 0.15s ease;
             background: linear-gradient(180deg,
-                rgba(0,0,0,0.15) 0%,
-                transparent 55%);
+                    rgba(0, 0, 0, 0.15) 0%,
+                    transparent 55%);
         }
+
         .swipe-pack-brand {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.1rem;
             font-weight: 900;
             letter-spacing: 5px;
-            color: rgba(255,255,255,0.92);
-            text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+            color: rgba(255, 255, 255, 0.92);
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
             margin-bottom: 28px;
         }
+
         .swipe-pack-cta {
             font-family: 'Orbitron', sans-serif;
             font-size: 1rem;
@@ -706,60 +944,75 @@
             text-shadow: 0 0 20px color-mix(in srgb, var(--pack-color, #2563eb) 80%, transparent);
             margin-bottom: 10px;
         }
+
         .swipe-chevron {
             display: flex;
             flex-direction: column;
             gap: 2px;
             font-size: 0.85rem;
             font-weight: 900;
-            color: rgba(255,255,255,0.55);
+            color: rgba(255, 255, 255, 0.55);
             animation: swipeChevron 1.2s ease-in-out infinite;
         }
+
         @keyframes swipeChevron {
-            0%, 100% { transform: translateY(0); opacity: 0.45; }
-            50% { transform: translateY(-8px); opacity: 1; }
+
+            0%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.45;
+            }
+
+            50% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
         }
 
         .pack-card-well {
             position: absolute;
-            left: 10px; right: 10px;
+            left: 10px;
+            right: 10px;
             bottom: 12px;
             top: 46%;
             border-radius: 10px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.25));
-            box-shadow: inset 0 6px 24px rgba(0,0,0,0.7);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.25));
+            box-shadow: inset 0 6px 24px rgba(0, 0, 0, 0.7);
             overflow: hidden;
             z-index: 2;
         }
 
         .pack-lip {
             position: absolute;
-            left: 0; right: 0;
+            left: 0;
+            right: 0;
             top: 44%;
             height: 14px;
             background: linear-gradient(180deg,
-                color-mix(in srgb, var(--pack-color, #2563eb) 70%, black 30%),
-                color-mix(in srgb, var(--pack-color, #2563eb) 90%, black 10%));
+                    color-mix(in srgb, var(--pack-color, #2563eb) 70%, black 30%),
+                    color-mix(in srgb, var(--pack-color, #2563eb) 90%, black 10%));
             z-index: 6;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
             pointer-events: none;
         }
 
         .reveal-card {
             position: absolute;
-            left: 6px; right: 6px;
+            left: 6px;
+            right: 6px;
             bottom: 0;
             height: 200px;
             will-change: transform;
             transform: translateY(var(--pull-offset, 200px));
             z-index: 4;
         }
+
         .reveal-card-inner {
             height: 100%;
             border-radius: 10px;
             background: linear-gradient(155deg, rgba(22, 30, 52, 0.98), rgba(6, 10, 20, 0.99));
-            border: 2px solid rgba(255,255,255,0.18);
-            box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -768,13 +1021,23 @@
             padding: 14px 10px;
             opacity: var(--card-info-opacity, 0);
         }
+
         .reveal-card.flying {
             z-index: 100;
             animation: cardFlyToDeck 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
+
         @keyframes cardFlyToDeck {
-            0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
-            40% { transform: translateY(-50px) scale(1.12) rotate(6deg); opacity: 1; }
+            0% {
+                transform: translateY(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+
+            40% {
+                transform: translateY(-50px) scale(1.12) rotate(6deg);
+                opacity: 1;
+            }
+
             100% {
                 transform: translateY(calc(-42vh)) scale(0.32) rotate(12deg);
                 opacity: 0;
@@ -782,54 +1045,100 @@
         }
 
         .reveal-card .pci-rarity {
-            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px;
-            font-weight: 800; margin-bottom: 6px;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 800;
+            margin-bottom: 6px;
         }
+
         .reveal-card .pci-name {
-            font-size: 0.8rem; font-weight: 900; line-height: 1.25; margin-bottom: 8px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            line-height: 1.25;
+            margin-bottom: 8px;
         }
+
         .reveal-card .pci-value {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.95rem; font-weight: 700; color: var(--accent-green);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent-green);
         }
 
         .pack-deck-target {
-            position: fixed; bottom: 100px; left: 50%;
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
             transform: translateX(-50%) scale(0);
-            width: 56px; height: 56px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             background: rgba(16, 185, 129, 0.2);
             border: 2px solid var(--accent-green);
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.6rem;
             opacity: 0;
             transition: transform 0.4s cubic-bezier(0.34, 1.5, 0.64, 1), opacity 0.3s;
-            pointer-events: none; z-index: 501;
+            pointer-events: none;
+            z-index: 501;
         }
+
         .pack-deck-target.show {
             transform: translateX(-50%) scale(1);
             opacity: 1;
             animation: deckPulse 0.8s ease-in-out infinite;
         }
+
         @keyframes deckPulse {
-            0%, 100% { box-shadow: 0 0 0 rgba(16,185,129,0); }
-            50% { box-shadow: 0 0 20px rgba(16,185,129,0.5); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 rgba(16, 185, 129, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+            }
         }
 
         .pack-reveal-burst {
-            position: fixed; inset: 0; pointer-events: none; z-index: 502;
-            display: flex; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 502;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
-        .pack-reveal-burst.show { opacity: 1; }
+
+        .pack-reveal-burst.show {
+            opacity: 1;
+        }
+
         .pack-reveal-burst span {
-            position: absolute; width: 6px; height: 6px; border-radius: 50%;
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
             background: var(--pack-color, #fff);
             animation: burstParticle 0.9s ease-out forwards;
         }
+
         @keyframes burstParticle {
-            0% { transform: translate(0,0) scale(0); opacity: 1; }
-            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
         }
 
         /* --- ADMIN SYSTEM --- */
@@ -849,7 +1158,12 @@
             cursor: pointer;
             backdrop-filter: blur(8px);
         }
-        #btn-admin-lock.unlocked { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 16px rgba(245, 158, 11, 0.25); }
+
+        #btn-admin-lock.unlocked {
+            border-color: var(--gold);
+            color: var(--gold);
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.25);
+        }
 
         .hud-right-col {
             display: flex;
@@ -857,6 +1171,7 @@
             align-items: flex-end;
             gap: 6px;
         }
+
         #hud-luck-badge {
             display: none;
             font-family: 'Orbitron', sans-serif;
@@ -869,23 +1184,38 @@
             border-radius: 999px;
             animation: luckPulse 2s ease-in-out infinite;
         }
-        #hud-luck-badge.active { display: block; }
+
+        #hud-luck-badge.active {
+            display: block;
+        }
+
         @keyframes luckPulse {
-            0%, 100% { box-shadow: 0 0 0 rgba(167, 139, 250, 0); }
-            50% { box-shadow: 0 0 14px rgba(167, 139, 250, 0.45); }
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 rgba(167, 139, 250, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 14px rgba(167, 139, 250, 0.45);
+            }
         }
 
         #global-broadcast-banner {
             position: fixed;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             z-index: 600;
             transform: translateY(-110%);
             transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
             pointer-events: none;
         }
+
         #global-broadcast-banner.show {
             transform: translateY(0);
         }
+
         .broadcast-inner {
             margin: 10px 14px 0;
             padding: 14px 18px;
@@ -904,6 +1234,7 @@
             padding-bottom: 16px;
             border-bottom: 1px solid var(--border-glow);
         }
+
         .admin-panel-section h4 {
             font-family: 'Orbitron', sans-serif;
             font-size: 0.8rem;
@@ -911,12 +1242,14 @@
             margin-bottom: 12px;
             letter-spacing: 1px;
         }
+
         .admin-luck-btns {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
             margin-bottom: 12px;
         }
+
         .admin-luck-btn {
             flex: 1;
             min-width: 60px;
@@ -928,18 +1261,22 @@
             font-weight: 800;
             cursor: pointer;
         }
+
         .admin-luck-btn.selected {
             border-color: #a78bfa;
             background: rgba(139, 92, 246, 0.2);
             color: #c4b5fd;
         }
+
         .admin-row {
             display: flex;
             gap: 8px;
             margin-bottom: 10px;
             align-items: center;
         }
-        .admin-row input, .admin-row select {
+
+        .admin-row input,
+        .admin-row select {
             flex: 1;
             background: var(--bg-surface);
             border: 1px solid var(--border-glow);
@@ -948,11 +1285,13 @@
             border-radius: 8px;
             font-size: 0.9rem;
         }
+
         .admin-restock-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 8px;
         }
+
         .admin-restock-btn {
             padding: 10px;
             font-size: 0.72rem;
@@ -962,6 +1301,7 @@
             cursor: pointer;
             text-transform: uppercase;
         }
+
         #admin-replies-list {
             max-height: 200px;
             overflow-y: auto;
@@ -969,6 +1309,7 @@
             flex-direction: column;
             gap: 8px;
         }
+
         .admin-reply-item {
             background: var(--bg-surface);
             padding: 10px 12px;
@@ -976,69 +1317,153 @@
             border-left: 3px solid var(--primary);
             font-size: 0.85rem;
         }
-        .admin-reply-item strong { color: var(--gold); }
+
+        .admin-reply-item strong {
+            color: var(--gold);
+        }
 
         /* --- MOBILE POLISH & MOTION --- */
         @media (max-width: 640px) {
-            #top-bar { padding: 10px 12px 8px; }
-            .username-txt { font-size: 0.9rem; }
-            .currency-display { font-size: 1.05rem; }
-            #main-content { padding: 12px 12px calc(92px + env(safe-area-inset-bottom)); }
-            .section-title { font-size: 1.1rem; }
-            .section-desc { font-size: 0.75rem; margin-bottom: 12px; }
+            #top-bar {
+                padding: 10px 12px 8px;
+            }
+
+            .username-txt {
+                font-size: 0.9rem;
+            }
+
+            .currency-display {
+                font-size: 1.05rem;
+            }
+
+            #main-content {
+                padding: 12px 12px calc(92px + env(safe-area-inset-bottom));
+            }
+
+            .section-title {
+                font-size: 1.1rem;
+            }
+
+            .section-desc {
+                font-size: 0.75rem;
+                margin-bottom: 12px;
+            }
+
             .grid-container {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
                 gap: 10px;
             }
+
             .card-item {
                 min-height: 168px;
                 padding: 8px;
                 border-radius: 14px;
             }
-            .card-title { font-size: 0.82rem; }
+
+            .card-title {
+                font-size: 0.82rem;
+            }
+
             .card-btn {
                 min-height: 40px;
                 font-size: 0.68rem;
                 padding: 10px 6px;
             }
-            .pack-box { padding: 14px 12px; }
+
+            .pack-box {
+                padding: 14px 12px;
+            }
+
             .player-row {
                 flex-direction: column;
                 align-items: stretch;
                 gap: 10px;
             }
-            .player-row .btn-lvlup { width: 100%; min-height: 44px; }
+
+            .player-row .btn-lvlup {
+                width: 100%;
+                min-height: 44px;
+            }
+
             .modal-body {
                 max-height: 92vh;
                 border-radius: 20px 20px 0 0;
                 margin-top: auto;
                 padding: 18px 16px calc(16px + env(safe-area-inset-bottom));
             }
-            .modal-mask.is-open { align-items: flex-end; padding: 0; }
-            .traffic-lens { width: 52px; height: 52px; }
-            .nav-tab { font-size: 0.62rem; min-height: 52px; }
-            .nav-icon { font-size: 1.25rem; }
-            .btn-action { min-height: 48px; }
-            .auth-container { padding: 28px 18px; }
+
+            .modal-mask.is-open {
+                align-items: flex-end;
+                padding: 0;
+            }
+
+            .traffic-lens {
+                width: 52px;
+                height: 52px;
+            }
+
+            .nav-tab {
+                font-size: 0.62rem;
+                min-height: 52px;
+            }
+
+            .nav-icon {
+                font-size: 1.25rem;
+            }
+
+            .btn-action {
+                min-height: 48px;
+            }
+
+            .auth-container {
+                padding: 28px 18px;
+            }
         }
 
         @media (max-width: 380px) {
-            .grid-container { grid-template-columns: 1fr; }
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
         }
 
         .card-item {
             animation: cardPopIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
         }
-        .card-item:nth-child(1) { animation-delay: 0.02s; }
-        .card-item:nth-child(2) { animation-delay: 0.05s; }
-        .card-item:nth-child(3) { animation-delay: 0.08s; }
-        .card-item:nth-child(4) { animation-delay: 0.11s; }
-        .card-item:nth-child(5) { animation-delay: 0.14s; }
-        .card-item:nth-child(6) { animation-delay: 0.17s; }
+
+        .card-item:nth-child(1) {
+            animation-delay: 0.02s;
+        }
+
+        .card-item:nth-child(2) {
+            animation-delay: 0.05s;
+        }
+
+        .card-item:nth-child(3) {
+            animation-delay: 0.08s;
+        }
+
+        .card-item:nth-child(4) {
+            animation-delay: 0.11s;
+        }
+
+        .card-item:nth-child(5) {
+            animation-delay: 0.14s;
+        }
+
+        .card-item:nth-child(6) {
+            animation-delay: 0.17s;
+        }
 
         @keyframes cardPopIn {
-            from { opacity: 0; transform: translateY(14px) scale(0.96); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(14px) scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .card-item::after {
@@ -1052,25 +1477,46 @@
             pointer-events: none;
             animation: cardShine 4s ease-in-out infinite;
         }
+
         @keyframes cardShine {
-            0%, 100% { transform: translate(0, 0); opacity: 0.35; }
-            50% { transform: translate(-8%, 8%); opacity: 0.7; }
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+                opacity: 0.35;
+            }
+
+            50% {
+                transform: translate(-8%, 8%);
+                opacity: 0.7;
+            }
         }
 
         .pack-box {
             transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
         }
-        .pack-box:active { transform: scale(0.97); }
+
+        .pack-box:active {
+            transform: scale(0.97);
+        }
 
         .player-row {
             transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .player-row:active { transform: scale(0.99); }
 
-        .btn-lvlup, .btn-action, .card-btn {
+        .player-row:active {
+            transform: scale(0.99);
+        }
+
+        .btn-lvlup,
+        .btn-action,
+        .card-btn {
             transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.15s ease;
         }
-        .btn-lvlup:active, .btn-action:active, .card-btn:active {
+
+        .btn-lvlup:active,
+        .btn-action:active,
+        .card-btn:active {
             transform: scale(0.96);
         }
 
@@ -1092,6 +1538,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="ambient-bg" aria-hidden="true">
@@ -1111,7 +1558,7 @@
     <div id="auth-screen">
         <div class="auth-container glass">
             <div class="auth-logo">REALM</div>
-            
+
             <div class="input-group">
                 <label>EMAIL ADDRESS</label>
                 <input type="email" id="auth-email" placeholder="name@domain.com">
@@ -1133,7 +1580,7 @@
     </div>
 
     <div id="app-workspace" style="display:none; flex-direction: column; height: 100%;">
-        
+
         <header id="top-bar">
             <div class="top-row">
                 <div class="user-meta">
@@ -1148,7 +1595,7 @@
                     <div class="currency-display" id="hud-currency">€0.00</div>
                 </div>
             </div>
-            
+
             <div class="xp-row">
                 <div class="level-tag" id="hud-level">LV 1</div>
                 <div class="xp-track">
@@ -1160,7 +1607,7 @@
         </header>
 
         <main id="main-content">
-            
+
             <section id="view-packs" class="view-panel active">
                 <div class="flex-between mb-4">
                     <div>
@@ -1168,8 +1615,10 @@
                         <p class="section-desc">Global structural restock cycle happening live</p>
                     </div>
                     <div class="timer-chip">
-                        <span class="label" style="font-size:0.68rem;color:#94a3b8;font-weight:700;">RESTOCKING IN</span>
-                        <span class="value" id="timer-restock" style="font-family:'Orbitron',sans-serif;color:var(--gold);">10:00</span>
+                        <span class="label" style="font-size:0.68rem;color:#94a3b8;font-weight:700;">RESTOCKING
+                            IN</span>
+                        <span class="value" id="timer-restock"
+                            style="font-family:'Orbitron',sans-serif;color:var(--gold);">10:00</span>
                     </div>
                 </div>
                 <div class="grid-container" id="container-packs"></div>
@@ -1182,8 +1631,10 @@
                         <p class="section-desc">Tap a card for detailed metrics</p>
                     </div>
                     <div class="timer-chip">
-                        <span class="label" style="font-size:0.68rem;color:#94a3b8;font-weight:700;">MUTATION PULSE</span>
-                        <span class="value" id="timer-mutation" style="font-family:'Orbitron',sans-serif;color:#a855f7;">03:00</span>
+                        <span class="label" style="font-size:0.68rem;color:#94a3b8;font-weight:700;">MUTATION
+                            PULSE</span>
+                        <span class="value" id="timer-mutation"
+                            style="font-family:'Orbitron',sans-serif;color:#a855f7;">03:00</span>
                     </div>
                 </div>
                 <div class="grid-container" id="container-inventory"></div>
@@ -1192,7 +1643,8 @@
             <section id="view-steal" class="view-panel">
                 <h2 class="section-title">Online Targets</h2>
                 <p class="section-desc">Infiltrate active online users to steal unlocked relics</p>
-                <div id="container-steal-cooldown" style="display:none; background:rgba(239,68,68,0.2); border:1px solid var(--accent-red); padding:12px; border-radius:8px; margin-bottom:12px; font-weight:bold; text-align:center; color:var(--accent-red);">
+                <div id="container-steal-cooldown"
+                    style="display:none; background:rgba(239,68,68,0.2); border:1px solid var(--accent-red); padding:12px; border-radius:8px; margin-bottom:12px; font-weight:bold; text-align:center; color:var(--accent-red);">
                     Steal systems recharging! Cooldown active.
                 </div>
                 <div class="panel-glass">
@@ -1203,7 +1655,8 @@
             <section id="view-book" class="view-panel">
                 <h2 class="section-title">The Master Archive Book</h2>
                 <p class="section-desc">Permanent registry of all discovered cards. Tap to view history.</p>
-                <div class="tab-sub-row" id="book-pack-filters" style="overflow-x:auto; white-space:nowrap; display:block; padding:6px;"></div>
+                <div class="tab-sub-row" id="book-pack-filters"
+                    style="overflow-x:auto; white-space:nowrap; display:block; padding:6px;"></div>
                 <div class="grid-container" id="container-book"></div>
             </section>
 
@@ -1221,56 +1674,71 @@
             <section id="view-shop" class="view-panel">
                 <h2 class="section-title">Hardware Upgrade Utilities</h2>
                 <p class="section-desc">Purchase locks to secure your assets. Apply them from your Deck.</p>
-                
+
                 <div class="player-row">
                     <div>
                         <div style="font-weight:bold;">15-Minute Cryptographic Lock</div>
-                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-15" style="color:white; font-weight:bold;">0</span></div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-15"
+                                style="color:white; font-weight:bold;">0</span></div>
                     </div>
-                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(15, 25)">€25.00</button>
+                    <button class="btn-lvlup" style="background:var(--primary)"
+                        onclick="buyLockItem(15, 25)">€25.00</button>
                 </div>
                 <div class="player-row">
                     <div>
                         <div style="font-weight:bold;">30-Minute Cryptographic Lock</div>
-                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-30" style="color:white; font-weight:bold;">0</span></div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-30"
+                                style="color:white; font-weight:bold;">0</span></div>
                     </div>
-                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(30, 45)">€45.00</button>
+                    <button class="btn-lvlup" style="background:var(--primary)"
+                        onclick="buyLockItem(30, 45)">€45.00</button>
                 </div>
                 <div class="player-row">
                     <div>
                         <div style="font-weight:bold;">45-Minute Cryptographic Lock</div>
-                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-45" style="color:white; font-weight:bold;">0</span></div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-45"
+                                style="color:white; font-weight:bold;">0</span></div>
                     </div>
-                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(45, 60)">€60.00</button>
+                    <button class="btn-lvlup" style="background:var(--primary)"
+                        onclick="buyLockItem(45, 60)">€60.00</button>
                 </div>
                 <div class="player-row">
                     <div>
                         <div style="font-weight:bold;">1-Hour Cryptographic Lock</div>
-                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-60" style="color:white; font-weight:bold;">0</span></div>
+                        <div style="font-size:0.75rem; color:#9ca3af;">Inventory: <span id="shop-locks-60"
+                                style="color:white; font-weight:bold;">0</span></div>
                     </div>
-                    <button class="btn-lvlup" style="background:var(--primary)" onclick="buyLockItem(60, 75)">€75.00</button>
+                    <button class="btn-lvlup" style="background:var(--primary)"
+                        onclick="buyLockItem(60, 75)">€75.00</button>
                 </div>
             </section>
 
             <section id="view-profile" class="view-panel">
                 <h2 class="section-title">User Operations Profile</h2>
                 <p class="section-desc">Accounts meta statistics and synchronization configurations</p>
-                <div style="background:var(--bg-panel); border:1px solid var(--border-glow); padding:24px; border-radius:16px; text-align:center;">
-                    <div id="prof-avatar" class="profile-badge" style="width:72px; height:72px; font-size:2rem; margin:0 auto 16px auto;">U</div>
+                <div
+                    style="background:var(--bg-panel); border:1px solid var(--border-glow); padding:24px; border-radius:16px; text-align:center;">
+                    <div id="prof-avatar" class="profile-badge"
+                        style="width:72px; height:72px; font-size:2rem; margin:0 auto 16px auto;">U</div>
                     <h3 id="prof-username" style="font-size:1.4rem; font-weight:800;">---</h3>
                     <p id="prof-email" style="font-size:0.85rem; color:#9ca3af; margin-bottom:24px;">---</p>
-                    
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left; margin-bottom:24px;">
+
+                    <div
+                        style="display:grid; grid-template-columns:1fr 1fr; gap:12px; text-align:left; margin-bottom:24px;">
                         <div style="background:var(--bg-surface); padding:12px; border-radius:8px;">
                             <div style="font-size:0.7rem; color:#9ca3af;">TOTAL VALUATION</div>
-                            <div style="font-size:1.1rem; font-weight:bold; color:var(--accent-green);" id="prof-stat-wealth">€0.00</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:var(--accent-green);"
+                                id="prof-stat-wealth">€0.00</div>
                         </div>
                         <div style="background:var(--bg-surface); padding:12px; border-radius:8px;">
                             <div style="font-size:0.7rem; color:#9ca3af;">UNIQUE DISCOVERIES</div>
-                            <div style="font-size:1.1rem; font-weight:bold; color:var(--primary);" id="prof-stat-discovery">0 / 150</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:var(--primary);"
+                                id="prof-stat-discovery">0 / 150</div>
                         </div>
                     </div>
-                    <button class="btn-action btn-outline" style="border-color:var(--accent-red); color:var(--accent-red);" id="action-signout">SIGN OUT OPERATIONS</button>
+                    <button class="btn-action btn-outline"
+                        style="border-color:var(--accent-red); color:var(--accent-red);" id="action-signout">SIGN OUT
+                        OPERATIONS</button>
                 </div>
             </section>
 
@@ -1294,40 +1762,46 @@
                 <h3 id="pack-modal-title" style="font-weight:900; font-size:1.3rem;">Pack Contents</h3>
                 <span class="close-modal" id="close-pack-modal">&times;</span>
             </div>
-            <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">This pack contains 25 unique cards. Probabilities are structured to remain entirely profitable.</p>
+            <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">This pack contains 25 unique cards.
+                Probabilities are structured to remain entirely profitable.</p>
             <div id="pack-modal-contents-list" style="display:flex; flex-direction:column; gap:6px;"></div>
         </div>
     </div>
-    
+
     <div class="modal-mask" id="modal-card-details">
         <div class="modal-body">
             <div class="modal-header">
                 <h3 id="cd-modal-title" style="font-weight:900; font-size:1.3rem;">Asset Inspection</h3>
                 <span class="close-modal" id="close-cd-modal">&times;</span>
             </div>
-            <div style="background:var(--bg-surface); padding:16px; border-radius:12px; margin-bottom:16px; text-align:center; border: 2px solid var(--border-glow);" id="cd-visual-box">
+            <div style="background:var(--bg-surface); padding:16px; border-radius:12px; margin-bottom:16px; text-align:center; border: 2px solid var(--border-glow);"
+                id="cd-visual-box">
                 <div id="cd-name" style="font-size:1.2rem; font-weight:900;">Name</div>
-                <div id="cd-rarity" style="font-size:0.8rem; color:#9ca3af; text-transform:uppercase; margin-bottom:8px;">Rarity</div>
-                <div style="font-size:0.9rem;">Base Value: <span id="cd-base-val" style="color:white; font-weight:bold;">€0.00</span></div>
+                <div id="cd-rarity"
+                    style="font-size:0.8rem; color:#9ca3af; text-transform:uppercase; margin-bottom:8px;">Rarity</div>
+                <div style="font-size:0.9rem;">Base Value: <span id="cd-base-val"
+                        style="color:white; font-weight:bold;">€0.00</span></div>
             </div>
-            
+
             <h4 style="margin-bottom:8px; font-size:0.9rem; color:#9ca3af;">Applied Mutations Matrix</h4>
             <div id="cd-mutations-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;"></div>
-            
-            <div style="border-top:1px solid var(--border-glow); padding-top:16px; display:flex; justify-content:space-between; align-items:center;">
+
+            <div
+                style="border-top:1px solid var(--border-glow); padding-top:16px; display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-size:0.85rem; color:#9ca3af;">FINAL VALUATION</div>
                 <div id="cd-final-val" style="font-size:1.4rem; font-weight:900; color:var(--accent-green);">€0.00</div>
             </div>
         </div>
     </div>
-    
+
     <div class="modal-mask" id="modal-apply-lock">
         <div class="modal-body">
             <div class="modal-header">
                 <h3 style="font-weight:900; font-size:1.3rem;">Secure Asset</h3>
                 <span class="close-modal" id="close-lock-modal">&times;</span>
             </div>
-            <p style="font-size:0.85rem; color:#9ca3af; margin-bottom:16px;">Select a cryptographic lock from your inventory to permanently attach to this array.</p>
+            <p style="font-size:0.85rem; color:#9ca3af; margin-bottom:16px;">Select a cryptographic lock from your
+                inventory to permanently attach to this array.</p>
             <div id="lock-options-container" style="display:flex; flex-direction:column; gap:8px;"></div>
         </div>
     </div>
@@ -1338,10 +1812,13 @@
                 <span class="close-modal" id="close-archive-modal">&times;</span>
             </div>
             <div id="arc-icon" style="font-size:4rem; margin-bottom:12px;">📖</div>
-            <h3 id="arc-title" style="font-weight:900; font-size:1.4rem; color:var(--gold); margin-bottom:4px;">Card Name</h3>
+            <h3 id="arc-title" style="font-weight:900; font-size:1.4rem; color:var(--gold); margin-bottom:4px;">Card
+                Name</h3>
             <p style="font-size:0.9rem; color:#9ca3af; margin-bottom:24px;">Registry Log Data</p>
-            <div style="background:var(--bg-surface); border:1px solid var(--border-glow); padding:16px; border-radius:8px; margin-bottom:16px;">
-                <div style="font-size:0.75rem; color:#9ca3af; font-weight:bold; letter-spacing:1px; margin-bottom:4px;">FIRST DISCOVERED ON</div>
+            <div
+                style="background:var(--bg-surface); border:1px solid var(--border-glow); padding:16px; border-radius:8px; margin-bottom:16px;">
+                <div style="font-size:0.75rem; color:#9ca3af; font-weight:bold; letter-spacing:1px; margin-bottom:4px;">
+                    FIRST DISCOVERED ON</div>
                 <div id="arc-date" style="font-size:1.1rem; font-weight:bold; color:white;">Loading...</div>
             </div>
         </div>
@@ -1350,9 +1827,13 @@
     <div class="modal-mask" id="modal-game-math">
         <div class="modal-body" style="text-align:center;">
             <h2 style="color:var(--gold); font-weight:900;">INTRUSION ENCRYPTION INTERCEPT</h2>
-            <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:24px;">Solve the calculation sequence instantly to compromise or defend the card!</p>
-            <div style="font-size:3.5rem; font-weight:900; letter-spacing:2px; margin-bottom:24px;" id="math-equation-prompt">-- + --</div>
-            <input type="number" id="math-player-input" style="background:var(--bg-dark); border:2px solid var(--border-glow); font-size:1.8rem; text-align:center; padding:12px; width:80%; border-radius:12px; color:white; outline:none; margin-bottom:24px;" placeholder="Result">
+            <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:24px;">Solve the calculation sequence instantly to
+                compromise or defend the card!</p>
+            <div style="font-size:3.5rem; font-weight:900; letter-spacing:2px; margin-bottom:24px;"
+                id="math-equation-prompt">-- + --</div>
+            <input type="number" id="math-player-input"
+                style="background:var(--bg-dark); border:2px solid var(--border-glow); font-size:1.8rem; text-align:center; padding:12px; width:80%; border-radius:12px; color:white; outline:none; margin-bottom:24px;"
+                placeholder="Result">
             <button class="btn-action btn-blue" id="math-submit-response">TRANSMIT DECRYPTION</button>
         </div>
     </div>
@@ -1360,14 +1841,16 @@
     <div class="modal-mask" id="modal-game-reaction">
         <div class="modal-body" style="text-align:center;">
             <h2 style="color:var(--accent-red); font-weight:900;">SIGNAL VELOCITY TEST</h2>
-            <p style="font-size:0.8rem; color:#9ca3af;">Tap when the structural diagnostic sequence array changes completely to GREEN!</p>
+            <p style="font-size:0.8rem; color:#9ca3af;">Tap when the structural diagnostic sequence array changes
+                completely to GREEN!</p>
             <div class="traffic-container">
                 <div class="traffic-lens" id="lens-1"></div>
                 <div class="traffic-lens" id="lens-2"></div>
                 <div class="traffic-lens" id="lens-3"></div>
                 <div class="traffic-lens" id="lens-4"></div>
             </div>
-            <button class="btn-action btn-blue" style="background:#374151; font-size:1.3rem; padding:18px;" id="reaction-trigger-btn" disabled>WAITING FOR INITIALIZATION...</button>
+            <button class="btn-action btn-blue" style="background:#374151; font-size:1.3rem; padding:18px;"
+                id="reaction-trigger-btn" disabled>WAITING FOR INITIALIZATION...</button>
         </div>
     </div>
 
@@ -1387,8 +1870,10 @@
                 <h3 style="font-weight:900;">Admin Access</h3>
                 <span class="close-modal" id="close-admin-pin">&times;</span>
             </div>
-            <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:16px;">Enter operator code to unlock control panel.</p>
-            <input type="password" id="admin-pin-input" maxlength="8" placeholder="••••" style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:14px;border-radius:10px;color:white;font-size:1.2rem;text-align:center;letter-spacing:6px;margin-bottom:16px;">
+            <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:16px;">Enter operator code to unlock control panel.
+            </p>
+            <input type="password" id="admin-pin-input" maxlength="8" placeholder="••••"
+                style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:14px;border-radius:10px;color:white;font-size:1.2rem;text-align:center;letter-spacing:6px;margin-bottom:16px;">
             <button class="btn-action btn-blue" id="admin-pin-submit" style="width:100%;">UNLOCK</button>
         </div>
     </div>
@@ -1402,7 +1887,8 @@
 
             <div class="admin-panel-section">
                 <h4>GLOBAL LUCK</h4>
-                <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px;">Higher luck improves card pulls, pack odds, and good mutations for everyone.</p>
+                <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px;">Higher luck improves card pulls, pack
+                    odds, and good mutations for everyone.</p>
                 <div class="admin-luck-btns" id="admin-luck-btns">
                     <button type="button" class="admin-luck-btn selected" data-mult="1">1×</button>
                     <button type="button" class="admin-luck-btn" data-mult="2">2×</button>
@@ -1420,13 +1906,16 @@
                     </select>
                     <button class="btn-lvlup" id="admin-apply-luck" style="white-space:nowrap;">APPLY LUCK</button>
                 </div>
-                <button class="btn-action btn-outline" id="admin-clear-luck" style="width:100%;margin-top:6px;">CLEAR LUCK BOOST</button>
+                <button class="btn-action btn-outline" id="admin-clear-luck" style="width:100%;margin-top:6px;">CLEAR
+                    LUCK BOOST</button>
             </div>
 
             <div class="admin-panel-section">
                 <h4>BROADCAST MESSAGE</h4>
-                <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px;">Slides from top of screen for all players.</p>
-                <input type="text" id="admin-broadcast-text" placeholder="Your message to everyone..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:10px;">
+                <p style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px;">Slides from top of screen for all
+                    players.</p>
+                <input type="text" id="admin-broadcast-text" placeholder="Your message to everyone..."
+                    style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:10px;">
                 <div class="admin-row">
                     <select id="admin-broadcast-duration">
                         <option value="10">10 seconds</option>
@@ -1443,14 +1932,16 @@
                 <h4>PACK RESTOCK</h4>
                 <div class="admin-row">
                     <input type="number" id="admin-restock-qty" min="1" max="99" value="10" placeholder="Qty">
-                    <button class="btn-lvlup" id="admin-restock-all" style="background:var(--accent-green);">RESTOCK ALL</button>
+                    <button class="btn-lvlup" id="admin-restock-all" style="background:var(--accent-green);">RESTOCK
+                        ALL</button>
                 </div>
                 <div class="admin-restock-grid" id="admin-restock-grid"></div>
             </div>
 
             <div class="admin-panel-section" style="border:none;">
                 <h4>ASK PLAYERS</h4>
-                <input type="text" id="admin-question-text" placeholder="Question for all users..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:10px;">
+                <input type="text" id="admin-question-text" placeholder="Question for all users..."
+                    style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:10px;">
                 <div class="admin-row">
                     <select id="admin-question-duration">
                         <option value="60">1 minute</option>
@@ -1460,7 +1951,8 @@
                     </select>
                     <button class="btn-lvlup" id="admin-send-question" style="background:#a855f7;">ASK</button>
                 </div>
-                <button class="btn-action btn-outline" id="admin-close-question" style="width:100%;margin:10px 0;">END QUESTION</button>
+                <button class="btn-action btn-outline" id="admin-close-question" style="width:100%;margin:10px 0;">END
+                    QUESTION</button>
                 <div id="admin-replies-list"></div>
             </div>
         </div>
@@ -1471,8 +1963,10 @@
             <div class="modal-header">
                 <h3 style="font-weight:900;">Operator Question</h3>
             </div>
-            <p id="user-question-prompt" style="font-size:1rem;font-weight:700;margin-bottom:16px;line-height:1.45;"></p>
-            <input type="text" id="user-question-answer" placeholder="Your answer..." style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:16px;">
+            <p id="user-question-prompt" style="font-size:1rem;font-weight:700;margin-bottom:16px;line-height:1.45;">
+            </p>
+            <input type="text" id="user-question-answer" placeholder="Your answer..."
+                style="width:100%;background:var(--bg-surface);border:1px solid var(--border-glow);padding:12px;border-radius:8px;color:white;margin-bottom:16px;">
             <button class="btn-action btn-blue" id="user-question-submit" style="width:100%;">SUBMIT ANSWER</button>
         </div>
     </div>
@@ -1529,7 +2023,7 @@
         const db = getDatabase(app);
 
         // Core Game Constants Setup
-        const PACK_TYPES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'secret'];
+        const PACK_TYPES = ['paper', 'wood', 'stone', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'mythic', 'exotic', 'divine', 'celestial', 'galactic', 'universal', 'secret'];
         const MUTATIONS_LIST = [
             { name: "Shattered Core", multiplier: 0.4, type: "bad", color: "#ef4444" },
             { name: "Rust Corroded", multiplier: 0.7, type: "bad", color: "#ef4444" },
@@ -1543,191 +2037,457 @@
             { name: "Dark Antimatter Void", multiplier: -2.0, type: "volatile", color: "#6b7280" }
         ];
 
-        // Base Prices Configuration
+        // Brutal exponential economy — late tiers are fortune-level grinds
         const PACK_METADATA = {
-            'common': { price: 20, color: 'var(--common)' },
-            'uncommon': { price: 50, color: 'var(--uncommon)' },
-            'rare': { price: 150, color: 'var(--rare)' },
-            'epic': { price: 500, color: 'var(--epic)' },
-            'legendary': { price: 2000, color: 'var(--legendary)' },
-            'secret': { price: 10000, color: 'var(--secret)' }
+            paper: { price: 25, color: 'var(--paper)' },
+            wood: { price: 60, color: 'var(--wood)' },
+            stone: { price: 150, color: 'var(--stone)' },
+            bronze: { price: 350, color: 'var(--bronze)' },
+            silver: { price: 800, color: 'var(--silver)' },
+            gold: { price: 2000, color: 'var(--gold)' },
+            platinum: { price: 5000, color: 'var(--platinum)' },
+            diamond: { price: 12000, color: 'var(--diamond)' },
+            mythic: { price: 30000, color: 'var(--mythic)' },
+            exotic: { price: 75000, color: 'var(--exotic)' },
+            divine: { price: 180000, color: 'var(--divine)' },
+            celestial: { price: 450000, color: 'var(--celestial)' },
+            galactic: { price: 1100000, color: 'var(--galactic)' },
+            universal: { price: 2800000, color: 'var(--universal)' },
+            secret: { price: 7500000, color: 'var(--secret)' }
         };
 
-        // Minimum and Maximum Dynamic Stock Boundaries (Making it significantly harder)
         const RESTOCK_CONFIG = {
-            'common': { min: 50, max: 70, chance: 1.0 },
-            'uncommon': { min: 20, max: 40, chance: 0.8 },
-            'rare': { min: 10, max: 20, chance: 0.6 },
-            'epic': { min: 3, max: 10, chance: 0.35 },
-            'legendary': { min: 1, max: 4, chance: 0.15 },
-            'secret': { min: 1, max: 1, chance: 0.05 }
+            paper: { min: 80, max: 120, chance: 1.0 },
+            wood: { min: 50, max: 80, chance: 0.95 },
+            stone: { min: 35, max: 60, chance: 0.85 },
+            bronze: { min: 25, max: 45, chance: 0.75 },
+            silver: { min: 15, max: 30, chance: 0.6 },
+            gold: { min: 10, max: 20, chance: 0.45 },
+            platinum: { min: 6, max: 12, chance: 0.3 },
+            diamond: { min: 3, max: 6, chance: 0.15 },
+            mythic: { min: 2, max: 4, chance: 0.08 },
+            exotic: { min: 1, max: 3, chance: 0.05 },
+            divine: { min: 1, max: 2, chance: 0.03 },
+            celestial: { min: 1, max: 2, chance: 0.02 },
+            galactic: { min: 1, max: 1, chance: 0.01 },
+            universal: { min: 1, max: 1, chance: 0.005 },
+            secret: { min: 1, max: 1, chance: 0.001 }
         };
 
-        // Manual card registry — each pack tier is an array; chances per tier must sum to 100.
-       const GAME_REGISTRY = {
-    common: [
-        { id: "common_1", index: 1, name: "zezo showerr", pack: "common", chance: 7.0, baseValue: 15 },
-        { id: "common_2", index: 2, name: "bomboclat", pack: "common", chance: 7.0, baseValue: 16 },
-        { id: "common_3", index: 3, name: "67 full code", pack: "common", chance: 7.0, baseValue: 17 },
-        { id: "common_4", index: 4, name: "Asser's Broken Controller", pack: "common", chance: 7.0, baseValue: 18 },
-        { id: "common_5", index: 5, name: "Lilly's Purple Checkmark", pack: "common", chance: 7.0, baseValue: 19 },
-        { id: "common_6", index: 6, name: "Noob Grinder", pack: "common", chance: 5.0, baseValue: 20 },
-        { id: "common_7", index: 7, name: "Ping 999ms Glitch", pack: "common", chance: 5.0, baseValue: 21 },
-        { id: "common_8", index: 8, name: "Standard Brainrot", pack: "common", chance: 5.0, baseValue: 22 },
-        { id: "common_9", index: 9, name: "Ripped Mousepad", pack: "common", chance: 5.0, baseValue: 23 },
-        { id: "common_10", index: 10, name: "Tactical Ragequit", pack: "common", chance: 5.0, baseValue: 24 },
-        { id: "common_11", index: 11, name: "Laggy Crouch Spammer", pack: "common", chance: 4.0, baseValue: 25 },
-        { id: "common_12", index: 12, name: "Default Dance Moves", pack: "common", chance: 4.0, baseValue: 26 },
-        { id: "common_13", index: 13, name: "Plastic Rank badge", pack: "common", chance: 4.0, baseValue: 27 },
-        { id: "common_14", index: 14, name: "Missing Semicolon", pack: "common", chance: 4.0, baseValue: 28 },
-        { id: "common_15", index: 15, name: "Low Battery Vibe", pack: "common", chance: 4.0, baseValue: 29 },
-        { id: "common_16", index: 16, name: "Uncooked Instant Noodles", pack: "common", chance: 3.0, baseValue: 30 },
-        { id: "common_17", index: 17, name: "Copy Paste StackOverflow", pack: "common", chance: 3.0, baseValue: 31 },
-        { id: "common_18", index: 18, name: "Cardboard Monitor Setup", pack: "common", chance: 3.0, baseValue: 32 },
-        { id: "common_19", index: 19, name: "1 FPS Slideshow", pack: "common", chance: 3.0, baseValue: 32 },
-        { id: "common_20", index: 20, name: "Free Robux Scam Link", pack: "common", chance: 3.0, baseValue: 33 },
-        { id: "common_21", index: 21, name: "Zezo's Left Shoe", pack: "common", chance: 1.0, baseValue: 33 },
-        { id: "common_22", index: 22, name: "Asser's Hidden Stash", pack: "common", chance: 1.0, baseValue: 34 },
-        { id: "common_23", index: 23, name: "Lilly's Loud Mic", pack: "common", chance: 1.0, baseValue: 34 },
-        { id: "common_24", index: 24, name: "Unranked Grind Routine", pack: "common", chance: 1.0, baseValue: 35 },
-        { id: "common_25", index: 25, name: "The Wooden Pity Prize", pack: "common", chance: 1.0, baseValue: 35 }
-    ],
-    uncommon: [
-        { id: "uncommon_1", index: 1, name: "Zezo's Midnight Script", pack: "uncommon", chance: 7.0, baseValue: 40 },
-        { id: "uncommon_2", index: 2, name: "Lilly's Garden Picker", pack: "uncommon", chance: 7.0, baseValue: 42 },
-        { id: "uncommon_3", index: 3, name: "Asser's Double Jump", pack: "uncommon", chance: 7.0, baseValue: 44 },
-        { id: "uncommon_4", index: 4, name: "W-Key Hold Warrior", pack: "uncommon", chance: 7.0, baseValue: 46 },
-        { id: "uncommon_5", index: 5, name: "Keyboard Key Smash", pack: "uncommon", chance: 7.0, baseValue: 48 },
-        { id: "uncommon_6", index: 6, name: "Git Push --force Danger", pack: "uncommon", chance: 5.0, baseValue: 50 },
-        { id: "uncommon_7", index: 7, name: "+100 Aura Points", pack: "uncommon", chance: 5.0, baseValue: 52 },
-        { id: "uncommon_8", index: 8, name: "Golden Gyatt Meme", pack: "uncommon", chance: 5.0, baseValue: 54 },
-        { id: "uncommon_9", index: 9, name: "Roblox Runway Star", pack: "uncommon", chance: 5.0, baseValue: 56 },
-        { id: "uncommon_10", index: 10, name: "Compiler Panic Mode", pack: "uncommon", chance: 5.0, baseValue: 58 },
-        { id: "uncommon_11", index: 11, name: "Infinite Loading Circle", pack: "uncommon", chance: 4.0, baseValue: 60 },
-        { id: "uncommon_12", index: 12, name: "Backseat Stream Backer", pack: "uncommon", chance: 4.0, baseValue: 62 },
-        { id: "uncommon_13", index: 13, name: "Mid-Tier Inventory Flex", pack: "uncommon", chance: 4.0, baseValue: 64 },
-        { id: "uncommon_14", index: 14, name: "Energy Drink Shake", pack: "uncommon", chance: 4.0, baseValue: 66 },
-        { id: "uncommon_15", index: 15, name: "Discord Mod Power Trip", pack: "uncommon", chance: 4.0, baseValue: 68 },
-        { id: "uncommon_16", index: 16, name: "Speedrunner Phase Shift", pack: "uncommon", chance: 3.0, baseValue: 70 },
-        { id: "uncommon_17", index: 17, name: "Hitbox Abuser Protocol", pack: "uncommon", chance: 3.0, baseValue: 72 },
-        { id: "uncommon_18", index: 18, name: "Third-Party Custom Client", pack: "uncommon", chance: 3.0, baseValue: 74 },
-        { id: "uncommon_19", index: 19, name: "Pixelated Retro Shader", pack: "uncommon", chance: 3.0, baseValue: 76 },
-        { id: "uncommon_20", index: 20, name: "Zezo's Cold Coffee Mug", pack: "uncommon", chance: 3.0, baseValue: 78 },
-        { id: "uncommon_21", index: 21, name: "Asser's Arcade High Score", pack: "uncommon", chance: 1.0, baseValue: 80 },
-        { id: "uncommon_22", index: 22, name: "Lilly's Neon Custom Avatar", pack: "uncommon", chance: 1.0, baseValue: 82 },
-        { id: "uncommon_23", index: 23, name: "Gacha Luck Addict Syndrome", pack: "uncommon", chance: 1.0, baseValue: 85 },
-        { id: "uncommon_24", index: 24, name: "Silver Elite Ranked Shell", pack: "uncommon", chance: 1.0, baseValue: 88 },
-        { id: "uncommon_25", index: 25, name: "The Slightly Shiny Pebble", pack: "uncommon", chance: 1.0, baseValue: 90 }
-    ],
-    rare: [
-        { id: "rare_1", index: 1, name: "Project Flight Captain", pack: "rare", chance: 7.0, baseValue: 100 },
-        { id: "rare_2", index: 2, name: "A320 Avionics Glitch", pack: "rare", chance: 7.0, baseValue: 105 },
-        { id: "rare_3", index: 3, name: "Zezo's Custom Compiler", pack: "rare", chance: 7.0, baseValue: 110 },
-        { id: "rare_4", index: 4, name: "Asser's Clutch 1v3 Play", pack: "rare", chance: 7.0, baseValue: 115 },
-        { id: "rare_5", index: 5, name: "Lilly's Diamond Tiara", pack: "rare", chance: 7.0, baseValue: 120 },
-        { id: "rare_6", index: 6, name: "Strava Speed Demon Sprint", pack: "rare", chance: 5.0, baseValue: 125 },
-        { id: "rare_7", index: 7, name: "Carbon Fiber Bike Frame", pack: "rare", chance: 5.0, baseValue: 130 },
-        { id: "rare_8", index: 8, name: "Overclocked Liquid Core", pack: "rare", chance: 5.0, baseValue: 135 },
-        { id: "rare_9", index: 9, name: "HTML5 Masterclass Badge", pack: "rare", chance: 5.0, baseValue: 140 },
-        { id: "rare_10", index: 10, name: "CSS Grid Overlord Layout", pack: "rare", chance: 5.0, baseValue: 145 },
-        { id: "rare_11", index: 11, name: "Script Kiddie Deflection", pack: "rare", chance: 4.0, baseValue: 150 },
-        { id: "rare_12", index: 12, name: "144Hz Monitor Advantage", pack: "rare", chance: 4.0, baseValue: 155 },
-        { id: "rare_13", index: 13, name: "Gold Rank Ceiling Cap", pack: "rare", chance: 4.0, baseValue: 160 },
-        { id: "rare_14", index: 14, name: "Node Modules Heavy Weight", pack: "rare", chance: 4.0, baseValue: 165 },
-        { id: "rare_15", index: 15, name: "Firebase Realtime Stream", pack: "rare", chance: 4.0, baseValue: 170 },
-        { id: "rare_16", index: 16, name: "Jetlagged Virtual Pilot", pack: "rare", chance: 3.0, baseValue: 175 },
-        { id: "rare_17", index: 17, name: "Mach 2 Sound Barrier Snap", pack: "rare", chance: 3.0, baseValue: 185 },
-        { id: "rare_18", index: 18, name: "Blue Mechanical Key Click", pack: "rare", chance: 3.0, baseValue: 195 },
-        { id: "rare_19", index: 19, name: "RGB Dynamic Backlight Matrix", pack: "rare", chance: 3.0, baseValue: 205 },
-        { id: "rare_20", index: 20, name: "Zezo's Secured Admin Panel", pack: "rare", chance: 3.0, baseValue: 215 },
-        { id: "rare_21", index: 21, name: "Asser's Infinite Stamina", pack: "rare", chance: 1.0, baseValue: 225 },
-        { id: "rare_22", index: 22, name: "Lilly's Ultra Glitter Blast", pack: "rare", chance: 1.0, baseValue: 230 },
-        { id: "rare_23", index: 23, name: "Neon Underglow Chassis", pack: "rare", chance: 1.0, baseValue: 240 },
-        { id: "rare_24", index: 24, name: "Diamond Hands Investor HODL", pack: "rare", chance: 1.0, baseValue: 245 },
-        { id: "rare_25", index: 25, name: "The Sapphire Crystal Core", pack: "rare", chance: 1.0, baseValue: 250 }
-    ],
-    epic: [
-        { id: "epic_1", index: 1, name: "Zezo's Flawless Fullstack", pack: "epic", chance: 7.0, baseValue: 300 },
-        { id: "epic_2", index: 2, name: "Lilly's Majestic Phoenix", pack: "epic", chance: 7.0, baseValue: 310 },
-        { id: "epic_3", index: 3, name: "Asser's Ultimate Combo Break", pack: "epic", chance: 7.0, baseValue: 320 },
-        { id: "epic_4", index: 4, name: "Airbus Manual Canopy Recovery", pack: "epic", chance: 7.0, baseValue: 340 },
-        { id: "epic_5", index: 5, name: "+10,000 Cosmic Aura Surge", pack: "epic", chance: 7.0, baseValue: 360 },
-        { id: "epic_6", index: 6, name: "Firebase Accidental Data Wipe", pack: "epic", chance: 5.0, baseValue: 380 },
-        { id: "epic_7", index: 7, name: "GitHub Solid Green Streak", pack: "epic", chance: 5.0, baseValue: 400 },
-        { id: "epic_8", index: 8, name: "Cyber Firewall Exploitation", pack: "epic", chance: 5.0, baseValue: 420 },
-        { id: "epic_9", index: 9, name: "Liquid Nitrogen Frozen Rig", pack: "epic", chance: 5.0, baseValue: 440 },
-        { id: "epic_10", index: 10, name: "360 Spin No-Scope Missile", pack: "epic", chance: 5.0, baseValue: 460 },
-        { id: "epic_11", index: 11, name: "Roblox Stock Market Whale", pack: "epic", chance: 4.0, baseValue: 480 },
-        { id: "epic_12", index: 12, name: "Grandmaster Competitive Pool", pack: "epic", chance: 4.0, baseValue: 500 },
-        { id: "epic_13", index: 13, name: "Hardcore World Day 1000", pack: "epic", chance: 4.0, baseValue: 520 },
-        { id: "epic_14", index: 14, name: "Pure Midnight Dark Mode UI", pack: "epic", chance: 4.0, baseValue: 540 },
-        { id: "epic_15", index: 15, name: "Ultimate Dev Bug Exterminator", pack: "epic", chance: 4.0, baseValue: 560 },
-        { id: "epic_16", index: 16, name: "0ms LAN Fiber Optimization", pack: "epic", chance: 3.0, baseValue: 580 },
-        { id: "epic_17", index: 17, name: "Quantum Calculation Stream", pack: "epic", chance: 3.0, baseValue: 600 },
-        { id: "epic_18", index: 18, name: "Hypersonic Engine Combustion", pack: "epic", chance: 3.0, baseValue: 620 },
-        { id: "epic_19", index: 19, name: "Premium Gacha Ticket Variant", pack: "epic", chance: 3.0, baseValue: 640 },
-        { id: "epic_20", index: 20, name: "Digital Matrix Shard Matrix", pack: "epic", chance: 3.0, baseValue: 660 },
-        { id: "epic_21", index: 21, name: "Zezo's Masterpiece Algorithm", pack: "epic", chance: 1.0, baseValue: 680 },
-        { id: "epic_22", index: 22, name: "Asser's Unstoppable Streak", pack: "epic", chance: 1.0, baseValue: 700 },
-        { id: "epic_23", index: 23, name: "Lilly's Starlight Radiation", pack: "epic", chance: 1.0, baseValue: 720 },
-        { id: "epic_24", index: 24, name: "Mythic Drop Box Specimen", pack: "epic", chance: 1.0, baseValue: 740 },
-        { id: "epic_25", index: 25, name: "The Emerald Grand Championship", pack: "epic", chance: 1.0, baseValue: 750 }
-    ],
-    legendary: [
-        { id: "legendary_1", index: 1, name: "Emperor Zezo the Architect", pack: "legendary", chance: 7.0, baseValue: 900 },
-        { id: "legendary_2", index: 2, name: "Princess Lilly of the Realm", pack: "legendary", chance: 7.0, baseValue: 950 },
-        { id: "legendary_3", index: 3, name: "Commander Asser the Fearless", pack: "legendary", chance: 7.0, baseValue: 1000 },
-        { id: "legendary_4", index: 4, name: "The AI Core Prompt Architect", pack: "legendary", chance: 7.0, baseValue: 1050 },
-        { id: "legendary_5", index: 5, name: "Production Server Total Collapse", pack: "legendary", chance: 7.0, baseValue: 1100 },
-        { id: "legendary_6", index: 6, name: "Infinite Cash Flow Loophole", pack: "legendary", chance: 5.0, baseValue: 1150 },
-        { id: "legendary_7", index: 7, name: "1000 FPS Raytracing Engine", pack: "legendary", chance: 5.0, baseValue: 1200 },
-        { id: "legendary_8", index: 8, name: "God Mode Structural Console", pack: "legendary", chance: 5.0, baseValue: 1250 },
-        { id: "legendary_9", index: 9, name: "Roblox Game Pass Monopoly Owner", pack: "legendary", chance: 5.0, baseValue: 1300 },
-        { id: "legendary_10", index: 10, name: "Senior Full Stack Tech Overlord", pack: "legendary", chance: 5.0, baseValue: 1350 },
-        { id: "legendary_11", index: 11, name: "Airbus A380 Superjumbo Heavy", pack: "legendary", chance: 4.0, baseValue: 1400 },
-        { id: "legendary_12", index: 12, name: "Strava King of the Mountain Title", pack: "legendary", chance: 4.0, baseValue: 1450 },
-        { id: "legendary_13", index: 13, name: "Cyberpunk Megastructure Terminal", pack: "legendary", chance: 4.0, baseValue: 1500 },
-        { id: "legendary_14", index: 14, name: "Holographic UI Projection Plane", pack: "legendary", chance: 4.0, baseValue: 1550 },
-        { id: "legendary_15", index: 15, name: "Absolute Zero Theoretical Ping", pack: "legendary", chance: 4.0, baseValue: 1600 },
-        { id: "legendary_16", index: 16, name: "Crypto Token Mining Super-Grid", pack: "legendary", chance: 3.0, baseValue: 1700 },
-        { id: "legendary_17", index: 17, name: "Temporal Distortion Engine Run", pack: "legendary", chance: 3.0, baseValue: 1800 },
-        { id: "legendary_18", index: 18, name: "The Chosen Core Dev Unit", pack: "legendary", chance: 3.0, baseValue: 1900 },
-        { id: "legendary_19", index: 19, name: "Cosmic Code Memory Injector", pack: "legendary", chance: 3.0, baseValue: 2000 },
-        { id: "legendary_20", index: 20, name: "Eldritch Hardware System Core", pack: "legendary", chance: 3.0, baseValue: 2100 },
-        { id: "legendary_21", index: 21, name: "Zezo's Diamond Imperial Crown", pack: "legendary", chance: 1.0, baseValue: 2200 },
-        { id: "legendary_22", index: 22, name: "Asser's Unbreakable Aegis Shield", pack: "legendary", chance: 1.0, baseValue: 2300 },
-        { id: "legendary_23", index: 23, name: "Lilly's Interstellar Star Wand", pack: "legendary", chance: 1.0, baseValue: 2400 },
-        { id: "legendary_24", index: 24, name: "Immortal Tier Celestial Deity", pack: "legendary", chance: 1.0, baseValue: 2450 },
-        { id: "legendary_25", index: 25, name: "The Obsidian Black Hole Anomaly", pack: "legendary", chance: 1.0, baseValue: 2500 }
-    ],
-    secret: [
-        { id: "secret_1", index: 1, name: "Zezo's Secret Super-App Engine", pack: "secret", chance: 7.0, baseValue: 3000 },
-        { id: "secret_2", index: 2, name: "Lilly's Forbidden Mythic Sorcery", pack: "secret", chance: 7.0, baseValue: 3200 },
-        { id: "secret_3", index: 3, name: "Asser's Unreleased Sandbox Game", pack: "secret", chance: 7.0, baseValue: 3400 },
-        { id: "secret_4", index: 4, name: "The Authentic 67 Full Code Fragment", pack: "secret", chance: 7.0, baseValue: 3600 },
-        { id: "secret_5", index: 5, name: "Bomboclat Reality Fracture Anchor", pack: "secret", chance: 7.0, baseValue: 3800 },
-        { id: "secret_6", index: 6, name: "Absolute System Omnipotence Command", pack: "secret", chance: 5.0, baseValue: 4000 },
-        { id: "secret_7", index: 7, name: "Developer Root Access Console Key", pack: "secret", chance: 5.0, baseValue: 4200 },
-        { id: "secret_8", index: 8, name: "The Final Source Binary File", pack: "secret", chance: 5.0, baseValue: 4500 },
-        { id: "secret_9", index: 9, name: "System Level Kernel Root Override", pack: "secret", chance: 5.0, baseValue: 4800 },
-        { id: "secret_10", index: 10, name: "Spatial Glitch Reality Warp Matrix", pack: "secret", chance: 5.0, baseValue: 5100 },
-        { id: "secret_11", index: 11, name: "The Creator's Primordial Blueprint", pack: "secret", chance: 4.0, baseValue: 5400 },
-        { id: "secret_12", index: 12, name: "Error 404: Universe Found Missing", pack: "secret", chance: 4.0, baseValue: 5700 },
-        { id: "secret_13", index: 13, name: "Infinity Matrix Processing Reactor", pack: "secret", chance: 4.0, baseValue: 6000 },
-        { id: "secret_14", index: 14, name: "Multiverse Hosting Server Cluster", pack: "secret", chance: 4.0, baseValue: 6400 },
-        { id: "secret_15", index: 15, name: "Zero-Day Exploit Reality Payload", pack: "secret", chance: 4.0, baseValue: 6800 },
-        { id: "secret_16", index: 16, name: "Fully Conscious Logic Algorithm", pack: "secret", chance: 3.0, baseValue: 7200 },
-        { id: "secret_17", index: 17, name: "The Golden Absolute Zeyad Rule", pack: "secret", chance: 3.0, baseValue: 7600 },
-        { id: "secret_18", index: 18, name: "Lilly's Supreme Authority Request", pack: "secret", chance: 3.0, baseValue: 8000 },
-        { id: "secret_19", index: 19, name: "Asser's Mythical VIP Golden Pass", pack: "secret", chance: 3.0, baseValue: 8400 },
-        { id: "secret_20", index: 20, name: "Dark Matter Singularity Overdrive", pack: "secret", chance: 3.0, baseValue: 8800 },
-        { id: "secret_21", index: 21, name: "The Alpha & The Omega Singularity", pack: "secret", chance: 1.0, baseValue: 9200 },
-        { id: "secret_22", index: 22, name: "Unpatchable Currency Duplication", pack: "secret", chance: 1.0, baseValue: 9500 },
-        { id: "secret_23", index: 23, name: "Escaped The Simulation Node Edge", pack: "secret", chance: 1.0, baseValue: 9800 },
-        { id: "secret_24", index: 24, name: "Poltergeist Spectral Network Ghost", pack: "secret", chance: 1.0, baseValue: 9900 },
-        { id: "secret_25", index: 25, name: "The Absolute Platinum Singularity", pack: "secret", chance: 1.0, baseValue: 10000 }
-    ]
-};
+        const PACK_CARD_CHANCES = [7, 7, 7, 7, 7, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 1, 1, 1, 1, 1];
+
+        function calcPackCardBaseValue(packPrice, cardIndex) {
+            return Math.max(1, Math.round(packPrice * (0.04 + (cardIndex / 25) * 0.12)));
+        }
+
+        // Manual card registry — 375 cards, 25 per tier; chances sum to 100% per tier.
+        const GAME_REGISTRY = {
+            paper: [
+                { id: "paper_1", index: 1, name: "Lint Sock Jackpot", pack: "paper", chance: 7, baseValue: 1 },
+                { id: "paper_2", index: 2, name: "Sibling Remote War", pack: "paper", chance: 7, baseValue: 1 },
+                { id: "paper_3", index: 3, name: "Brainrot Alarm Clock", pack: "paper", chance: 7, baseValue: 1 },
+                { id: "paper_4", index: 4, name: "Zezo Debug Napkin", pack: "paper", chance: 7, baseValue: 1 },
+                { id: "paper_5", index: 5, name: "Lilly Glitter Tax", pack: "paper", chance: 7, baseValue: 2 },
+                { id: "paper_6", index: 6, name: "Asser Broken Analog", pack: "paper", chance: 5, baseValue: 2 },
+                { id: "paper_7", index: 7, name: "Paper Emperor Decree", pack: "paper", chance: 5, baseValue: 2 },
+                { id: "paper_8", index: 8, name: "zezo showerr", pack: "paper", chance: 5, baseValue: 2 },
+                { id: "paper_9", index: 9, name: "Ctrl+Z Regret", pack: "paper", chance: 5, baseValue: 2 },
+                { id: "paper_10", index: 10, name: "bomboclat", pack: "paper", chance: 5, baseValue: 2 },
+                { id: "paper_11", index: 11, name: "67 Side Eye", pack: "paper", chance: 4, baseValue: 2 },
+                { id: "paper_12", index: 12, name: "67 full code", pack: "paper", chance: 4, baseValue: 2 },
+                { id: "paper_13", index: 13, name: "Arduino Blink of Doom", pack: "paper", chance: 4, baseValue: 3 },
+                { id: "paper_14", index: 14, name: "Roblox Oof Echo", pack: "paper", chance: 4, baseValue: 3 },
+                { id: "paper_15", index: 15, name: "RL Double Tap Panic", pack: "paper", chance: 4, baseValue: 3 },
+                { id: "paper_16", index: 16, name: "Garden Gnome Heist", pack: "paper", chance: 3, baseValue: 3 },
+                { id: "paper_17", index: 17, name: "Princess WiFi Crown", pack: "paper", chance: 3, baseValue: 3 },
+                { id: "paper_18", index: 18, name: "Clutch 1v3 Dream", pack: "paper", chance: 3, baseValue: 3 },
+                { id: "paper_19", index: 19, name: "Speed Flip Apology", pack: "paper", chance: 3, baseValue: 3 },
+                { id: "paper_20", index: 20, name: "Full-Stack Spaghetti", pack: "paper", chance: 3, baseValue: 3 },
+                { id: "paper_21", index: 21, name: "A320 Autopilot Yawn", pack: "paper", chance: 1, baseValue: 4 },
+                { id: "paper_22", index: 22, name: "Emperor Keyboard Throne", pack: "paper", chance: 1, baseValue: 4 },
+                { id: "paper_23", index: 23, name: "Luck Aura Leak", pack: "paper", chance: 1, baseValue: 4 },
+                { id: "paper_24", index: 24, name: "Rocket Boost Tantrum", pack: "paper", chance: 1, baseValue: 4 },
+                { id: "paper_25", index: 25, name: "Sibling Rivalry Receipt", pack: "paper", chance: 1, baseValue: 4 }
+            ],
+            wood: [
+                { id: "wood_1", index: 1, name: "Wood Brainrot Siren", pack: "wood", chance: 7, baseValue: 3 },
+                { id: "wood_2", index: 2, name: "Bomboclat Timber Echo", pack: "wood", chance: 7, baseValue: 3 },
+                { id: "wood_3", index: 3, name: "67 Splinter Council", pack: "wood", chance: 7, baseValue: 4 },
+                { id: "wood_4", index: 4, name: "Skibidi Log Choir", pack: "wood", chance: 7, baseValue: 4 },
+                { id: "wood_5", index: 5, name: "Rizz Bark Decree", pack: "wood", chance: 7, baseValue: 4 },
+                { id: "wood_6", index: 6, name: "Gyatt Knot Oracle", pack: "wood", chance: 5, baseValue: 5 },
+                { id: "wood_7", index: 7, name: "Ohio Lumber Boss", pack: "wood", chance: 5, baseValue: 5 },
+                { id: "wood_8", index: 8, name: "Sigma Sawdust Scroll", pack: "wood", chance: 5, baseValue: 5 },
+                { id: "wood_9", index: 9, name: "Fanum Twig Tax", pack: "wood", chance: 5, baseValue: 6 },
+                { id: "wood_10", index: 10, name: "Mewing Knot Muse", pack: "wood", chance: 5, baseValue: 6 },
+                { id: "wood_11", index: 11, name: "Mogging Mulch Law", pack: "wood", chance: 4, baseValue: 7 },
+                { id: "wood_12", index: 12, name: "Cap No Cap Plank", pack: "wood", chance: 4, baseValue: 7 },
+                { id: "wood_13", index: 13, name: "Bussin Birch Banquet", pack: "wood", chance: 4, baseValue: 7 },
+                { id: "wood_14", index: 14, name: "Delulu Driftwood", pack: "wood", chance: 4, baseValue: 8 },
+                { id: "wood_15", index: 15, name: "Slay Splinter Scepter", pack: "wood", chance: 4, baseValue: 8 },
+                { id: "wood_16", index: 16, name: "Sibling Stick Duel", pack: "wood", chance: 3, baseValue: 8 },
+                { id: "wood_17", index: 17, name: "Zezo Wooden Debugger", pack: "wood", chance: 3, baseValue: 9 },
+                { id: "wood_18", index: 18, name: "Lilly Moss Princess", pack: "wood", chance: 3, baseValue: 9 },
+                { id: "wood_19", index: 19, name: "Asser Timber Goal", pack: "wood", chance: 3, baseValue: 10 },
+                { id: "wood_20", index: 20, name: "Arduino Bark Upload", pack: "wood", chance: 3, baseValue: 10 },
+                { id: "wood_21", index: 21, name: "Roblox Plank Crown", pack: "wood", chance: 1, baseValue: 10 },
+                { id: "wood_22", index: 22, name: "A320 Wooden Runway", pack: "wood", chance: 1, baseValue: 11 },
+                { id: "wood_23", index: 23, name: "Emperor Log Edict", pack: "wood", chance: 1, baseValue: 11 },
+                { id: "wood_24", index: 24, name: "Luck Acorn Vein", pack: "wood", chance: 1, baseValue: 12 },
+                { id: "wood_25", index: 25, name: "Brainrot Knot Ballad", pack: "wood", chance: 1, baseValue: 10 }
+            ],
+            stone: [
+                { id: "stone_1", index: 1, name: "Stone Tablet Brainrot", pack: "stone", chance: 7, baseValue: 7 },
+                { id: "stone_2", index: 2, name: "Bomboclat Quarry Echo", pack: "stone", chance: 7, baseValue: 7 },
+                { id: "stone_3", index: 3, name: "67 Carved In Bedrock", pack: "stone", chance: 7, baseValue: 8 },
+                { id: "stone_4", index: 4, name: "Skibidi Stone Choir", pack: "stone", chance: 7, baseValue: 9 },
+                { id: "stone_5", index: 5, name: "Rizz Fossil Finder", pack: "stone", chance: 7, baseValue: 10 },
+                { id: "stone_6", index: 6, name: "Gyatt Geode Guardian", pack: "stone", chance: 5, baseValue: 11 },
+                { id: "stone_7", index: 7, name: "Ohio Ore Oracle", pack: "stone", chance: 5, baseValue: 11 },
+                { id: "stone_8", index: 8, name: "Sigma Stalactite", pack: "stone", chance: 5, baseValue: 12 },
+                { id: "stone_9", index: 9, name: "Fanum Flint Tax", pack: "stone", chance: 5, baseValue: 13 },
+                { id: "stone_10", index: 10, name: "Mewing Marble Muse", pack: "stone", chance: 5, baseValue: 14 },
+                { id: "stone_11", index: 11, name: "Mogging Mountain", pack: "stone", chance: 4, baseValue: 14 },
+                { id: "stone_12", index: 12, name: "Cap Cave Painting", pack: "stone", chance: 4, baseValue: 15 },
+                { id: "stone_13", index: 13, name: "Bussin Basalt Banquet", pack: "stone", chance: 4, baseValue: 16 },
+                { id: "stone_14", index: 14, name: "Delulu Dolmen", pack: "stone", chance: 4, baseValue: 17 },
+                { id: "stone_15", index: 15, name: "Slay Slate Scepter", pack: "stone", chance: 4, baseValue: 17 },
+                { id: "stone_16", index: 16, name: "Sibling Stone Scuffle", pack: "stone", chance: 3, baseValue: 18 },
+                { id: "stone_17", index: 17, name: "Zezo Pebble Debugger", pack: "stone", chance: 3, baseValue: 19 },
+                { id: "stone_18", index: 18, name: "Lilly Moss Princess II", pack: "stone", chance: 3, baseValue: 20 },
+                { id: "stone_19", index: 19, name: "Asser Gravel Goal", pack: "stone", chance: 3, baseValue: 20 },
+                { id: "stone_20", index: 20, name: "Arduino Rock Upload", pack: "stone", chance: 3, baseValue: 21 },
+                { id: "stone_21", index: 21, name: "Roblox Cobble Crown", pack: "stone", chance: 1, baseValue: 22 },
+                { id: "stone_22", index: 22, name: "A320 Stone Runway", pack: "stone", chance: 1, baseValue: 23 },
+                { id: "stone_23", index: 23, name: "Emperor Quarry Edict", pack: "stone", chance: 1, baseValue: 23 },
+                { id: "stone_24", index: 24, name: "Luck Gem Vein", pack: "stone", chance: 1, baseValue: 24 },
+                { id: "stone_25", index: 25, name: "Brainrot Bedrock Ballad", pack: "stone", chance: 1, baseValue: 24 }
+            ],
+            bronze: [
+                { id: "bronze_1", index: 1, name: "Bronze Zezo Compile Relic", pack: "bronze", chance: 7, baseValue: 16 },
+                { id: "bronze_2", index: 2, name: "Bronze Full-Stack Anvil", pack: "bronze", chance: 7, baseValue: 17 },
+                { id: "bronze_3", index: 3, name: "Bronze Arduino Crest", pack: "bronze", chance: 7, baseValue: 19 },
+                { id: "bronze_4", index: 4, name: "Bronze A320 Taxi Medal", pack: "bronze", chance: 7, baseValue: 21 },
+                { id: "bronze_5", index: 5, name: "Bronze Emperor Seal", pack: "bronze", chance: 7, baseValue: 22 },
+                { id: "bronze_6", index: 6, name: "Bronze Lilly Garden Gate", pack: "bronze", chance: 5, baseValue: 24 },
+                { id: "bronze_7", index: 7, name: "Bronze Roblox Bloom", pack: "bronze", chance: 5, baseValue: 26 },
+                { id: "bronze_8", index: 8, name: "Bronze Glitter Gavel", pack: "bronze", chance: 5, baseValue: 27 },
+                { id: "bronze_9", index: 9, name: "Bronze Princess Patent", pack: "bronze", chance: 5, baseValue: 29 },
+                { id: "bronze_10", index: 10, name: "Bronze Luck Clover", pack: "bronze", chance: 5, baseValue: 31 },
+                { id: "bronze_11", index: 11, name: "Bronze Asser Boost Idol", pack: "bronze", chance: 4, baseValue: 32 },
+                { id: "bronze_12", index: 12, name: "Bronze Clutch 1v3 Coin", pack: "bronze", chance: 4, baseValue: 34 },
+                { id: "bronze_13", index: 13, name: "Bronze Broken Controller", pack: "bronze", chance: 4, baseValue: 36 },
+                { id: "bronze_14", index: 14, name: "Bronze Double Jump Crest", pack: "bronze", chance: 4, baseValue: 38 },
+                { id: "bronze_15", index: 15, name: "Bronze Speed Flip Insignia", pack: "bronze", chance: 4, baseValue: 39 },
+                { id: "bronze_16", index: 16, name: "Bronze Brainrot Gong", pack: "bronze", chance: 3, baseValue: 41 },
+                { id: "bronze_17", index: 17, name: "Bronze Bomboclat Bell", pack: "bronze", chance: 3, baseValue: 43 },
+                { id: "bronze_18", index: 18, name: "Bronze 67 Sidequest", pack: "bronze", chance: 3, baseValue: 44 },
+                { id: "bronze_19", index: 19, name: "Bronze Sibling Rivalry", pack: "bronze", chance: 3, baseValue: 46 },
+                { id: "bronze_20", index: 20, name: "Bronze Skibidi Crest", pack: "bronze", chance: 3, baseValue: 48 },
+                { id: "bronze_21", index: 21, name: "Bronze Rizz Mint", pack: "bronze", chance: 1, baseValue: 49 },
+                { id: "bronze_22", index: 22, name: "Bronze Gyatt Gauge", pack: "bronze", chance: 1, baseValue: 51 },
+                { id: "bronze_23", index: 23, name: "Bronze Ohio Compass", pack: "bronze", chance: 1, baseValue: 53 },
+                { id: "bronze_24", index: 24, name: "Bronze Sigma Sigil", pack: "bronze", chance: 1, baseValue: 54 },
+                { id: "bronze_25", index: 25, name: "Bronze Fanum Fee", pack: "bronze", chance: 1, baseValue: 56 }
+            ],
+            silver: [
+                { id: "silver_1", index: 1, name: "Silver Lilly Tiara Wire", pack: "silver", chance: 7, baseValue: 36 },
+                { id: "silver_2", index: 2, name: "Silver Roblox Moon Gate", pack: "silver", chance: 7, baseValue: 40 },
+                { id: "silver_3", index: 3, name: "Silver Garden Frost", pack: "silver", chance: 7, baseValue: 43 },
+                { id: "silver_4", index: 4, name: "Silver Glitter Comet", pack: "silver", chance: 7, baseValue: 47 },
+                { id: "silver_5", index: 5, name: "Silver Princess Mirror", pack: "silver", chance: 7, baseValue: 51 },
+                { id: "silver_6", index: 6, name: "Silver Luck Halo", pack: "silver", chance: 5, baseValue: 55 },
+                { id: "silver_7", index: 7, name: "Silver Asser Aerial Silver", pack: "silver", chance: 5, baseValue: 58 },
+                { id: "silver_8", index: 8, name: "Silver Clutch 1v3 Moon", pack: "silver", chance: 5, baseValue: 62 },
+                { id: "silver_9", index: 9, name: "Silver Broken D-Pad", pack: "silver", chance: 5, baseValue: 66 },
+                { id: "silver_10", index: 10, name: "Silver Double Jump Arc", pack: "silver", chance: 5, baseValue: 70 },
+                { id: "silver_11", index: 11, name: "Silver Speed Flip Comet", pack: "silver", chance: 4, baseValue: 73 },
+                { id: "silver_12", index: 12, name: "Silver Zezo Silver Deploy", pack: "silver", chance: 4, baseValue: 77 },
+                { id: "silver_13", index: 13, name: "Silver Full-Stack Fork", pack: "silver", chance: 4, baseValue: 81 },
+                { id: "silver_14", index: 14, name: "Silver Arduino Pulse", pack: "silver", chance: 4, baseValue: 85 },
+                { id: "silver_15", index: 15, name: "Silver A320 ILS Ghost", pack: "silver", chance: 4, baseValue: 88 },
+                { id: "silver_16", index: 16, name: "Silver Emperor Lune", pack: "silver", chance: 3, baseValue: 92 },
+                { id: "silver_17", index: 17, name: "Silver Brainrot Silverware", pack: "silver", chance: 3, baseValue: 96 },
+                { id: "silver_18", index: 18, name: "Silver Bomboclat Chime", pack: "silver", chance: 3, baseValue: 100 },
+                { id: "silver_19", index: 19, name: "Silver 67 Refraction", pack: "silver", chance: 3, baseValue: 103 },
+                { id: "silver_20", index: 20, name: "Silver Sibling Truce", pack: "silver", chance: 3, baseValue: 107 },
+                { id: "silver_21", index: 21, name: "Silver Skibidi Moon", pack: "silver", chance: 1, baseValue: 111 },
+                { id: "silver_22", index: 22, name: "Silver Rizz Reflection", pack: "silver", chance: 1, baseValue: 115 },
+                { id: "silver_23", index: 23, name: "Silver Gyatt Gleam", pack: "silver", chance: 1, baseValue: 118 },
+                { id: "silver_24", index: 24, name: "Silver Ohio Frost", pack: "silver", chance: 1, baseValue: 122 },
+                { id: "silver_25", index: 25, name: "Silver Sigma Ring", pack: "silver", chance: 1, baseValue: 128 }
+            ],
+            gold: [
+                { id: "gold_1", index: 1, name: "Gold Asser Golden Boost", pack: "gold", chance: 7, baseValue: 90 },
+                { id: "gold_2", index: 2, name: "Gold Clutch 1v3 Aurora", pack: "gold", chance: 7, baseValue: 99 },
+                { id: "gold_3", index: 3, name: "Gold Broken Controller Relic", pack: "gold", chance: 7, baseValue: 109 },
+                { id: "gold_4", index: 4, name: "Gold Double Jump Sun", pack: "gold", chance: 7, baseValue: 118 },
+                { id: "gold_5", index: 5, name: "Gold Speed Flip Crown", pack: "gold", chance: 7, baseValue: 128 },
+                { id: "gold_6", index: 6, name: "Gold Zezo Gold Merge", pack: "gold", chance: 5, baseValue: 138 },
+                { id: "gold_7", index: 7, name: "Gold Full-Stack Bullion", pack: "gold", chance: 5, baseValue: 147 },
+                { id: "gold_8", index: 8, name: "Gold Arduino Aurum", pack: "gold", chance: 5, baseValue: 157 },
+                { id: "gold_9", index: 9, name: "Gold A320 Golden Approach", pack: "gold", chance: 5, baseValue: 166 },
+                { id: "gold_10", index: 10, name: "Gold Emperor Auric", pack: "gold", chance: 5, baseValue: 176 },
+                { id: "gold_11", index: 11, name: "Gold Lilly Golden Petal", pack: "gold", chance: 4, baseValue: 186 },
+                { id: "gold_12", index: 12, name: "Gold Roblox Gold Bloom", pack: "gold", chance: 4, baseValue: 195 },
+                { id: "gold_13", index: 13, name: "Gold Glitter Midas", pack: "gold", chance: 4, baseValue: 205 },
+                { id: "gold_14", index: 14, name: "Gold Princess Gilded", pack: "gold", chance: 4, baseValue: 214 },
+                { id: "gold_15", index: 15, name: "Gold Luck Midas Touch", pack: "gold", chance: 4, baseValue: 224 },
+                { id: "gold_16", index: 16, name: "Gold Brainrot Gild", pack: "gold", chance: 3, baseValue: 234 },
+                { id: "gold_17", index: 17, name: "Gold Bomboclat Bullion", pack: "gold", chance: 3, baseValue: 243 },
+                { id: "gold_18", index: 18, name: "Gold 67 Auric Code", pack: "gold", chance: 3, baseValue: 253 },
+                { id: "gold_19", index: 19, name: "Gold Sibling Gold Split", pack: "gold", chance: 3, baseValue: 262 },
+                { id: "gold_20", index: 20, name: "Gold Skibidi Gild", pack: "gold", chance: 3, baseValue: 272 },
+                { id: "gold_21", index: 21, name: "Gold Rizz Ingot", pack: "gold", chance: 1, baseValue: 282 },
+                { id: "gold_22", index: 22, name: "Gold Gyatt Gild", pack: "gold", chance: 1, baseValue: 291 },
+                { id: "gold_23", index: 23, name: "Gold Ohio Nugget", pack: "gold", chance: 1, baseValue: 301 },
+                { id: "gold_24", index: 24, name: "Gold Sigma Bar", pack: "gold", chance: 1, baseValue: 310 },
+                { id: "gold_25", index: 25, name: "Gold Fanum Coin", pack: "gold", chance: 1, baseValue: 320 }
+            ],
+            platinum: [
+                { id: "platinum_1", index: 1, name: "Zezo Midnight Compile", pack: "platinum", chance: 7, baseValue: 224 },
+                { id: "platinum_2", index: 2, name: "Full-Stack Pancake Stack", pack: "platinum", chance: 7, baseValue: 248 },
+                { id: "platinum_3", index: 3, name: "Arduino Soul Patch", pack: "platinum", chance: 7, baseValue: 272 },
+                { id: "platinum_4", index: 4, name: "A320 Coffee Autoland", pack: "platinum", chance: 7, baseValue: 296 },
+                { id: "platinum_5", index: 5, name: "Emperor Tab Overlord", pack: "platinum", chance: 7, baseValue: 320 },
+                { id: "platinum_6", index: 6, name: "TypeScript Serenade", pack: "platinum", chance: 5, baseValue: 344 },
+                { id: "platinum_7", index: 7, name: "React Hydration Panic", pack: "platinum", chance: 5, baseValue: 368 },
+                { id: "platinum_8", index: 8, name: "Node Event Loop Waltz", pack: "platinum", chance: 5, baseValue: 392 },
+                { id: "platinum_9", index: 9, name: "Git Blame Monologue", pack: "platinum", chance: 5, baseValue: 416 },
+                { id: "platinum_10", index: 10, name: "API Rate-Limit Hug", pack: "platinum", chance: 5, baseValue: 440 },
+                { id: "platinum_11", index: 11, name: "Deploy Friday Sacrifice", pack: "platinum", chance: 4, baseValue: 464 },
+                { id: "platinum_12", index: 12, name: "Console Log Prophecy", pack: "platinum", chance: 4, baseValue: 488 },
+                { id: "platinum_13", index: 13, name: "Runtime Exception Crown", pack: "platinum", chance: 4, baseValue: 512 },
+                { id: "platinum_14", index: 14, name: "Webpack Bundle Whisper", pack: "platinum", chance: 4, baseValue: 536 },
+                { id: "platinum_15", index: 15, name: "Docker Container Throne", pack: "platinum", chance: 4, baseValue: 560 },
+                { id: "platinum_16", index: 16, name: "VS Code Theme Empire", pack: "platinum", chance: 3, baseValue: 584 },
+                { id: "platinum_17", index: 17, name: "Stack Overflow Pilgrimage", pack: "platinum", chance: 3, baseValue: 608 },
+                { id: "platinum_18", index: 18, name: "Semicolon Peace Treaty", pack: "platinum", chance: 3, baseValue: 632 },
+                { id: "platinum_19", index: 19, name: "Lambda Closure Heirloom", pack: "platinum", chance: 3, baseValue: 656 },
+                { id: "platinum_20", index: 20, name: "Binary Emperor Scepter", pack: "platinum", chance: 3, baseValue: 680 },
+                { id: "platinum_21", index: 21, name: "Cloudflare Cache Blessing", pack: "platinum", chance: 1, baseValue: 704 },
+                { id: "platinum_22", index: 22, name: "Microservice Court Jester", pack: "platinum", chance: 1, baseValue: 728 },
+                { id: "platinum_23", index: 23, name: "RESTful Royal Decree", pack: "platinum", chance: 1, baseValue: 752 },
+                { id: "platinum_24", index: 24, name: "GraphQL Schema Scroll", pack: "platinum", chance: 1, baseValue: 776 },
+                { id: "platinum_25", index: 25, name: "CI Pipeline Coronation", pack: "platinum", chance: 1, baseValue: 800 }
+            ],
+            diamond: [
+                { id: "diamond_1", index: 1, name: "Lilly Roblox Rose Garden", pack: "diamond", chance: 7, baseValue: 538 },
+                { id: "diamond_2", index: 2, name: "Glitter Bomb Coronation", pack: "diamond", chance: 7, baseValue: 595 },
+                { id: "diamond_3", index: 3, name: "Princess Pixel Parade", pack: "diamond", chance: 7, baseValue: 653 },
+                { id: "diamond_4", index: 4, name: "Luck Clover Jackpot", pack: "diamond", chance: 7, baseValue: 710 },
+                { id: "diamond_5", index: 5, name: "Sparkle Slime Kingdom", pack: "diamond", chance: 7, baseValue: 768 },
+                { id: "diamond_6", index: 6, name: "Bloom Fairy Checkpoint", pack: "diamond", chance: 5, baseValue: 826 },
+                { id: "diamond_7", index: 7, name: "Castle WiFi Turret", pack: "diamond", chance: 5, baseValue: 883 },
+                { id: "diamond_8", index: 8, name: "Tiara Trade-Up Miracle", pack: "diamond", chance: 5, baseValue: 941 },
+                { id: "diamond_9", index: 9, name: "Petals Over Paywall", pack: "diamond", chance: 5, baseValue: 998 },
+                { id: "diamond_10", index: 10, name: "Rainbow Inventory Halo", pack: "diamond", chance: 5, baseValue: 1056 },
+                { id: "diamond_11", index: 11, name: "Fairy Dust Tax Refund", pack: "diamond", chance: 4, baseValue: 1114 },
+                { id: "diamond_12", index: 12, name: "Charm Script Angel", pack: "diamond", chance: 4, baseValue: 1171 },
+                { id: "diamond_13", index: 13, name: "Wish Fountain Overflow", pack: "diamond", chance: 4, baseValue: 1229 },
+                { id: "diamond_14", index: 14, name: "Garden Gnome Senate", pack: "diamond", chance: 4, baseValue: 1286 },
+                { id: "diamond_15", index: 15, name: "Glitter Storm Senate", pack: "diamond", chance: 4, baseValue: 1344 },
+                { id: "diamond_16", index: 16, name: "Roblox VIP Velvet Rope", pack: "diamond", chance: 3, baseValue: 1402 },
+                { id: "diamond_17", index: 17, name: "Princess Bubble Chat Ban", pack: "diamond", chance: 3, baseValue: 1459 },
+                { id: "diamond_18", index: 18, name: "Luck Potion Pipeline", pack: "diamond", chance: 3, baseValue: 1517 },
+                { id: "diamond_19", index: 19, name: "Sparkle Trail Dynasty", pack: "diamond", chance: 3, baseValue: 1574 },
+                { id: "diamond_20", index: 20, name: "Bloom Crown Ceremony", pack: "diamond", chance: 3, baseValue: 1632 },
+                { id: "diamond_21", index: 21, name: "Castle Moat Monetization", pack: "diamond", chance: 1, baseValue: 1690 },
+                { id: "diamond_22", index: 22, name: "Tiara Twin Pack", pack: "diamond", chance: 1, baseValue: 1747 },
+                { id: "diamond_23", index: 23, name: "Petals Premium Pass", pack: "diamond", chance: 1, baseValue: 1805 },
+                { id: "diamond_24", index: 24, name: "Rainbow Ranked Ribbon", pack: "diamond", chance: 1, baseValue: 1862 },
+                { id: "diamond_25", index: 25, name: "Fairy Godmother Firewall", pack: "diamond", chance: 1, baseValue: 1920 }
+            ],
+            mythic: [
+                { id: "mythic_1", index: 1, name: "Asser Rocket League Rumble", pack: "mythic", chance: 7, baseValue: 1344 },
+                { id: "mythic_2", index: 2, name: "Clutch 1v3 Mirage", pack: "mythic", chance: 7, baseValue: 1488 },
+                { id: "mythic_3", index: 3, name: "Broken Controller Saga", pack: "mythic", chance: 7, baseValue: 1632 },
+                { id: "mythic_4", index: 4, name: "Double Jump Doctrine", pack: "mythic", chance: 7, baseValue: 1776 },
+                { id: "mythic_5", index: 5, name: "Speed Flip Dynasty", pack: "mythic", chance: 7, baseValue: 1920 },
+                { id: "mythic_6", index: 6, name: "Boost Starvation Heir", pack: "mythic", chance: 5, baseValue: 2064 },
+                { id: "mythic_7", index: 7, name: "Aerial Ceiling Breaker", pack: "mythic", chance: 5, baseValue: 2208 },
+                { id: "mythic_8", index: 8, name: "Flick Physics Betrayal", pack: "mythic", chance: 5, baseValue: 2352 },
+                { id: "mythic_9", index: 9, name: "Demo Apology Tour", pack: "mythic", chance: 5, baseValue: 2496 },
+                { id: "mythic_10", index: 10, name: "Ranked Sweat Coronation", pack: "mythic", chance: 5, baseValue: 2640 },
+                { id: "mythic_11", index: 11, name: "Overtime Heart Monitor", pack: "mythic", chance: 4, baseValue: 2784 },
+                { id: "mythic_12", index: 12, name: "Flip Reset Gospel", pack: "mythic", chance: 4, baseValue: 2928 },
+                { id: "mythic_13", index: 13, name: "Wave Dash Whisper", pack: "mythic", chance: 4, baseValue: 3072 },
+                { id: "mythic_14", index: 14, name: "SSL Dream Sequence", pack: "mythic", chance: 4, baseValue: 3216 },
+                { id: "mythic_15", index: 15, name: "Kickoff Cheat Code", pack: "mythic", chance: 4, baseValue: 3360 },
+                { id: "mythic_16", index: 16, name: "Backboard Rebound Prophecy", pack: "mythic", chance: 3, baseValue: 3504 },
+                { id: "mythic_17", index: 17, name: "Pinch Goal Parliament", pack: "mythic", chance: 3, baseValue: 3648 },
+                { id: "mythic_18", index: 18, name: "Air Dribble Testament", pack: "mythic", chance: 3, baseValue: 3792 },
+                { id: "mythic_19", index: 19, name: "Musty Flick Manifesto", pack: "mythic", chance: 3, baseValue: 3936 },
+                { id: "mythic_20", index: 20, name: "Ceiling Shot Eclipse", pack: "mythic", chance: 3, baseValue: 4080 },
+                { id: "mythic_21", index: 21, name: "Redirect Royal Pardon", pack: "mythic", chance: 1, baseValue: 4224 },
+                { id: "mythic_22", index: 22, name: "Half Flip Heritage", pack: "mythic", chance: 1, baseValue: 4368 },
+                { id: "mythic_23", index: 23, name: "Breezi Flick Benediction", pack: "mythic", chance: 1, baseValue: 4512 },
+                { id: "mythic_24", index: 24, name: "Turtle Goal Tribunal", pack: "mythic", chance: 1, baseValue: 4656 },
+                { id: "mythic_25", index: 25, name: "Supersonic Legend Sermon", pack: "mythic", chance: 1, baseValue: 4800 }
+            ],
+            exotic: [
+                { id: "exotic_1", index: 1, name: "Zezo x Lilly Compile Garden", pack: "exotic", chance: 7, baseValue: 3360 },
+                { id: "exotic_2", index: 2, name: "Full-Stack x Glitter Pancake", pack: "exotic", chance: 7, baseValue: 3720 },
+                { id: "exotic_3", index: 3, name: "Arduino x Roblox Soul Bloom", pack: "exotic", chance: 7, baseValue: 4080 },
+                { id: "exotic_4", index: 4, name: "A320 x Princess Autoland", pack: "exotic", chance: 7, baseValue: 4440 },
+                { id: "exotic_5", index: 5, name: "Emperor x Luck Tab Overlord", pack: "exotic", chance: 7, baseValue: 4800 },
+                { id: "exotic_6", index: 6, name: "TypeScript x Sparkle Serenade", pack: "exotic", chance: 5, baseValue: 5160 },
+                { id: "exotic_7", index: 7, name: "React x Bloom Hydration", pack: "exotic", chance: 5, baseValue: 5520 },
+                { id: "exotic_8", index: 8, name: "Node x Castle Event Waltz", pack: "exotic", chance: 5, baseValue: 5880 },
+                { id: "exotic_9", index: 9, name: "Git x Tiara Blame Monologue", pack: "exotic", chance: 5, baseValue: 6240 },
+                { id: "exotic_10", index: 10, name: "API x Petals Rate Hug", pack: "exotic", chance: 5, baseValue: 6600 },
+                { id: "exotic_11", index: 11, name: "Deploy x Rainbow Friday", pack: "exotic", chance: 4, baseValue: 6960 },
+                { id: "exotic_12", index: 12, name: "Console x Fairy Log Prophecy", pack: "exotic", chance: 4, baseValue: 7320 },
+                { id: "exotic_13", index: 13, name: "Runtime x Wish Exception", pack: "exotic", chance: 4, baseValue: 7680 },
+                { id: "exotic_14", index: 14, name: "Webpack x Garden Bundle", pack: "exotic", chance: 4, baseValue: 8040 },
+                { id: "exotic_15", index: 15, name: "Docker x Gnome Container", pack: "exotic", chance: 4, baseValue: 8400 },
+                { id: "exotic_16", index: 16, name: "VS Code x Glitter Empire", pack: "exotic", chance: 3, baseValue: 8760 },
+                { id: "exotic_17", index: 17, name: "Stack x Roblox Overflow", pack: "exotic", chance: 3, baseValue: 9120 },
+                { id: "exotic_18", index: 18, name: "Semicolon x Princess Peace", pack: "exotic", chance: 3, baseValue: 9480 },
+                { id: "exotic_19", index: 19, name: "Lambda x Luck Closure", pack: "exotic", chance: 3, baseValue: 9840 },
+                { id: "exotic_20", index: 20, name: "Binary x Sparkle Scepter", pack: "exotic", chance: 3, baseValue: 10200 },
+                { id: "exotic_21", index: 21, name: "Cloudflare x Bloom Cache", pack: "exotic", chance: 1, baseValue: 10560 },
+                { id: "exotic_22", index: 22, name: "Microservice x Fairy Jester", pack: "exotic", chance: 1, baseValue: 10920 },
+                { id: "exotic_23", index: 23, name: "RESTful x Castle Decree", pack: "exotic", chance: 1, baseValue: 11280 },
+                { id: "exotic_24", index: 24, name: "GraphQL x Tiara Schema", pack: "exotic", chance: 1, baseValue: 11640 },
+                { id: "exotic_25", index: 25, name: "CI x Rainbow Pipeline", pack: "exotic", chance: 1, baseValue: 12000 }
+            ],
+            divine: [
+                { id: "divine_1", index: 1, name: "Zezo x Asser Midnight Rumble", pack: "divine", chance: 7, baseValue: 8064 },
+                { id: "divine_2", index: 2, name: "Full-Stack x Clutch Pancake", pack: "divine", chance: 7, baseValue: 8928 },
+                { id: "divine_3", index: 3, name: "Arduino x Broken Soul Controller", pack: "divine", chance: 7, baseValue: 9792 },
+                { id: "divine_4", index: 4, name: "A320 x Double Jump Autoland", pack: "divine", chance: 7, baseValue: 10656 },
+                { id: "divine_5", index: 5, name: "Emperor x Speed Tab Dynasty", pack: "divine", chance: 7, baseValue: 11520 },
+                { id: "divine_6", index: 6, name: "TypeScript x Boost Serenade", pack: "divine", chance: 5, baseValue: 12384 },
+                { id: "divine_7", index: 7, name: "React x Aerial Hydration", pack: "divine", chance: 5, baseValue: 13248 },
+                { id: "divine_8", index: 8, name: "Node x Flick Event Waltz", pack: "divine", chance: 5, baseValue: 14112 },
+                { id: "divine_9", index: 9, name: "Git x Demo Blame Tour", pack: "divine", chance: 5, baseValue: 14976 },
+                { id: "divine_10", index: 10, name: "API x Ranked Rate Hug", pack: "divine", chance: 5, baseValue: 15840 },
+                { id: "divine_11", index: 11, name: "Deploy x Overtime Friday", pack: "divine", chance: 4, baseValue: 16704 },
+                { id: "divine_12", index: 12, name: "Console x Flip Log Gospel", pack: "divine", chance: 4, baseValue: 17568 },
+                { id: "divine_13", index: 13, name: "Runtime x Wave Exception", pack: "divine", chance: 4, baseValue: 18432 },
+                { id: "divine_14", index: 14, name: "Webpack x SSL Bundle", pack: "divine", chance: 4, baseValue: 19296 },
+                { id: "divine_15", index: 15, name: "Docker x Kickoff Container", pack: "divine", chance: 4, baseValue: 20160 },
+                { id: "divine_16", index: 16, name: "VS Code x Backboard Empire", pack: "divine", chance: 3, baseValue: 21024 },
+                { id: "divine_17", index: 17, name: "Stack x Pinch Overflow", pack: "divine", chance: 3, baseValue: 21888 },
+                { id: "divine_18", index: 18, name: "Semicolon x Air Peace", pack: "divine", chance: 3, baseValue: 22752 },
+                { id: "divine_19", index: 19, name: "Lambda x Musty Closure", pack: "divine", chance: 3, baseValue: 23616 },
+                { id: "divine_20", index: 20, name: "Binary x Ceiling Scepter", pack: "divine", chance: 3, baseValue: 24480 },
+                { id: "divine_21", index: 21, name: "Cloudflare x Redirect Cache", pack: "divine", chance: 1, baseValue: 25344 },
+                { id: "divine_22", index: 22, name: "Microservice x Half Jester", pack: "divine", chance: 1, baseValue: 26208 },
+                { id: "divine_23", index: 23, name: "RESTful x Breezi Decree", pack: "divine", chance: 1, baseValue: 27072 },
+                { id: "divine_24", index: 24, name: "GraphQL x Turtle Schema", pack: "divine", chance: 1, baseValue: 27936 },
+                { id: "divine_25", index: 25, name: "CI x Supersonic Pipeline", pack: "divine", chance: 1, baseValue: 28800 }
+            ],
+            celestial: [
+                { id: "celestial_1", index: 1, name: "Lilly x Asser Rose Rumble", pack: "celestial", chance: 7, baseValue: 20160 },
+                { id: "celestial_2", index: 2, name: "Glitter x Clutch Bomb Mirage", pack: "celestial", chance: 7, baseValue: 22320 },
+                { id: "celestial_3", index: 3, name: "Princess x Broken Pixel Saga", pack: "celestial", chance: 7, baseValue: 24480 },
+                { id: "celestial_4", index: 4, name: "Luck x Double Jump Clover", pack: "celestial", chance: 7, baseValue: 26640 },
+                { id: "celestial_5", index: 5, name: "Sparkle x Speed Flip Slime", pack: "celestial", chance: 7, baseValue: 28800 },
+                { id: "celestial_6", index: 6, name: "Bloom x Boost Fairy Dynasty", pack: "celestial", chance: 5, baseValue: 30960 },
+                { id: "celestial_7", index: 7, name: "Castle x Aerial WiFi Breaker", pack: "celestial", chance: 5, baseValue: 33120 },
+                { id: "celestial_8", index: 8, name: "Tiara x Flick Trade Betrayal", pack: "celestial", chance: 5, baseValue: 35280 },
+                { id: "celestial_9", index: 9, name: "Petals x Demo Over Paywall", pack: "celestial", chance: 5, baseValue: 37440 },
+                { id: "celestial_10", index: 10, name: "Rainbow x Ranked Inventory", pack: "celestial", chance: 5, baseValue: 39600 },
+                { id: "celestial_11", index: 11, name: "Fairy x Overtime Dust Monitor", pack: "celestial", chance: 4, baseValue: 41760 },
+                { id: "celestial_12", index: 12, name: "Charm x Flip Script Gospel", pack: "celestial", chance: 4, baseValue: 43920 },
+                { id: "celestial_13", index: 13, name: "Wish x Wave Fountain Whisper", pack: "celestial", chance: 4, baseValue: 46080 },
+                { id: "celestial_14", index: 14, name: "Garden x SSL Gnome Sequence", pack: "celestial", chance: 4, baseValue: 48240 },
+                { id: "celestial_15", index: 15, name: "Glitter x Kickoff Storm Code", pack: "celestial", chance: 4, baseValue: 50400 },
+                { id: "celestial_16", index: 16, name: "Roblox x Backboard VIP Prophecy", pack: "celestial", chance: 3, baseValue: 52560 },
+                { id: "celestial_17", index: 17, name: "Princess x Pinch Bubble Parliament", pack: "celestial", chance: 3, baseValue: 54720 },
+                { id: "celestial_18", index: 18, name: "Luck x Air Potion Testament", pack: "celestial", chance: 3, baseValue: 56880 },
+                { id: "celestial_19", index: 19, name: "Sparkle x Musty Trail Manifesto", pack: "celestial", chance: 3, baseValue: 59040 },
+                { id: "celestial_20", index: 20, name: "Bloom x Ceiling Crown Eclipse", pack: "celestial", chance: 3, baseValue: 61200 },
+                { id: "celestial_21", index: 21, name: "Castle x Redirect Moat Pardon", pack: "celestial", chance: 1, baseValue: 63360 },
+                { id: "celestial_22", index: 22, name: "Tiara x Half Twin Heritage", pack: "celestial", chance: 1, baseValue: 65520 },
+                { id: "celestial_23", index: 23, name: "Petals x Breezi Premium Benediction", pack: "celestial", chance: 1, baseValue: 67680 },
+                { id: "celestial_24", index: 24, name: "Rainbow x Turtle Ranked Tribunal", pack: "celestial", chance: 1, baseValue: 69840 },
+                { id: "celestial_25", index: 25, name: "Fairy x Supersonic Godmother", pack: "celestial", chance: 1, baseValue: 72000 }
+            ],
+            galactic: [
+                { id: "galactic_1", index: 1, name: "Galactic Zezo Midnight Compile", pack: "galactic", chance: 7, baseValue: 49280 },
+                { id: "galactic_2", index: 2, name: "Galactic Full-Stack Pancake", pack: "galactic", chance: 7, baseValue: 54560 },
+                { id: "galactic_3", index: 3, name: "Galactic Arduino Soul Patch", pack: "galactic", chance: 7, baseValue: 59840 },
+                { id: "galactic_4", index: 4, name: "Galactic A320 Coffee Autoland", pack: "galactic", chance: 7, baseValue: 65120 },
+                { id: "galactic_5", index: 5, name: "Galactic Emperor Tab Overlord", pack: "galactic", chance: 7, baseValue: 70400 },
+                { id: "galactic_6", index: 6, name: "Galactic TypeScript Serenade", pack: "galactic", chance: 5, baseValue: 75680 },
+                { id: "galactic_7", index: 7, name: "Galactic React Hydration Panic", pack: "galactic", chance: 5, baseValue: 80960 },
+                { id: "galactic_8", index: 8, name: "Galactic Node Event Loop Waltz", pack: "galactic", chance: 5, baseValue: 86240 },
+                { id: "galactic_9", index: 9, name: "Galactic Git Blame Monologue", pack: "galactic", chance: 5, baseValue: 91520 },
+                { id: "galactic_10", index: 10, name: "Galactic API Rate-Limit Hug", pack: "galactic", chance: 5, baseValue: 96800 },
+                { id: "galactic_11", index: 11, name: "Galactic Deploy Friday Sacrifice", pack: "galactic", chance: 4, baseValue: 102080 },
+                { id: "galactic_12", index: 12, name: "Galactic Console Log Prophecy", pack: "galactic", chance: 4, baseValue: 107360 },
+                { id: "galactic_13", index: 13, name: "Galactic Runtime Exception Crown", pack: "galactic", chance: 4, baseValue: 112640 },
+                { id: "galactic_14", index: 14, name: "Galactic Webpack Bundle Whisper", pack: "galactic", chance: 4, baseValue: 117920 },
+                { id: "galactic_15", index: 15, name: "Galactic Docker Container Throne", pack: "galactic", chance: 4, baseValue: 123200 },
+                { id: "galactic_16", index: 16, name: "Galactic VS Code Theme Empire", pack: "galactic", chance: 3, baseValue: 128480 },
+                { id: "galactic_17", index: 17, name: "Galactic Stack Overflow Pilgrimage", pack: "galactic", chance: 3, baseValue: 133760 },
+                { id: "galactic_18", index: 18, name: "Galactic Semicolon Peace Treaty", pack: "galactic", chance: 3, baseValue: 139040 },
+                { id: "galactic_19", index: 19, name: "Galactic Lambda Closure Heirloom", pack: "galactic", chance: 3, baseValue: 144320 },
+                { id: "galactic_20", index: 20, name: "Galactic Binary Emperor Scepter", pack: "galactic", chance: 3, baseValue: 149600 },
+                { id: "galactic_21", index: 21, name: "Galactic Cloudflare Cache Blessing", pack: "galactic", chance: 1, baseValue: 154880 },
+                { id: "galactic_22", index: 22, name: "Galactic Microservice Court Jester", pack: "galactic", chance: 1, baseValue: 160160 },
+                { id: "galactic_23", index: 23, name: "Galactic RESTful Royal Decree", pack: "galactic", chance: 1, baseValue: 165440 },
+                { id: "galactic_24", index: 24, name: "Galactic GraphQL Schema Scroll", pack: "galactic", chance: 1, baseValue: 170720 },
+                { id: "galactic_25", index: 25, name: "Galactic CI Pipeline Coronation", pack: "galactic", chance: 1, baseValue: 176000 }
+            ],
+            universal: [
+                { id: "universal_1", index: 1, name: "Universal Lilly Roblox Garden", pack: "universal", chance: 7, baseValue: 125440 },
+                { id: "universal_2", index: 2, name: "Universal Glitter Bomb Coronation", pack: "universal", chance: 7, baseValue: 138880 },
+                { id: "universal_3", index: 3, name: "Universal Princess Pixel Parade", pack: "universal", chance: 7, baseValue: 152320 },
+                { id: "universal_4", index: 4, name: "Universal Luck Clover Jackpot", pack: "universal", chance: 7, baseValue: 165760 },
+                { id: "universal_5", index: 5, name: "Universal Sparkle Slime Kingdom", pack: "universal", chance: 7, baseValue: 179200 },
+                { id: "universal_6", index: 6, name: "Universal Bloom Fairy Checkpoint", pack: "universal", chance: 5, baseValue: 192640 },
+                { id: "universal_7", index: 7, name: "Universal Castle WiFi Turret", pack: "universal", chance: 5, baseValue: 206080 },
+                { id: "universal_8", index: 8, name: "Universal Tiara Trade-Up Miracle", pack: "universal", chance: 5, baseValue: 219520 },
+                { id: "universal_9", index: 9, name: "Universal Petals Over Paywall", pack: "universal", chance: 5, baseValue: 232960 },
+                { id: "universal_10", index: 10, name: "Universal Rainbow Inventory Halo", pack: "universal", chance: 5, baseValue: 246400 },
+                { id: "universal_11", index: 11, name: "Universal Fairy Dust Tax Refund", pack: "universal", chance: 4, baseValue: 259840 },
+                { id: "universal_12", index: 12, name: "Universal Charm Script Angel", pack: "universal", chance: 4, baseValue: 273280 },
+                { id: "universal_13", index: 13, name: "Universal Wish Fountain Overflow", pack: "universal", chance: 4, baseValue: 286720 },
+                { id: "universal_14", index: 14, name: "Universal Garden Gnome Senate", pack: "universal", chance: 4, baseValue: 300160 },
+                { id: "universal_15", index: 15, name: "Universal Glitter Storm Senate", pack: "universal", chance: 4, baseValue: 313600 },
+                { id: "universal_16", index: 16, name: "Universal Roblox VIP Velvet Rope", pack: "universal", chance: 3, baseValue: 327040 },
+                { id: "universal_17", index: 17, name: "Universal Princess Bubble Chat Ban", pack: "universal", chance: 3, baseValue: 340480 },
+                { id: "universal_18", index: 18, name: "Universal Luck Potion Pipeline", pack: "universal", chance: 3, baseValue: 353920 },
+                { id: "universal_19", index: 19, name: "Universal Sparkle Trail Dynasty", pack: "universal", chance: 3, baseValue: 367360 },
+                { id: "universal_20", index: 20, name: "Universal Bloom Crown Ceremony", pack: "universal", chance: 3, baseValue: 380800 },
+                { id: "universal_21", index: 21, name: "Universal Castle Moat Monetization", pack: "universal", chance: 1, baseValue: 394240 },
+                { id: "universal_22", index: 22, name: "Universal Tiara Twin Pack", pack: "universal", chance: 1, baseValue: 407680 },
+                { id: "universal_23", index: 23, name: "Universal Petals Premium Pass", pack: "universal", chance: 1, baseValue: 421120 },
+                { id: "universal_24", index: 24, name: "Universal Rainbow Ranked Ribbon", pack: "universal", chance: 1, baseValue: 434560 },
+                { id: "universal_25", index: 25, name: "Universal Fairy Godmother Firewall", pack: "universal", chance: 1, baseValue: 448000 }
+            ],
+            secret: [
+                { id: "secret_1", index: 1, name: "Secret Asser Rocket Rumble", pack: "secret", chance: 7, baseValue: 336000 },
+                { id: "secret_2", index: 2, name: "Secret Clutch 1v3 Mirage", pack: "secret", chance: 7, baseValue: 372000 },
+                { id: "secret_3", index: 3, name: "Secret Broken Controller Saga", pack: "secret", chance: 7, baseValue: 408000 },
+                { id: "secret_4", index: 4, name: "Secret Double Jump Doctrine", pack: "secret", chance: 7, baseValue: 444000 },
+                { id: "secret_5", index: 5, name: "Secret Speed Flip Dynasty", pack: "secret", chance: 7, baseValue: 480000 },
+                { id: "secret_6", index: 6, name: "Secret Boost Starvation Heir", pack: "secret", chance: 5, baseValue: 516000 },
+                { id: "secret_7", index: 7, name: "Secret Aerial Ceiling Breaker", pack: "secret", chance: 5, baseValue: 552000 },
+                { id: "secret_8", index: 8, name: "Secret Flick Physics Betrayal", pack: "secret", chance: 5, baseValue: 588000 },
+                { id: "secret_9", index: 9, name: "Secret Demo Apology Tour", pack: "secret", chance: 5, baseValue: 624000 },
+                { id: "secret_10", index: 10, name: "Secret Ranked Sweat Coronation", pack: "secret", chance: 5, baseValue: 660000 },
+                { id: "secret_11", index: 11, name: "Secret Overtime Heart Monitor", pack: "secret", chance: 4, baseValue: 696000 },
+                { id: "secret_12", index: 12, name: "Secret Flip Reset Gospel", pack: "secret", chance: 4, baseValue: 732000 },
+                { id: "secret_13", index: 13, name: "Secret Wave Dash Whisper", pack: "secret", chance: 4, baseValue: 768000 },
+                { id: "secret_14", index: 14, name: "Secret SSL Dream Sequence", pack: "secret", chance: 4, baseValue: 804000 },
+                { id: "secret_15", index: 15, name: "Secret Kickoff Cheat Code", pack: "secret", chance: 4, baseValue: 840000 },
+                { id: "secret_16", index: 16, name: "Secret Backboard Rebound Prophecy", pack: "secret", chance: 3, baseValue: 876000 },
+                { id: "secret_17", index: 17, name: "Secret Pinch Goal Parliament", pack: "secret", chance: 3, baseValue: 912000 },
+                { id: "secret_18", index: 18, name: "Secret Air Dribble Testament", pack: "secret", chance: 3, baseValue: 948000 },
+                { id: "secret_19", index: 19, name: "Secret Musty Flick Manifesto", pack: "secret", chance: 3, baseValue: 984000 },
+                { id: "secret_20", index: 20, name: "Secret Ceiling Shot Eclipse", pack: "secret", chance: 3, baseValue: 1020000 },
+                { id: "secret_21", index: 21, name: "Secret Redirect Royal Pardon", pack: "secret", chance: 1, baseValue: 1056000 },
+                { id: "secret_22", index: 22, name: "Secret Half Flip Heritage", pack: "secret", chance: 1, baseValue: 1092000 },
+                { id: "secret_23", index: 23, name: "Secret Breezi Flick Benediction", pack: "secret", chance: 1, baseValue: 1128000 },
+                { id: "secret_24", index: 24, name: "Secret Turtle Goal Tribunal", pack: "secret", chance: 1, baseValue: 1164000 },
+                { id: "secret_25", index: 25, name: "Secret Supersonic Legend Sermon", pack: "secret", chance: 1, baseValue: 1200000 }
+            ]
+        };
 
         // Local State Variables Tracking Runtime Core Data
         let activeUserSession = null;
@@ -1758,8 +2518,9 @@
         let packOpeningInProgress = false;
 
         const PACK_COLOR_HEX = {
-            common: '#9ca3af', uncommon: '#10b981', rare: '#3b82f6',
-            epic: '#8b5cf6', legendary: '#ec4899', secret: '#f43f5e'
+            paper: '#d4c4a8', wood: '#a67c52', stone: '#78716c', bronze: '#cd7f32', silver: '#c0c0c0',
+            gold: '#ffd700', platinum: '#e5e4e2', diamond: '#7df9ff', mythic: '#a855f7', exotic: '#ff6b35',
+            divine: '#fff8dc', celestial: '#87ceeb', galactic: '#6a0dad', universal: '#ff1493', secret: '#ff0040'
         };
 
         const SWIPE_PULL_MAX = 200;
@@ -1900,7 +2661,7 @@
             const pull = packOpenUi.pullAtDragStart + (-dy);
             applySwipePull(pull);
             if (packOpenUi.pullPx >= SWIPE_PULL_MAX * SWIPE_COMPLETE_RATIO) {
-                try { packOpenUi.pack.releasePointerCapture(e.pointerId); } catch (_) {}
+                try { packOpenUi.pack.releasePointerCapture(e.pointerId); } catch (_) { }
                 finishSwipeReveal();
             }
         }
@@ -1910,7 +2671,7 @@
             if (!packOpenUi.dragging) return;
             packOpenUi.dragging = false;
             packOpenUi.pointerId = null;
-            try { packOpenUi.pack.releasePointerCapture(e.pointerId); } catch (_) {}
+            try { packOpenUi.pack.releasePointerCapture(e.pointerId); } catch (_) { }
             if (packOpenUi.pullPx >= SWIPE_PULL_MAX * SWIPE_COMPLETE_RATIO) {
                 finishSwipeReveal();
             } else {
@@ -2246,17 +3007,17 @@
             tabItem.addEventListener('click', () => {
                 document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
                 document.querySelectorAll('.view-panel').forEach(v => v.classList.remove('active'));
-                
+
                 tabItem.classList.add('active');
                 const targetViewId = `view-${tabItem.dataset.target}`;
                 const panel = document.getElementById(targetViewId);
                 panel.classList.add('active');
                 panel.classList.add('view-enter');
                 setTimeout(() => panel.classList.remove('view-enter'), 400);
-                
+
                 updateNavIndicator();
-                if(tabItem.dataset.target === 'book') buildArchiveBookUI();
-                if(tabItem.dataset.target === 'ranks') handleLeaderboardQuery('money');
+                if (tabItem.dataset.target === 'book') buildArchiveBookUI();
+                if (tabItem.dataset.target === 'ranks') handleLeaderboardQuery('money');
             });
         });
         window.addEventListener('resize', updateNavIndicator);
@@ -2285,13 +3046,13 @@
             const passInput = document.getElementById('auth-pass').value.trim();
             const usernameInput = document.getElementById('auth-username').value.trim() || "Operative";
 
-            if(!emailInput || !passInput) return showToast("All credential fields are required.", "error");
+            if (!emailInput || !passInput) return showToast("All credential fields are required.", "error");
 
             if (currentAuthScreenIsLogin) {
                 signInWithEmailAndPassword(auth, emailInput, passInput).catch(err => showToast(`Operational Error: ${err.message}`, "error"));
             } else {
                 createUserWithEmailAndPassword(auth, emailInput, passInput).then(userCredential => {
-                    const generatedColorValue = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                    const generatedColorValue = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
                     set(ref(db, `users/${userCredential.user.uid}`), {
                         uid: userCredential.user.uid,
                         username: usernameInput,
@@ -2490,7 +3251,7 @@
             activeStealSequenceId = null;
 
             if (activeUserSession?.uid) {
-                remove(ref(db, `presence/${activeUserSession.uid}`)).catch(() => {});
+                remove(ref(db, `presence/${activeUserSession.uid}`)).catch(() => { });
             }
         }
 
@@ -2499,14 +3260,14 @@
             document.getElementById('hud-streak').innerText = `🔥 Daily Streak: ${userDataRecord.streak || 0} days`;
             document.getElementById('hud-currency').innerText = `€${parseFloat(userDataRecord.money || 0).toFixed(2)}`;
             document.getElementById('hud-level').innerText = `LV ${userDataRecord.level || 1}`;
-            
+
             const targetXpRequirement = (userDataRecord.level || 1) * 100;
             const absoluteCurrentXpVal = userDataRecord.xp || 0;
             const completionPercentageFactor = Math.min(100, (absoluteCurrentXpVal / targetXpRequirement) * 100);
-            
+
             document.getElementById('hud-xp-fill').style.width = `${completionPercentageFactor}%`;
             document.getElementById('hud-xp-text').innerText = `${absoluteCurrentXpVal}/${targetXpRequirement} XP`;
-            
+
             const avatarNode = document.getElementById('hud-avatar');
             avatarNode.innerText = (userDataRecord.username || 'O').charAt(0).toUpperCase();
             avatarNode.style.backgroundColor = userDataRecord.avatarBgColor || 'var(--primary)';
@@ -2515,7 +3276,7 @@
         function renderShopLockCounts() {
             [15, 30, 45, 60].forEach(mins => {
                 const countNode = document.getElementById(`shop-locks-${mins}`);
-                if(countNode) {
+                if (countNode) {
                     countNode.innerText = (userDataRecord.locks && userDataRecord.locks[mins]) || 0;
                 }
             });
@@ -2523,13 +3284,13 @@
 
         document.getElementById('hud-lvlup-btn').addEventListener('click', () => {
             const currentLvl = userDataRecord.level || 1;
-            if(currentLvl >= 100) return showToast("Maximum level (100) reached.", "info");
+            if (currentLvl >= 100) return showToast("Maximum level (100) reached.", "info");
 
             const requiredXpTarget = currentLvl * 100;
             const financialExecutionCost = currentLvl * 50;
 
-            if(userDataRecord.xp < requiredXpTarget) return showToast(`Need ${requiredXpTarget} XP to level up.`, "error");
-            if(userDataRecord.money < financialExecutionCost) return showToast(`Need €${financialExecutionCost.toFixed(2)} to level up.`, "error");
+            if (userDataRecord.xp < requiredXpTarget) return showToast(`Need ${requiredXpTarget} XP to level up.`, "error");
+            if (userDataRecord.money < financialExecutionCost) return showToast(`Need €${financialExecutionCost.toFixed(2)} to level up.`, "error");
 
             update(ref(db, `users/${activeUserSession.uid}`), {
                 level: currentLvl + 1,
@@ -2548,15 +3309,15 @@
             if (structuralElapsedDelta >= restockFrequencyInterval) {
                 runTransaction(ref(db, 'system/packs'), (currentRecordState) => {
                     if (!currentRecordState || currentSystemEpochTime - currentRecordState.lastRestockTime >= restockFrequencyInterval) {
-                        
+
                         const newStockAllocations = currentRecordState ? { ...currentRecordState.stockAllocations } : {};
-                        
-                        for(let pKey in RESTOCK_CONFIG) {
+
+                        for (let pKey in RESTOCK_CONFIG) {
                             const config = RESTOCK_CONFIG[pKey];
-                            if(Math.random() <= config.chance) {
+                            if (Math.random() <= config.chance) {
                                 newStockAllocations[pKey] = Math.floor(Math.random() * (config.max - config.min + 1)) + config.min;
                             } else {
-                                newStockAllocations[pKey] = 0; 
+                                newStockAllocations[pKey] = 0;
                             }
                         }
 
@@ -2580,25 +3341,25 @@
             const mSecondsField = Math.floor((localizedRemainingMutationTick % 60000) / 1000);
             document.getElementById('timer-mutation').innerText = `${mMinutesField.toString().padStart(2, '0')}:${mSecondsField.toString().padStart(2, '0')}`;
 
-            if(mMinutesField === 0 && mSecondsField === 0) {
+            if (mMinutesField === 0 && mSecondsField === 0) {
                 executeSystemicCardMutationTick();
             }
 
-            if(userDataRecord.stealCooldownExpiry && userDataRecord.stealCooldownExpiry > currentSystemEpochTime) {
+            if (userDataRecord.stealCooldownExpiry && userDataRecord.stealCooldownExpiry > currentSystemEpochTime) {
                 document.getElementById('container-steal-cooldown').style.display = "block";
                 const clRemaining = userDataRecord.stealCooldownExpiry - currentSystemEpochTime;
-                document.getElementById('container-steal-cooldown').innerText = `Steal infrastructure recharging! Available in: ${Math.ceil(clRemaining/1000)}s`;
+                document.getElementById('container-steal-cooldown').innerText = `Steal infrastructure recharging! Available in: ${Math.ceil(clRemaining / 1000)}s`;
             } else {
                 document.getElementById('container-steal-cooldown').style.display = "none";
             }
         }
 
         function evaluateStreakDeductionsRealtime() {
-            if(!userDataRecord.lastPackPurchaseTimestamp) return;
+            if (!userDataRecord.lastPackPurchaseTimestamp) return;
             const absoluteCurrentEpoch = Date.now();
             const thresholdLimitDeductionWindow = 48 * 60 * 60 * 1000;
-            
-            if(absoluteCurrentEpoch - userDataRecord.lastPackPurchaseTimestamp > thresholdLimitDeductionWindow && userDataRecord.streak > 0) {
+
+            if (absoluteCurrentEpoch - userDataRecord.lastPackPurchaseTimestamp > thresholdLimitDeductionWindow && userDataRecord.streak > 0) {
                 update(ref(db, `users/${activeUserSession.uid}`), { streak: 0 });
             }
         }
@@ -2629,10 +3390,10 @@
             });
         }
 
-        window.openPackDetailsProbabilityModal = function(packKey) {
+        window.openPackDetailsProbabilityModal = function (packKey) {
             const targetModalNode = document.getElementById('modal-pack-details');
             document.getElementById('pack-modal-title').innerText = `${packKey.toUpperCase()} PACK SPECIFICATIONS`;
-            
+
             const targetListDisplay = document.getElementById('pack-modal-contents-list');
             targetListDisplay.innerHTML = '';
 
@@ -2663,12 +3424,12 @@
             });
         });
 
-        window.purchasePackAsset = async function(packKey) {
+        window.purchasePackAsset = async function (packKey) {
             if (packOpeningInProgress) return;
 
             const metaSpec = PACK_METADATA[packKey];
-            if(userDataRecord.money < metaSpec.price) return showToast("Insufficient funds for this pack.", "error");
-            if(!sharedGlobalPacks.stockAllocations || sharedGlobalPacks.stockAllocations[packKey] <= 0) {
+            if (userDataRecord.money < metaSpec.price) return showToast("Insufficient funds for this pack.", "error");
+            if (!sharedGlobalPacks.stockAllocations || sharedGlobalPacks.stockAllocations[packKey] <= 0) {
                 return showToast("This pack type is sold out.", "error");
             }
 
@@ -2684,12 +3445,12 @@
                     break;
                 }
             }
-            if(!capturedSelectedCardObject) capturedSelectedCardObject = internalPackPool[internalPackPool.length - 1];
+            if (!capturedSelectedCardObject) capturedSelectedCardObject = internalPackPool[internalPackPool.length - 1];
 
             const currentTimestampMarker = Date.now();
             const lastPurchaseDateObj = new Date(userDataRecord.lastPackPurchaseTimestamp || 0);
             const currentActiveDateObj = new Date(currentTimestampMarker);
-            
+
             let newStreak = userDataRecord.streak || 0;
             let updatedMoney = userDataRecord.money - metaSpec.price;
             let earnedStreakBonus = 0;
@@ -2699,7 +3460,7 @@
             if (currentActiveDateObj.toDateString() !== lastPurchaseDateObj.toDateString()) {
                 newStreak += 1;
                 operationsPayloadBatch[`users/${activeUserSession.uid}/streak`] = newStreak;
-                
+
                 if (newStreak > 0 && newStreak % 5 === 0) {
                     earnedStreakBonus = (newStreak / 5) * 500;
                     updatedMoney += earnedStreakBonus;
@@ -2707,9 +3468,9 @@
             }
 
             operationsPayloadBatch[`users/${activeUserSession.uid}/money`] = updatedMoney;
-            operationsPayloadBatch[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + 10; 
+            operationsPayloadBatch[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + 10;
 
-            if(!userDataRecord.discovered || !userDataRecord.discovered[capturedSelectedCardObject.id]) {
+            if (!userDataRecord.discovered || !userDataRecord.discovered[capturedSelectedCardObject.id]) {
                 operationsPayloadBatch[`users/${activeUserSession.uid}/discovered/${capturedSelectedCardObject.id}`] = Date.now();
             }
 
@@ -2750,14 +3511,14 @@
 
         function calculateLiveInstanceMarketValue(instanceObj) {
             const matchingBaseCardRegistryMeta = GAME_REGISTRY[instanceObj.packSource]?.find(x => x.id === instanceObj.cardId);
-            if(!matchingBaseCardRegistryMeta) return 0;
+            if (!matchingBaseCardRegistryMeta) return 0;
 
             let compoundMarketValValue = matchingBaseCardRegistryMeta.baseValue;
             const appliedMutationsArray = instanceObj.activeMutationIndexes || [];
-            
+
             appliedMutationsArray.forEach((mutIndex) => {
                 const mutSpec = MUTATIONS_LIST[mutIndex];
-                if(mutSpec) {
+                if (mutSpec) {
                     compoundMarketValValue = compoundMarketValValue * Math.abs(mutSpec.multiplier);
                 }
             });
@@ -2769,7 +3530,7 @@
             targetGridDisplayNode.innerHTML = '';
 
             const activeDeckKeys = Object.keys(userDeckRecord);
-            if(activeDeckKeys.length === 0) {
+            if (activeDeckKeys.length === 0) {
                 targetGridDisplayNode.innerHTML = `<div class="empty-state">No cards yet — open packs to build your deck.</div>`;
                 return;
             }
@@ -2777,26 +3538,26 @@
             activeDeckKeys.forEach((instanceIdKey) => {
                 const currentInstanceItem = userDeckRecord[instanceIdKey];
                 const staticRegistryItemMeta = GAME_REGISTRY[currentInstanceItem.packSource]?.find(x => x.id === currentInstanceItem.cardId);
-                if(!staticRegistryItemMeta) return;
+                if (!staticRegistryItemMeta) return;
 
                 const liveCalculatedValue = calculateLiveInstanceMarketValue(currentInstanceItem);
                 const currentSystemEpoch = Date.now();
                 const evaluatingSecurityLockIsActive = currentInstanceItem.cryptographicLockExpiry && currentInstanceItem.cryptographicLockExpiry > currentSystemEpoch;
-                
+
                 const globalRegisteredCopiesCount = globalCopiesTrackerRef[currentInstanceItem.cardId] || 1;
                 const mutationsCount = (currentInstanceItem.activeMutationIndexes || []).length;
 
                 const cardUiNodeElement = document.createElement('div');
                 cardUiNodeElement.className = `card-item`;
                 cardUiNodeElement.style.setProperty('--rarity-color', PACK_METADATA[currentInstanceItem.packSource].color);
-                
+
                 let lockOverlayElementMarkup = '';
-                if(evaluatingSecurityLockIsActive) {
+                if (evaluatingSecurityLockIsActive) {
                     const dynamicSecondsLeft = Math.ceil((currentInstanceItem.cryptographicLockExpiry - currentSystemEpoch) / 1000);
                     lockOverlayElementMarkup = `
                         <div class="card-overlay-lock">
                             <span>🔒 SECURED</span>
-                            <span style="font-size:0.7rem; margin-top:4.px;">${Math.floor(dynamicSecondsLeft/60)}m ${dynamicSecondsLeft%60}s</span>
+                            <span style="font-size:0.7rem; margin-top:4.px;">${Math.floor(dynamicSecondsLeft / 60)}m ${dynamicSecondsLeft % 60}s</span>
                         </div>
                     `;
                 }
@@ -2829,14 +3590,14 @@
                 targetGridDisplayNode.appendChild(cardUiNodeElement);
             });
         }
-        
+
         // --- ASSET INSPECTION DETAILS MODAL ---
-        window.openCardInspectionDetails = function(instanceId) {
+        window.openCardInspectionDetails = function (instanceId) {
             const instanceData = userDeckRecord[instanceId];
-            if(!instanceData) return;
-            
+            if (!instanceData) return;
+
             const staticMeta = GAME_REGISTRY[instanceData.packSource]?.find(x => x.id === instanceData.cardId);
-            if(!staticMeta) return;
+            if (!staticMeta) return;
 
             document.getElementById('cd-name').innerText = staticMeta.name;
             document.getElementById('cd-name').style.color = PACK_METADATA[instanceData.packSource].color;
@@ -2846,14 +3607,14 @@
 
             const mutsListContainer = document.getElementById('cd-mutations-list');
             mutsListContainer.innerHTML = '';
-            
+
             const mutationsArr = instanceData.activeMutationIndexes || [];
-            if(mutationsArr.length === 0) {
+            if (mutationsArr.length === 0) {
                 mutsListContainer.innerHTML = `<div style="font-size:0.8rem; color:#6b7280; font-style:italic; text-align:center;">No modifications active on this array frame.</div>`;
             } else {
                 mutationsArr.forEach(mutIndex => {
                     const mDef = MUTATIONS_LIST[mutIndex];
-                    if(!mDef) return;
+                    if (!mDef) return;
                     mutsListContainer.innerHTML += `
                         <div style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-dark); padding:8px 12px; border-radius:6px; font-size:0.8rem;">
                             <span style="font-weight:bold; color:${mDef.color};">${mDef.name}</span>
@@ -2874,16 +3635,16 @@
         });
 
         // --- LOCK APPLICATION LOGIC & MODALS ---
-        window.openLockSelectionModal = function(instanceId) {
+        window.openLockSelectionModal = function (instanceId) {
             const containerNode = document.getElementById('lock-options-container');
             containerNode.innerHTML = '';
-            
+
             const lockTiers = [15, 30, 45, 60];
             let hasAnyLocksAvailable = false;
 
             lockTiers.forEach(mins => {
                 const availableCount = (userDataRecord.locks && userDataRecord.locks[mins]) || 0;
-                if(availableCount > 0) {
+                if (availableCount > 0) {
                     hasAnyLocksAvailable = true;
                     containerNode.innerHTML += `
                         <div class="player-row" style="margin-bottom:8px;">
@@ -2897,7 +3658,7 @@
                 }
             });
 
-            if(!hasAnyLocksAvailable) {
+            if (!hasAnyLocksAvailable) {
                 containerNode.innerHTML = `
                     <div style="text-align:center; padding:24px; color:#6b7280;">
                         <div style="font-size:2rem; margin-bottom:12px;">🛒</div>
@@ -2914,12 +3675,12 @@
             closeModal('modal-apply-lock');
         });
 
-        window.executeLockApplication = async function(instanceId, minutes) {
+        window.executeLockApplication = async function (instanceId, minutes) {
             const currentCount = (userDataRecord.locks && userDataRecord.locks[minutes]) || 0;
-            if(currentCount <= 0) return showToast("No locks available in inventory.", "error");
+            if (currentCount <= 0) return showToast("No locks available in inventory.", "error");
 
             const calculatedEpochLockExpiryTime = Date.now() + (minutes * 60 * 1000);
-            
+
             const lockApplicationPayload = {};
             lockApplicationPayload[`users/${activeUserSession.uid}/locks/${minutes}`] = currentCount - 1;
             lockApplicationPayload[`inventory/${activeUserSession.uid}/${instanceId}/cryptographicLockExpiry`] = calculatedEpochLockExpiryTime;
@@ -2929,8 +3690,8 @@
             showToast(`Asset secured for ${minutes} minutes.`, "success");
         };
 
-        window.buyLockItem = async function(minutesCountValue, executionPriceInEuros) {
-            if(userDataRecord.money < executionPriceInEuros) return showToast("Insufficient funds.", "error");
+        window.buyLockItem = async function (minutesCountValue, executionPriceInEuros) {
+            if (userDataRecord.money < executionPriceInEuros) return showToast("Insufficient funds.", "error");
 
             const currentLockCount = (userDataRecord.locks && userDataRecord.locks[minutesCountValue]) || 0;
 
@@ -2948,55 +3709,55 @@
             closeModal('modal-archive-details');
         });
 
-        window.showArchiveDetails = function(registryId, timestampEpoch, name, color) {
+        window.showArchiveDetails = function (registryId, timestampEpoch, name, color) {
             document.getElementById('arc-title').innerText = name;
             document.getElementById('arc-title').style.color = color;
             document.getElementById('arc-date').innerText = new Date(timestampEpoch).toLocaleString();
             openModal('modal-archive-details');
         }
 
-        window.liquidateInventoryCardInstance = function(instanceId, salePayoutVal) {
-            if(!confirm(`Verify financial liquidation execution for selected asset? Payout calculated at: €${salePayoutVal.toFixed(2)}`)) return;
-            
+        window.liquidateInventoryCardInstance = function (instanceId, salePayoutVal) {
+            if (!confirm(`Verify financial liquidation execution for selected asset? Payout calculated at: €${salePayoutVal.toFixed(2)}`)) return;
+
             const databasePatchPayload = {};
             databasePatchPayload[`inventory/${activeUserSession.uid}/${instanceId}`] = null;
             databasePatchPayload[`users/${activeUserSession.uid}/money`] = userDataRecord.money + salePayoutVal;
-            databasePatchPayload[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + 5; 
-            
+            databasePatchPayload[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + 5;
+
             update(ref(db, '/'), databasePatchPayload);
         };
 
-        window.initiateAssetTransferProtocol = async function(instanceId) {
+        window.initiateAssetTransferProtocol = async function (instanceId) {
             const targetedDestinationUserUsername = prompt("Enter complete destination account username parameters:");
-            if(!targetedDestinationUserUsername) return;
+            if (!targetedDestinationUserUsername) return;
 
             const allUsersSnapshotData = await get(ref(db, 'users'));
             const userProfilesMap = allUsersSnapshotData.val() || {};
             let matchedTargetUserIdKey = null;
 
-            for(let keyId in userProfilesMap) {
-                if(userProfilesMap[keyId].username?.toLowerCase() === targetedDestinationUserUsername.trim().toLowerCase()) {
+            for (let keyId in userProfilesMap) {
+                if (userProfilesMap[keyId].username?.toLowerCase() === targetedDestinationUserUsername.trim().toLowerCase()) {
                     matchedTargetUserIdKey = keyId;
                     break;
                 }
             }
 
-            if(!matchedTargetUserIdKey) return showToast("Recipient username not found.", "error");
-            if(matchedTargetUserIdKey === activeUserSession.uid) return showToast("Cannot send to yourself.", "error");
+            if (!matchedTargetUserIdKey) return showToast("Recipient username not found.", "error");
+            if (matchedTargetUserIdKey === activeUserSession.uid) return showToast("Cannot send to yourself.", "error");
 
             const sourceCardMovingObjectInstance = userDeckRecord[instanceId];
-            if(sourceCardMovingObjectInstance.cryptographicLockExpiry && sourceCardMovingObjectInstance.cryptographicLockExpiry > Date.now()) {
+            if (sourceCardMovingObjectInstance.cryptographicLockExpiry && sourceCardMovingObjectInstance.cryptographicLockExpiry > Date.now()) {
                 return showToast("Card is locked — transfer blocked.", "error");
             }
 
             const assetRoutingTransferPayload = {};
             assetRoutingTransferPayload[`inventory/${activeUserSession.uid}/${instanceId}`] = null;
-            
-            sourceCardMovingObjectInstance.acquiredTimestamp = Date.now(); 
+
+            sourceCardMovingObjectInstance.acquiredTimestamp = Date.now();
             assetRoutingTransferPayload[`inventory/${matchedTargetUserIdKey}/${instanceId}`] = sourceCardMovingObjectInstance;
-            
+
             const targetDiscoveredRef = userProfilesMap[matchedTargetUserIdKey].discovered || {};
-            if(!targetDiscoveredRef[sourceCardMovingObjectInstance.cardId]) {
+            if (!targetDiscoveredRef[sourceCardMovingObjectInstance.cardId]) {
                 assetRoutingTransferPayload[`users/${matchedTargetUserIdKey}/discovered/${sourceCardMovingObjectInstance.cardId}`] = Date.now();
             }
 
@@ -3006,15 +3767,15 @@
 
         function executeSystemicCardMutationTick() {
             const arrayKeysOfInventory = Object.keys(userDeckRecord);
-            if(arrayKeysOfInventory.length === 0) return;
+            if (arrayKeysOfInventory.length === 0) return;
 
             const randomlySelectedTargetInstanceKey = arrayKeysOfInventory[Math.floor(Math.random() * arrayKeysOfInventory.length)];
             const targetSelectedCardInstance = userDeckRecord[randomlySelectedTargetInstanceKey];
 
-            if(targetSelectedCardInstance.cryptographicLockExpiry && targetSelectedCardInstance.cryptographicLockExpiry > Date.now()) return;
+            if (targetSelectedCardInstance.cryptographicLockExpiry && targetSelectedCardInstance.cryptographicLockExpiry > Date.now()) return;
 
             const trackingMutationsListIndexes = targetSelectedCardInstance.activeMutationIndexes || [];
-            if(trackingMutationsListIndexes.length >= 10) return; 
+            if (trackingMutationsListIndexes.length >= 10) return;
 
             const generatedRandomMutationIndex = pickWeightedMutationIndex();
             trackingMutationsListIndexes.push(generatedRandomMutationIndex);
@@ -3068,14 +3829,14 @@
             }
         }
 
-        window.executeTargetInventoryInspectionScan = async function(targetPlayerUid) {
-            if(userDataRecord.stealCooldownExpiry && userDataRecord.stealCooldownExpiry > Date.now()) {
+        window.executeTargetInventoryInspectionScan = async function (targetPlayerUid) {
+            if (userDataRecord.stealCooldownExpiry && userDataRecord.stealCooldownExpiry > Date.now()) {
                 return showToast("Steal cooldown active.", "error");
             }
 
             const targetInventoryDatabaseSnapshot = await get(ref(db, `inventory/${targetPlayerUid}`));
             const targetDeckPayload = targetInventoryDatabaseSnapshot.val() || {};
-            
+
             const targetGridModalDisplayContainer = document.getElementById('container-target-cards');
             targetGridModalDisplayContainer.innerHTML = '';
 
@@ -3085,10 +3846,10 @@
             targetAssetKeys.forEach((instanceIdKey) => {
                 const currentInstanceItem = targetDeckPayload[instanceIdKey];
                 const staticRegistryItemMeta = GAME_REGISTRY[currentInstanceItem.packSource]?.find(x => x.id === currentInstanceItem.cardId);
-                if(!staticRegistryItemMeta) return;
+                if (!staticRegistryItemMeta) return;
 
                 const evaluatingSecurityLockIsActive = currentInstanceItem.cryptographicLockExpiry && currentInstanceItem.cryptographicLockExpiry > Date.now();
-                if(evaluatingSecurityLockIsActive) return; 
+                if (evaluatingSecurityLockIsActive) return;
 
                 verifiedStealableOptionsRenderedCount++;
                 const calculatedLiveValue = calculateLiveInstanceMarketValue(currentInstanceItem);
@@ -3102,7 +3863,7 @@
                         <div class="card-title" style="color:${PACK_METADATA[currentInstanceItem.packSource].color};">${staticRegistryItemMeta.name}</div>
                     </div>
                     <div class="card-badge-bottom">
-                        <span>🧬 M:${(currentInstanceItem.activeMutationIndexes||[]).length}</span>
+                        <span>🧬 M:${(currentInstanceItem.activeMutationIndexes || []).length}</span>
                         <span style="color:var(--accent-green);">€${calculatedLiveValue.toFixed(2)}</span>
                     </div>
                     <button class="card-btn" style="background:var(--accent-red); color:white; width:100%; margin-top:8px;" onclick="deployInfiltrationAttackChallenge('${targetPlayerUid}', '${instanceIdKey}')">LAUNCH ATTACK</button>
@@ -3110,7 +3871,7 @@
                 targetGridModalDisplayContainer.appendChild(itemCardUiNodeElement);
             });
 
-            if(verifiedStealableOptionsRenderedCount === 0) {
+            if (verifiedStealableOptionsRenderedCount === 0) {
                 targetGridModalDisplayContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:24px; color:#6b7280; font-weight:bold;">No accessible unprotected hardware configurations found inside targeted vector.</div>`;
             }
 
@@ -3333,7 +4094,7 @@
             renderHUDDisplayElements();
         }
 
-        window.deployInfiltrationAttackChallenge = async function(defenderUid, targetInstanceCardId) {
+        window.deployInfiltrationAttackChallenge = async function (defenderUid, targetInstanceCardId) {
             closeModal('modal-target-inventory');
 
             const attackerUid = activeUserSession?.uid;
@@ -3398,11 +4159,11 @@
                 targetCardInstanceKey: targetInstanceCardId,
                 card: targetCardSnapshot
             };
-            globalOperationsBatchedPayload[`users/${attackerUid}/stealCooldownExpiry`] = Date.now() + 45 * 1000;
+            globalOperationsBatchedPayload[`users/${attackerUid}/stealCooldownExpiry`] = Date.now() + 3 * 60 * 1000;
 
             try {
                 await update(ref(db, '/'), globalOperationsBatchedPayload);
-                userDataRecord.stealCooldownExpiry = Date.now() + 45 * 1000;
+                userDataRecord.stealCooldownExpiry = Date.now() + 3 * 60 * 1000;
             } catch (error) {
                 logFirebaseStealError('deployInfiltrationAttackChallenge', error);
                 showToast('Failed to start infiltration. Check console.', 'error');
@@ -3685,7 +4446,7 @@
         }
 
         // --- REGISTRY ARCHIVE BOOK IMPLEMENTATION ---
-        let currentArchiveFilterPackTab = 'common';
+        let currentArchiveFilterPackTab = 'paper';
         function buildArchiveBookUI() {
             const containerFiltersNode = document.getElementById('book-pack-filters');
             containerFiltersNode.innerHTML = '';
@@ -3697,7 +4458,7 @@
                 filterBtnElement.style.background = currentArchiveFilterPackTab === pType ? PACK_METADATA[pType].color : 'var(--bg-surface)';
                 filterBtnElement.style.color = currentArchiveFilterPackTab === pType ? '#000' : '#fff';
                 filterBtnElement.innerText = `${pType.toUpperCase()}`;
-                
+
                 filterBtnElement.addEventListener('click', () => {
                     currentArchiveFilterPackTab = pType;
                     buildArchiveBookUI();
@@ -3713,12 +4474,12 @@
 
             targetedPackPoolRegistry.forEach((registryCardObj) => {
                 const userOwnsThisCardFlag = !!discoveredCardsMap[registryCardObj.id];
-                
+
                 const cardUiNodeElement = document.createElement('div');
                 cardUiNodeElement.className = `card-item`;
                 cardUiNodeElement.style.setProperty('--rarity-color', PACK_METADATA[currentArchiveFilterPackTab].color);
-                
-                if(!userOwnsThisCardFlag) {
+
+                if (!userOwnsThisCardFlag) {
                     cardUiNodeElement.style.opacity = '0.25';
                 } else {
                     cardUiNodeElement.style.cursor = 'pointer';
@@ -3750,16 +4511,16 @@
             });
         });
 
-        window.handleLeaderboardQuery = async function(metricSortingKey) {
+        window.handleLeaderboardQuery = async function (metricSortingKey) {
             const targetLeaderboardsContainer = document.getElementById('container-leaderboards');
             targetLeaderboardsContainer.innerHTML = '<div style="text-align:center; padding:16px; color:#6b7280;">Querying sequence array indices...</div>';
 
             const usersDatabaseSnapshot = await get(ref(db, 'users'));
             const completeUsersRecordMap = usersDatabaseSnapshot.val() || {};
-            
+
             const structuredRankingArrayData = [];
 
-            for(let uidKey in completeUsersRecordMap) {
+            for (let uidKey in completeUsersRecordMap) {
                 const userProf = completeUsersRecordMap[uidKey];
                 const discoveredNodes = userProf.discovered || {};
 
@@ -3772,19 +4533,19 @@
                 });
             }
 
-            if(metricSortingKey === 'money') {
+            if (metricSortingKey === 'money') {
                 structuredRankingArrayData.sort((alpha, beta) => beta.money - alpha.money);
-            } else if(metricSortingKey === 'level') {
+            } else if (metricSortingKey === 'level') {
                 structuredRankingArrayData.sort((alpha, beta) => beta.level - alpha.level);
-            } else if(metricSortingKey === 'collection') {
+            } else if (metricSortingKey === 'collection') {
                 structuredRankingArrayData.sort((alpha, beta) => beta.collectionCount - alpha.collectionCount);
             }
 
             targetLeaderboardsContainer.innerHTML = '';
             structuredRankingArrayData.slice(0, 50).forEach((rankItem, indexValue) => {
                 let displayedSortingMetricValueField = `€${rankItem.money.toFixed(2)}`;
-                if(metricSortingKey === 'level') displayedSortingMetricValueField = `LV ${rankItem.level}`;
-                if(metricSortingKey === 'collection') displayedSortingMetricValueField = `${rankItem.collectionCount} / 150 Unlocked`;
+                if (metricSortingKey === 'level') displayedSortingMetricValueField = `LV ${rankItem.level}`;
+                if (metricSortingKey === 'collection') displayedSortingMetricValueField = `${rankItem.collectionCount} / 150 Unlocked`;
 
                 const entryHtmlNode = `
                     <div class="rank-entry">
@@ -3803,7 +4564,7 @@
         function renderProfileDisplayData() {
             document.getElementById('prof-username').innerText = userDataRecord.username || '---';
             document.getElementById('prof-email').innerText = userDataRecord.email || '---';
-            
+
             const targetAvatarNodeBadge = document.getElementById('prof-avatar');
             targetAvatarNodeBadge.innerText = (userDataRecord.username || 'U').charAt(0).toUpperCase();
             targetAvatarNodeBadge.style.backgroundColor = userDataRecord.avatarBgColor || 'var(--primary)';
@@ -3821,4 +4582,5 @@
         }
     </script>
 </body>
+
 </html>
