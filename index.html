@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red Light Green Light - Reaction Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Realm - Card Economy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Outfit:wght@400;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-dark: #090d16;
@@ -24,7 +28,7 @@
             --wood: #a67c52;
             --stone: #78716c;
             --bronze: #cd7f32;
-            --silver: #c0c0c0;  
+            --silver: #c0c0c0;
             --gold: #ffd700;
             --platinum: #e5e4e2;
             --diamond: #7df9ff;
@@ -7310,98 +7314,6 @@
             trackQuestProgress('earn_money', finalPayout);
         };
 
-        window.sellAllCards = async function () {
-            const activeDeckKeys = Object.keys(userDeckRecord);
-            if (activeDeckKeys.length === 0) {
-                showToast('No cards to sell.', 'info');
-                return;
-            }
-
-            const currentSystemEpoch = Date.now();
-            let totalPayout = 0;
-            let cardsToSell = [];
-            let protectedCount = 0;
-
-            activeDeckKeys.forEach((instanceIdKey) => {
-                const currentInstanceItem = userDeckRecord[instanceIdKey];
-                const evaluatingSecurityLockIsActive = currentInstanceItem.cryptographicLockExpiry && currentInstanceItem.cryptographicLockExpiry > currentSystemEpoch;
-                const protectedCard = isRamezCard(currentInstanceItem);
-
-                if (!evaluatingSecurityLockIsActive && !protectedCard) {
-                    const liveCalculatedValue = calculateLiveInstanceMarketValue(currentInstanceItem);
-                    totalPayout += liveCalculatedValue;
-                    cardsToSell.push(instanceIdKey);
-                } else {
-                    protectedCount++;
-                }
-            });
-
-            if (cardsToSell.length === 0) {
-                if (protectedCount > 0) {
-                    showToast('All cards are protected or locked.', 'info');
-                } else {
-                    showToast('No cards to sell.', 'info');
-                }
-                return;
-            }
-
-            const message = `Sell ${cardsToSell.length} card(s) for €${totalPayout.toFixed(2)}?${protectedCount > 0 ? ` (${protectedCount} protected/locked cards will be skipped)` : ''}`;
-            if (!confirm(message)) return;
-
-            const databasePatchPayload = {};
-            cardsToSell.forEach((instanceIdKey) => {
-                databasePatchPayload[`inventory/${activeUserSession.uid}/${instanceIdKey}`] = null;
-            });
-
-            databasePatchPayload[`users/${activeUserSession.uid}/money`] = userDataRecord.money + totalPayout;
-            databasePatchPayload[`users/${activeUserSession.uid}/xp`] = userDataRecord.xp + (cardsToSell.length * 10);
-
-            await update(ref(db, '/'), databasePatchPayload);
-            
-            // Track quest progress for each card sold
-            cardsToSell.forEach(() => {
-                trackQuestProgress('sell_cards', 1);
-            });
-            trackQuestProgress('earn_money', totalPayout);
-
-            showToast(`Sold ${cardsToSell.length} card(s) for €${totalPayout.toFixed(2)}!`, 'success');
-        };
-
-        window.unlockAllCards = async function () {
-            const activeDeckKeys = Object.keys(userDeckRecord);
-            if (activeDeckKeys.length === 0) {
-                showToast('No cards to unlock.', 'info');
-                return;
-            }
-
-            const currentSystemEpoch = Date.now();
-            let lockedCards = [];
-
-            activeDeckKeys.forEach((instanceIdKey) => {
-                const currentInstanceItem = userDeckRecord[instanceIdKey];
-                const evaluatingSecurityLockIsActive = currentInstanceItem.cryptographicLockExpiry && currentInstanceItem.cryptographicLockExpiry > currentSystemEpoch;
-                
-                if (evaluatingSecurityLockIsActive) {
-                    lockedCards.push(instanceIdKey);
-                }
-            });
-
-            if (lockedCards.length === 0) {
-                showToast('No locked cards to unlock.', 'info');
-                return;
-            }
-
-            if (!confirm(`Unlock ${lockedCards.length} card(s)?`)) return;
-
-            const databasePatchPayload = {};
-            lockedCards.forEach((instanceIdKey) => {
-                databasePatchPayload[`inventory/${activeUserSession.uid}/${instanceIdKey}/cryptographicLockExpiry`] = 0;
-            });
-
-            await update(ref(db, '/'), databasePatchPayload);
-            showToast(`Unlocked ${lockedCards.length} card(s)!`, 'success');
-        };
-
         window.initiateAssetTransferProtocol = async function (instanceId) {
             const targetedDestinationUserUsername = prompt("Enter complete destination account username parameters:");
             if (!targetedDestinationUserUsername) return;
@@ -8862,6 +8774,272 @@
             trackQuestProgress('open_packs', 1, foundPackKey);
             startPackOpeningExperience(foundPackKey, foundCard, instanceId);
         };
+
+        // ============================================
+        // REACTION GAME STATE MACHINE
+        // ============================================
+        const ReactionGame = {
+            // Game state enum
+            State: {
+                IDLE: 'idle',
+                WAITING: 'waiting',
+                GREEN: 'green',
+                RESOLVED: 'resolved'
+            },
+
+            // State tracking variables
+            currentState: null,
+            greenLightTimestamp: null,
+            player1ClickTimestamp: null,
+            player2ClickTimestamp: null,
+            player1ReactionTime: null,
+            player2ReactionTime: null,
+            player1Fouled: false,
+            player2Fouled: false,
+            countdownTimer: null,
+            randomDelayMs: null,
+
+            // DOM element references
+            elements: {
+                lenses: null,
+                triggerBtn: null,
+                statusDisplay: null
+            },
+
+            // Initialize the game system
+            initialize() {
+                this.elements.lenses = document.querySelectorAll('.traffic-lens');
+                this.elements.triggerBtn = document.getElementById('reaction-trigger-btn');
+                this.reset();
+            },
+
+            // Reset all game state
+            reset() {
+                this.currentState = this.State.IDLE;
+                this.greenLightTimestamp = null;
+                this.player1ClickTimestamp = null;
+                this.player2ClickTimestamp = null;
+                this.player1ReactionTime = null;
+                this.player2ReactionTime = null;
+                this.player1Fouled = false;
+                this.player2Fouled = false;
+                this.randomDelayMs = null;
+                
+                if (this.countdownTimer) {
+                    clearTimeout(this.countdownTimer);
+                    this.countdownTimer = null;
+                }
+
+                this.setAllLensesToRed();
+                this.updateTriggerButton('WAITING FOR INITIALIZATION...', true, '#374151');
+            },
+
+            // Start a new game round
+            startGame() {
+                if (this.currentState === this.State.WAITING || this.currentState === this.State.GREEN) {
+                    return; // Game already in progress
+                }
+
+                this.reset();
+                this.currentState = this.State.WAITING;
+
+                // Generate random delay between 2.0 and 5.0 seconds (2000-5000ms)
+                this.randomDelayMs = Math.floor(Math.random() * 3000) + 2000;
+
+                // Update UI to show waiting state
+                this.updateTriggerButton('WAIT FOR GREEN...', true, '#374151');
+
+                // Start countdown timer
+                this.countdownTimer = setTimeout(() => {
+                    this.activateGreenLight();
+                }, this.randomDelayMs);
+            },
+
+            // Activate green light simultaneously for all lenses
+            activateGreenLight() {
+                if (this.currentState !== this.State.WAITING) return;
+
+                this.currentState = this.State.GREEN;
+                
+                // Record high-precision timestamp using performance.now()
+                this.greenLightTimestamp = performance.now();
+
+                // Switch all lenses to green simultaneously
+                this.setAllLensesToGreen();
+
+                // Enable trigger button
+                this.updateTriggerButton('CLICK NOW!', false, 'var(--accent-green)');
+            },
+
+            // Handle player click
+            handlePlayerClick(playerId = 'player1') {
+                const clickTimestamp = performance.now();
+
+                // Check for foul (clicked before green)
+                if (this.currentState === this.State.WAITING) {
+                    this.handleFoul(playerId);
+                    return;
+                }
+
+                // Ignore clicks if game is not in green phase or already resolved
+                if (this.currentState !== this.State.GREEN) return;
+
+                // Record click timestamp
+                if (playerId === 'player1') {
+                    this.player1ClickTimestamp = clickTimestamp;
+                    this.player1ReactionTime = clickTimestamp - this.greenLightTimestamp;
+                } else {
+                    this.player2ClickTimestamp = clickTimestamp;
+                    this.player2ReactionTime = clickTimestamp - this.greenLightTimestamp;
+                }
+
+                // Determine winner if both players have clicked
+                if (this.player1ClickTimestamp && this.player2ClickTimestamp) {
+                    this.resolveGame();
+                }
+            },
+
+            // Handle foul (false start)
+            handleFoul(playerId) {
+                if (playerId === 'player1') {
+                    this.player1Fouled = true;
+                } else {
+                    this.player2Fouled = true;
+                }
+
+                this.currentState = this.State.RESOLVED;
+                
+                // Clear countdown timer
+                if (this.countdownTimer) {
+                    clearTimeout(this.countdownTimer);
+                    this.countdownTimer = null;
+                }
+
+                // Show foul message
+                const fouledPlayer = playerId === 'player1' ? 'Player 1' : 'Player 2';
+                this.updateTriggerButton(`${fouledPlayer} FALSE START!`, true, 'var(--accent-red)');
+                this.showFeedback(`${fouledPlayer} clicked too early! Auto-loss.`);
+            },
+
+            // Resolve the game and determine winner
+            resolveGame() {
+                this.currentState = this.State.RESOLVED;
+
+                let winner;
+                let timeDifference;
+
+                if (this.player1Fouled && !this.player2Fouled) {
+                    winner = 'Player 2';
+                    timeDifference = null;
+                    this.showFeedback('Player 1 false start! Player 2 wins by default.');
+                } else if (this.player2Fouled && !this.player1Fouled) {
+                    winner = 'Player 1';
+                    timeDifference = null;
+                    this.showFeedback('Player 2 false start! Player 1 wins by default.');
+                } else if (this.player1Fouled && this.player2Fouled) {
+                    winner = 'Draw';
+                    timeDifference = null;
+                    this.showFeedback('Both players false started! Draw.');
+                } else {
+                    // Compare reaction times
+                    if (this.player1ReactionTime < this.player2ReactionTime) {
+                        winner = 'Player 1';
+                        timeDifference = this.player2ReactionTime - this.player1ReactionTime;
+                    } else if (this.player2ReactionTime < this.player1ReactionTime) {
+                        winner = 'Player 2';
+                        timeDifference = this.player1ReactionTime - this.player2ReactionTime;
+                    } else {
+                        winner = 'Draw';
+                        timeDifference = 0;
+                    }
+                }
+
+                // Update UI with results
+                const resultMessage = timeDifference !== null
+                    ? `${winner} wins! (${this.formatTimeDifference(timeDifference)} faster)`
+                    : `${winner}`;
+                
+                this.updateTriggerButton(resultMessage, true, winner === 'Player 1' ? 'var(--accent-green)' : winner === 'Player 2' ? 'var(--accent-blue)' : '#374151');
+
+                // Show detailed timing feedback
+                this.showDetailedFeedback();
+            },
+
+            // Format reaction time as "X seconds, Y milliseconds"
+            formatReactionTime(ms) {
+                const seconds = Math.floor(ms / 1000);
+                const milliseconds = Math.floor(ms % 1000);
+                return `${seconds} seconds, ${milliseconds} milliseconds`;
+            },
+
+            // Format time difference
+            formatTimeDifference(ms) {
+                return `${ms.toFixed(0)}ms`;
+            },
+
+            // Show feedback message
+            showFeedback(message) {
+                // You can customize where to show this message
+                console.log(message);
+                // Or update a specific DOM element if you have one
+                const feedbackEl = document.getElementById('reaction-feedback');
+                if (feedbackEl) {
+                    feedbackEl.textContent = message;
+                }
+            },
+
+            // Show detailed timing feedback
+            showDetailedFeedback() {
+                const p1Time = this.player1Fouled ? 'FOUL' : this.formatReactionTime(this.player1ReactionTime);
+                const p2Time = this.player2Fouled ? 'FOUL' : this.formatReactionTime(this.player2ReactionTime);
+                
+                const feedback = `Player 1: ${p1Time} | Player 2: ${p2Time}`;
+                this.showFeedback(feedback);
+            },
+
+            // DOM helper: Set all lenses to red
+            setAllLensesToRed() {
+                this.elements.lenses.forEach(lens => {
+                    lens.classList.remove('green');
+                    lens.classList.add('red');
+                });
+            },
+
+            // DOM helper: Set all lenses to green
+            setAllLensesToGreen() {
+                this.elements.lenses.forEach(lens => {
+                    lens.classList.remove('red');
+                    lens.classList.add('green');
+                });
+            },
+
+            // DOM helper: Update trigger button
+            updateTriggerButton(text, disabled, backgroundColor) {
+                if (this.elements.triggerBtn) {
+                    this.elements.triggerBtn.innerText = text;
+                    this.elements.triggerBtn.disabled = disabled;
+                    this.elements.triggerBtn.style.background = backgroundColor;
+                }
+            },
+
+            // Get current game state (for debugging/external access)
+            getState() {
+                return {
+                    currentState: this.currentState,
+                    greenLightTimestamp: this.greenLightTimestamp,
+                    player1ReactionTime: this.player1ReactionTime,
+                    player2ReactionTime: this.player2ReactionTime,
+                    player1Fouled: this.player1Fouled,
+                    player2Fouled: this.player2Fouled,
+                    randomDelayMs: this.randomDelayMs
+                };
+            }
+        };
+
+        // Initialize the reaction game system when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            ReactionGame.initialize();
+        });
     </script>
 </body>
 
