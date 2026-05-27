@@ -7743,7 +7743,12 @@
             const chosenRandomPuzzleMechanicType = Math.random() > 0.5 ? 'clash_math' : 'clash_reaction';
             const mathematicalValueArgA = Math.floor(Math.random() * 80) + 15;
             const mathematicalValueArgB = Math.floor(Math.random() * 70) + 10;
-            const structuralRandomDelaySecondsTimer = Math.floor(Math.random() * 3000) + 2000;
+            
+            // For reaction game: Calculate server-synchronized green light time
+            // Random delay between 2.0 and 5.0 seconds (2000-5000ms)
+            const randomDelayMs = Math.floor(Math.random() * 3000) + 2000;
+            const estimatedServerTime = getEstimatedServerTimeMs();
+            const greenLightServerTime = estimatedServerTime + randomDelayMs;
 
             const sessionPackagePayload = {
                 sessionId: generatedAttackSessionUid,
@@ -7756,7 +7761,13 @@
                 puzzleType: chosenRandomPuzzleMechanicType,
                 mathArgA: mathematicalValueArgA,
                 mathArgB: mathematicalValueArgB,
-                reactionDelaySeed: structuralRandomDelaySecondsTimer,
+                // New reaction game fields
+                greenLightServerTime: chosenRandomPuzzleMechanicType === 'clash_reaction' ? greenLightServerTime : null,
+                attackerReaction: null,
+                defenderReaction: null,
+                attackerFouled: false,
+                defenderFouled: false,
+                reactionDelaySeed: randomDelayMs, // Keep for backward compatibility
                 sessionState: 'initialized',
                 winnerSignaledUid: '',
                 transferCompleted: false,
@@ -7824,6 +7835,24 @@
             if (reactionBtn) reactionBtn.disabled = true;
         }
 
+        // NEW: Helper function to activate green light locally with precise timestamp
+        function activateGreenLightLocally(sessionId, role) {
+            if (clashUiLocked || clashUiSessionId !== sessionId) return;
+
+            const lightLensesNodes = document.querySelectorAll('.traffic-lens');
+            lightLensesNodes.forEach(lens => { lens.classList.remove('red'); lens.classList.add('green'); });
+
+            const actionTriggerBtn = document.getElementById('reaction-trigger-btn');
+            actionTriggerBtn.disabled = false;
+            actionTriggerBtn.style.background = 'var(--accent-green)';
+            actionTriggerBtn.innerText = role === 'defender'
+                ? 'EXECUTE DEFENSE NOW!'
+                : 'TRIGGER EXECUTION IMPULSE NOW!';
+
+            // Record the exact local time when green light activated for reaction time calculation
+            window.reactionGreenLightLocalTime = performance.now();
+        }
+
         function initializeLiveChallengeInterface(sessionId, sessionObj) {
             if (!activeUserSession?.uid || sessionObj.sessionState !== 'initialized') return;
 
@@ -7874,15 +7903,24 @@
                         ? 'DEFENSE GRID INITIALIZING... HOLD'
                         : 'DIAGNOSTIC SYSTEM INITIATED... HOLD';
 
-                    reactionSequenceTimer = setTimeout(() => {
-                        if (clashUiLocked || clashUiSessionId !== sessionId) return;
-                        lightLensesNodes.forEach(lens => { lens.classList.remove('red'); lens.classList.add('green'); });
-                        actionTriggerBtn.disabled = false;
-                        actionTriggerBtn.style.background = 'var(--accent-green)';
-                        actionTriggerBtn.innerText = role === 'defender'
-                            ? 'EXECUTE DEFENSE NOW!'
-                            : 'TRIGGER EXECUTION IMPULSE NOW!';
-                    }, sessionObj.reactionDelaySeed);
+                    // NEW ARCHITECTURE: Use server-synchronized green light time
+                    if (!sessionObj.greenLightServerTime) {
+                        showToast('Invalid session data - missing green light time', 'error');
+                        return;
+                    }
+
+                    const currentServerTime = getEstimatedServerTimeMs();
+                    const delayUntilGreen = sessionObj.greenLightServerTime - currentServerTime;
+
+                    if (delayUntilGreen <= 0) {
+                        // Green light should already be on - activate immediately
+                        activateGreenLightLocally(sessionId, role);
+                    } else {
+                        // Set up local timer to sync with server time
+                        reactionSequenceTimer = setTimeout(() => {
+                            activateGreenLightLocally(sessionId, role);
+                        }, delayUntilGreen);
+                    }
                 }
             }
 
@@ -7890,6 +7928,13 @@
                 const updatedSessionData = snapshot.val();
                 if (!updatedSessionData) return;
 
+                // Handle reaction game state machine
+                if (updatedSessionData.puzzleType === 'clash_reaction') {
+                    handleReactionGameStateUpdate(updatedSessionData, sessionId, myUid);
+                    return;
+                }
+
+                // Handle math game (original logic)
                 if (updatedSessionData.sessionState === 'terminated_resolved') {
                     lockClashUiInputs();
                     concludeLiveChallengeTransactionClean(updatedSessionData);
@@ -7918,16 +7963,138 @@
         document.getElementById('reaction-trigger-btn')?.addEventListener('click', () => {
             if (clashUiLocked || !activeStealSequenceId) return;
 
-            const lenses = document.querySelectorAll('.traffic-lens');
-            const isGreenPhase = Array.from(lenses).some(lens => lens.classList.contains('green'));
-            if (!isGreenPhase) {
-                showToast('Too early — wait for GREEN.', 'error');
+            // NEW ARCHITECTURE: Submit reaction time instead of first-come-first-served
+            submitReactionTime();
+        });
+
+        // NEW: Submit reaction time to Firebase (replaces signalClashVictoryCaptureLock for reaction games)
+        async function submitReactionTime() {
+            if (!activeStealSequenceId || clashUiLocked || !activeUserSession?.uid) return;
+
+            const myUid = activeUserSession.uid;
+            const sessionRef = ref(db, `clash_sessions/${activeStealSequenceId}`);
+            
+            try {
+                const sessionSnap = await get(sessionRef);
+                const sessionData = sessionSnap.val();
+                
+                if (!sessionData || sessionData.puzzleType !== 'clash_reaction') {
+                    // Fall back to old logic for math games
+                    signalClashVictoryCaptureLock();
+                    return;
+                }
+
+                // Calculate reaction time
+                const clickTime = performance.now();
+                const greenLightTime = window.reactionGreenLightLocalTime;
+                const reactionTimeMs = clickTime - greenLightTime;
+
+                // Check for foul (clicked before green light)
+                const currentServerTime = getEstimatedServerTimeMs();
+                const isFoul = currentServerTime < sessionData.greenLightServerTime;
+
+                // Determine which field to update based on role
+                const isAttacker = sessionData.attackerUid === myUid;
+                const updateField = isAttacker ? 'attackerReaction' : 'defenderReaction';
+                const foulField = isAttacker ? 'attackerFouled' : 'defenderFouled';
+
+                // Submit reaction time to Firebase
+                const updatePayload = {};
+                if (isFoul) {
+                    updatePayload[foulField] = true;
+                    updatePayload[updateField] = -1; // -1 indicates foul
+                } else {
+                    updatePayload[updateField] = reactionTimeMs;
+                }
+
+                await update(sessionRef, updatePayload);
+
+                if (isFoul) {
+                    showToast('FALSE START! You clicked too early.', 'error');
+                    lockClashUiInputs();
+                } else {
+                    showToast(`Reaction time: ${reactionTimeMs.toFixed(0)}ms - Waiting for opponent...`, 'info');
+                    lockClashUiInputs(); // Lock UI after submission
+                }
+
+            } catch (error) {
+                logFirebaseStealError('submitReactionTime', error);
+                showToast('Failed to submit reaction time. Check console.', 'error');
+            }
+        }
+
+        // NEW: Handle reaction game state updates
+        async function handleReactionGameStateUpdate(sessionData, sessionId, myUid) {
+            // If already resolved, handle cleanup
+            if (sessionData.sessionState === 'terminated_resolved') {
+                lockClashUiInputs();
+                concludeLiveChallengeTransactionClean(sessionData);
                 return;
             }
 
-            signalClashVictoryCaptureLock();
-        });
+            // Check if both players have submitted (or fouled)
+            const attackerSubmitted = sessionData.attackerReaction !== null;
+            const defenderSubmitted = sessionData.defenderReaction !== null;
 
+            if (!attackerSubmitted || !defenderSubmitted) {
+                // Still waiting for one or both players
+                return;
+            }
+
+            // Both players have submitted - trigger comparison transaction
+            await compareAndResolveReactionGame(sessionId, myUid);
+        }
+
+        // NEW: Compare reaction times and determine winner in a single atomic transaction
+        async function compareAndResolveReactionGame(sessionId, myUid) {
+            const sessionRef = ref(db, `clash_sessions/${sessionId}`);
+
+            try {
+                await runTransaction(sessionRef, (currentSessionData) => {
+                    if (!currentSessionData) return;
+                    if (currentSessionData.sessionState !== 'initialized') return;
+                    if (currentSessionData.winnerSignaledUid) return; // Already resolved
+
+                    // Ensure both players have submitted
+                    if (currentSessionData.attackerReaction === null || currentSessionData.defenderReaction === null) {
+                        return; // Wait for both submissions
+                    }
+
+                    let winnerUid;
+
+                    // Check for fouls first
+                    if (currentSessionData.attackerFouled && !currentSessionData.defenderFouled) {
+                        winnerUid = currentSessionData.defenderUid;
+                    } else if (currentSessionData.defenderFouled && !currentSessionData.attackerFouled) {
+                        winnerUid = currentSessionData.attackerUid;
+                    } else if (currentSessionData.attackerFouled && currentSessionData.defenderFouled) {
+                        // Both fouled - defender wins by default (attacker failed to steal)
+                        winnerUid = currentSessionData.defenderUid;
+                    } else {
+                        // No fouls - compare reaction times (lower is better)
+                        if (currentSessionData.attackerReaction < currentSessionData.defenderReaction) {
+                            winnerUid = currentSessionData.attackerUid;
+                        } else if (currentSessionData.defenderReaction < currentSessionData.attackerReaction) {
+                            winnerUid = currentSessionData.defenderUid;
+                        } else {
+                            // Exact tie - defender wins by default
+                            winnerUid = currentSessionData.defenderUid;
+                        }
+                    }
+
+                    // Set winner and mark as resolved
+                    currentSessionData.winnerSignaledUid = winnerUid;
+                    currentSessionData.sessionState = 'terminated_resolved';
+                    
+                    return currentSessionData;
+                });
+
+            } catch (error) {
+                logFirebaseStealError('compareAndResolveReactionGame', error);
+            }
+        }
+
+        // Keep original function for math games
         function signalClashVictoryCaptureLock() {
             if (!activeStealSequenceId || clashUiLocked || !activeUserSession?.uid) return;
 
