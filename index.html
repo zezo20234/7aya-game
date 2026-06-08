@@ -5774,17 +5774,18 @@
             ];
 
             let messageIndex = 0;
-            const targetProgress = 85;
+            const targetProgress = 75;
             const progressIncrement = targetProgress / statusMessages.length;
 
             function animateLoading() {
-                if (loadingDismissed) return;
+                if (loadingDismissed || enterButtonShown) return;
 
                 if (currentProgress < targetProgress) {
-                    currentProgress += 0.5;
+                    // Slow down as we get closer to targetProgress (feels like waiting for server)
+                    const speed = currentProgress > 60 ? 0.18 : 0.5;
+                    currentProgress += speed;
                     loadingProgress.style.width = currentProgress + '%';
 
-                    // Update status message at certain progress points
                     const newMessageIndex = Math.min(
                         Math.floor(currentProgress / progressIncrement),
                         statusMessages.length - 1
@@ -5802,18 +5803,27 @@
             // Start loading animation
             setTimeout(animateLoading, 500);
 
-            // 12 second safety fallback — only show enter if appReadyToShow was never called
-            // (means something silently succeeded but never triggered — safe to show)
+            // Safety fallbacks — show enter button if Firebase is slow or fails on iOS
+            // 8 seconds: gentle nudge
             setTimeout(() => {
                 if (!loadingDismissed && !enterButtonShown) {
-                    console.warn('[Loading] Safety fallback: no ready signal received after 12s');
-                    // Do NOT show enter — wait for real appReadyToShow signal
+                    console.warn('[Loading] 8s: no ready signal yet — showing enter button');
+                    showEnterButton();
                 }
-            }, 12000);
+            }, 8000);
+
+            // 15 seconds: hard fallback — force-dismiss even if enterButton somehow failed
+            setTimeout(() => {
+                if (!loadingDismissed) {
+                    console.warn('[Loading] 15s hard fallback — force dismissing');
+                    dismissLoadingScreen();
+                }
+            }, 15000);
 
             // Function to dismiss loading screen — now shows ENTER button
             window.appReadyToShow = function() {
-                if (loadingDismissed) return;
+                if (loadingDismissed || enterButtonShown) return;
+                window.appReadyToShow = null; // prevent double-calls
                 showEnterButton();
             };
 
@@ -10282,7 +10292,9 @@
                 
                 // Call appReadyToShow on first data load
                 if (window.appReadyToShow) {
-                    setTimeout(() => window.appReadyToShow(), 500);
+                    const _readyFn = window.appReadyToShow;
+                    window.appReadyToShow = null; // consume immediately so subsequent onValue calls don't re-trigger
+                    setTimeout(() => _readyFn(), 500);
                     
                     // Check daily login XPB reward
                     setTimeout(() => {
